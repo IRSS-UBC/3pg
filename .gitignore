@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Data files
+*.flt
+*.hdr
+*.tif
