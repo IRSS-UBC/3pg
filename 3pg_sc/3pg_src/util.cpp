@@ -13,6 +13,9 @@ Use of this software assumes agreement to this condition of use
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <cctype>      // std::tolower
+#include <algorithm>   // std::equal
+#include <boost/algorithm/string/trim.hpp>
 
 #ifdef WIN32
 #define strncasecmp strnicmp
@@ -20,8 +23,11 @@ Use of this software assumes agreement to this condition of use
 
 //--------------------------------------------------------------------------
 
-char *strcpyTrim(char *s, char *ct)
+std::string strcpyTrim(std::string s, std::string ct)
 {
+  boost::algorithm::trim(ct);
+  s = ct;
+  return ct
   // Copy ct to s, plus trim leading and trailing white space. 
   int i;
   char *start, *end, *cp;
@@ -84,6 +90,17 @@ void logOnly(FILE *logfp, char *outstr)
 
 //--------------------------------------------------------------------------
 
+bool ichar_equals(char a, char b)
+{
+    return std::tolower(static_cast<unsigned char>(a)) ==
+           std::tolower(static_cast<unsigned char>(b));
+}
+
+bool iequals(const std::string& a, const std::string& b)
+{
+    return std::equal(a.begin(), a.end(), b.begin(), b.end(), ichar_equals);
+}
+
 bool namesMatch(const std::string& n1, const std::string& n2)
 {
   // Basically strcmp, but we compare length also so that substrings don't 
@@ -94,10 +111,8 @@ bool namesMatch(const std::string& n1, const std::string& n2)
   l2 = n2.length();
   if (l1 != l2)
     return false;
-  if (strncasecmp(n1, n2, l1) == 0)
-    return true;
-  else
-    return false;
+  return iequals(n1, n2);
+
 }
 
 //--------------------------------------------------------------------------

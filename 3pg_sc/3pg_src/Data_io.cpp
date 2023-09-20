@@ -17,11 +17,18 @@ Use of this software assumes agreement to this condition of use
 #include <cstdint>
 #include <math.h>
 #include <ctype.h>
+#include <iostream>
+#include <filesystem>
+#include <vector>
+// #include <format>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include "GDALRasterImage.hpp"
 #include "util.hpp"
 #include "Data_io.hpp"
 
+// namespace fs = std::filesystem;
 static std::string rcsid = "$Id: Data_io.cpp,v 1.10 2001/08/02 06:41:01 lou026 Exp $";
 
 // Case insensitive string comparison is strncasecmp on Solaris and strnicmp on WIN32. 
@@ -36,7 +43,7 @@ static std::string rcsid = "$Id: Data_io.cpp,v 1.10 2001/08/02 06:41:01 lou026 E
 #endif
 
 extern FILE *logfp;
-std::string outstr;
+char * outstr;
 
 #define GRID_NAME_LENGTH 300
 #define PPPG_MAX_SERIES_YEARS 150
@@ -50,7 +57,7 @@ typedef enum {pNull, pScalar, pTif} ParamSpatial;
 typedef struct {
   ParamSpatial spType;                   // Scalar, grid, or null
   double sval;                           // Scalar value. 
-  std::string *gridName;                        // ptr to grid file name
+  std::string gridName;                        // ptr to grid file name
   GDALRasterImage *g;                               // ptr to grid value
 } PPPG_VVAL; 
 
@@ -60,7 +67,7 @@ typedef struct {
 // used to help identify parameter lines, and to help get grid values into 
 // the model.  
 typedef struct {
-  std::string id;                        // String version of the variable name. 
+  std::string id = "-1";                        // String version of the variable name. 
   double *adr;                     // The address of the model variable. 
   bool got;                        // Has the parameter been set? 
   PPPG_VVAL data;                  // Variant value
@@ -465,6 +472,7 @@ PPPG_MT_PARAM MinAswMT[PPPG_MAX_SERIES_YEARS+1];
 // Sample points. 
 #define MAX_SAMPLE_POINTS 50
 std::string sampleIpFile;
+
 FILE *sampleIpFp; 
 struct {
   std::string id;
@@ -493,7 +501,7 @@ int pNameToInd(const std::string& id)
   int w1, w2;
 
   w1 = id.length();
-  for (pn=0; params[pn].id != 0; pn++) {
+  for (pn=0; params[pn].id != "-1"; pn++) {
     w2 = params[pn].id.length();
     if (id.compare(params[pn].id) == 0)
       if (w1 == w2)
@@ -513,7 +521,7 @@ int opNameToInd(const std::string& id)
   std::size_t w1, w2;
 
   w1 = id.length();
-  for (pn=0; opVars[pn].id != 0; pn++) {
+  for (pn=0; opVars[pn].id != "-1"; pn++) {
     w2 = opVars[pn].id.length();
     if (id.compare(opVars[pn].id) == 0)
       if (w1 == w2)
@@ -526,7 +534,7 @@ int opNameToInd(const std::string& id)
 
 //----------------------------------------------------------------------------------
 
-bool getVVal(double &val, PPPG_VVAL vval, long k)
+bool getVVal(double &val, PPPG_VVAL vval, std::tuple<int,int> k)
 {
   GDALRasterImage *fg;
   float result;
@@ -535,8 +543,8 @@ bool getVVal(double &val, PPPG_VVAL vval, long k)
     val = vval.sval;
   else if (vval.spType == pTif) {
     fg = (GDALRasterImage *)vval.g;
-    result = fg->GetVal(k);
-    if (result == fg->nodata)
+    result = fg->GetVal(std::get<0>(k), std::get<1>(k));
+    if (result == fg->noData)
       return false; 
     val = result;
   }
@@ -548,7 +556,7 @@ bool getVVal(double &val, PPPG_VVAL vval, long k)
 
 //-----------------------------------------------------------------------------
 
-double lookupManageTable( int year, int table, double def, long k )
+double lookupManageTable( int year, int table, double def, std::tuple<int,int> k )
 {
   // Lookup the value of a cell in a management table, for a year. 
   // Entries in management tables apply up to but not including the 
@@ -586,10 +594,10 @@ double lookupManageTable( int year, int table, double def, long k )
     }
     else if ( mt[i].data.spType == pTif ) {
       fg = (GDALRasterImage *)mt[i].data.g;
-      if ( fg->GetVal(k) == fg->nodata ) 
+      if ( fg->GetVal(std::get<0>(k), std::get<1>(k)) == fg->noData ) 
         continue; 
       else
-        val = fg->GetVal(k); 
+        val = fg->GetVal(std::get<0>(k), std::get<1>(k));; 
     }
     if ( mt[i].year >= year )
       break;
@@ -600,7 +608,7 @@ double lookupManageTable( int year, int table, double def, long k )
 
 //----------------------------------------------------------------------------------
 
-bool getSeriesVal(double &val, int ser, int calMonth, int calYear, long k)
+bool getSeriesVal(double &val, int ser, int calMonth, int calYear, std::tuple<int,int> k)
 {
   PPPG_SERIES_PARAM *series;
 
@@ -630,18 +638,18 @@ bool getSeriesVal(double &val, int ser, int calMonth, int calYear, long k)
     i = (calYear - series->start) * 12 + calMonth -1; 
     if (i > series->vlen * 12 - 1) {
       // Should not happen as we will sanity check series before running. 
-      sprintf(outstr, "Attempted lookup of series element %d in series %d, only %d entries in series.\nCheck Start/End Ages.",
-        i, ser, (series->vlen*12-1)); 
+      // sprintf(outstr.c_str(), "Attempted lookup of series element %d in series %d, only %d entries in series.\nCheck Start/End Ages.",
+      //   i, ser, (series->vlen*12-1)); 
       logAndExit(logfp, outstr);
     }
     if (i < 0)
     {
-      sprintf(outstr, "Attempted lookup of year before start year\n");
+      // sprintf(outstr, "Attempted lookup of year before start year\n");
       logAndExit(logfp, outstr);
     }
   }
   if ( getVVal(val, series->data[i], k) )
-    return true; 
+    return true;
   else 
     return false; 
 
@@ -652,46 +660,49 @@ void readSampleFile(GDALRasterImage *refGrid)
 {
   // Read a text file of sample points, one per line, in the format idstring, 
   // xcoord, ycoord; find the index number of the cell the points fall in. 
-  std::string line, fname, id, xstr, ystr, *cp;
+  char *line, *fname;
+  char *id, *xstr, *ystr, *cp;
   int ind=0;
   int opn;
-  double x, y;
+  double lat, lon;
   std::tuple<int, int> cellIndex;
 
   if (!samplePointsMonthly && !samplePointsYearly)
     return;
 
-    if ((sampleIpFp = fopen(sampleIpFile, "r")) == NULL) {
-      sprintf(outstr, "Could not open sample point file %s\n", sampleIpFile);
+    if ((sampleIpFp = fopen(sampleIpFile.c_str(), "r")) == NULL) {
+      // std::cout << outstr << "\n";
+      // sprintf(outstr.c_str(), "Could not open sample point file %s\n", sampleIpFile);
       fprintf(logfp, outstr);
       fprintf(stderr, outstr);
       exit(1);
     }
-
   while (fgets(line, MAXLINE-1, sampleIpFp) != NULL) {
     if (sscanf(line, "%s %s %s", id, xstr, ystr) != 3)
       return;
     // Change 'D' to 'e'.  Arcinfo ungenerate writes exponents with D, 
-    // atof and scanf only read e or E.  
-    for (cp = xstr; *cp != '\0'; cp++)
-      if (*cp == 'D')
-        *cp = 'e';
-    for (cp = ystr; *cp != '\0'; cp++)
-      if (*cp == 'D')
-        *cp = 'e';
-
-    // Read coordinates. 
-    strcpy(samplePoints[ind].id, id);
-    x = atof(xstr);
-    y = atof(ystr);
+    // atof and scanf only read e or E. 
+    // TODO: Need to enforce sample points use e/E 
+    // for (cp = xstr; *cp != '\0'; cp++)
+    //   if (*cp == 'D')
+    //     *cp = 'e';
+    // for (cp = ystr; *cp != '\0'; cp++)
+    //   if (*cp == 'D')
+    //     *cp = 'e';
+    
+    // Read coordinates.
+    // TODO: convert id to string
+    samplePoints[ind].id = id;
+    lat = atof(xstr);
+    lon = atof(ystr);
     // TODO: Need to create a function that gets cell index from x/y with GDAL
-    cellIndex = refGrid->XYfrom(x, y);
-    samplePoints[ind].x = x;
-    samplePoints[ind].y = y;
+    cellIndex = refGrid->XYfrom(lat, lon);
+    samplePoints[ind].x = lat;
+    samplePoints[ind].y = lon;
     samplePoints[ind].cellIndex = cellIndex;
 
     // Open output file for this point. Make sure its in outPath. 
-    sprintf(fname, "%s3pg.%s.txt", outPath, id);
+    // sprintf(fname, "%s3pg.%s.txt", outPath, id);
     if ((samplePoints[ind].fp = fopen(fname, "w")) == NULL) {
       sprintf(outstr, "Error opening output sample file %s\n", fname);
       logAndExit(logfp, outstr);
@@ -701,7 +712,7 @@ void readSampleFile(GDALRasterImage *refGrid)
     // For each output sample file
     fprintf(samplePoints[ind].fp, "year, month, id, ");
     for (opn = 1; opVars[opn].adr != NULL; opn++)
-    //for (opn = 1; opVars[opn].id != 0; opn++)
+    //for (opn = 1; opVars[opn].id != "-1"; opn++)
       fprintf(samplePoints[ind].fp, "%s, ", opVars[opn].id);
     fprintf(samplePoints[ind].fp, "\n");
 
@@ -921,7 +932,7 @@ bool readInputParam(const std::string& pName, std::string pValue)
   }
   
   // Is the parameter a constant value (a float).
-  if (sscanf(pValue, "%lf", params[pInd].adr) == 1) {
+  if (sscanf(pValue.c_str(), "%lf", params[pInd].adr) == 1) {
     fprintf(logfp, "   %-40s constant:  % 9.3f\n", params[pInd].id, 
       *(params[pInd].adr)); 
     params[pInd].data.spType = pScalar;
@@ -929,19 +940,20 @@ bool readInputParam(const std::string& pName, std::string pValue)
   }
   else {
     // Is the parameter a grid name (a string). 
-    params[pInd].data.gridName = new std::string;
-    strcpyTrim(params[pInd].data.gridName, pValue);
-    // Type of grid. 
-    if ( ( cp = strrchr(params[pInd].data.gridName, '.') ) == NULL ) {
-      sprintf( outstr, "No file extension found in grid name: %s\n", params[pInd].data.gridName );
-      logAndExit( logfp, outstr ); 
+    // REFERENCES: https://stackoverflow.com/questions/43114174/convert-a-string-to-std-filesystem-path
+    // and https://stackoverflow.com/questions/51949/
+    params[pInd].data.gridName = pValue;
+    const std::filesystem::path filePath = params[pInd].data.gridName;
+    if (filePath.extension() == ".tif") // Heed the dot.
+    {
+        std::cout << filePath.stem() << " is a valid typ  e.";
+        params[pInd].data.spType = pTif;
     }
-    else if (strncasecmp(cp, ".flt", 4) == 0) 
-      params[pInd].data.spType = pTif;
-    else {
-      sprintf(outstr, "Could not determine grid type for input grid name: %s\n"
-        "   File extension must be '.bil' or '.flt'.\n", params[pInd].data.gridName);
-      logAndExit(logfp, outstr);
+    else
+    {
+        std::cout << filePath.filename() << " is an invalid type. File extension must be '.tif'";
+        logAndExit(logfp, outstr);
+        // Output: "myFile.cfg is an invalid type"
     }
     fprintf(logfp, "   %-40s grid: %s\n", params[pInd].id, 
       params[pInd].data.gridName);
@@ -958,7 +970,7 @@ bool readOutputParam(const std::string& pName, const std::string& pValue, int li
   // the value into an appropriate variable. The parameter name can be either the 
   // same as the variable name, or it can be a long descriptive name.  
   int pInd, pInd1, pInd2;
-  std::string *cp;
+  std::string cp;
 
   pInd = pInd1 = pInd2 = 0;
 
@@ -1057,29 +1069,43 @@ bool readOutputParam(const std::string& pName, const std::string& pValue, int li
     sprintf(outstr, "Error: can't read grid name on line %u\n");
     logAndExit(logfp, outstr);
   }
-  cp = strtok(pValue, " \t\n\015");
 
-  // Set the output grid name
-  strcpyTrim(opVars[pInd].gridName, outPath);
-  strcat(opVars[pInd].gridName, cp);
-
-  // Type of grid. 
-  cp = strrchr(opVars[pInd].gridName, '.');
-  if (strncasecmp(cp, ".tif", 4) == 0) 
-    opVars[pInd].spType = pTif;
-  else {
-    sprintf(outstr, "Could not determine grid type for output grid named:\n"
-      "   %s\n"
-      "   File extension must be '.bil' or '.flt'.\n", opVars[pInd].gridName);
+  std::vector<std::string> pValToks;
+  // TODO: test if this delimiter match is needed, or if \t or \n would suffice
+  boost::split(pValToks, pValue, boost::is_any_of("\t\n\015"));
+  if (pValToks.size() > 4) {
+    std::cout << "More than 4 elements detected in string " << pValue;
     logAndExit(logfp, outstr);
+  }
+  // Set the output grid name
+  boost::trim(outPath); // trim leading and trailing whitespaces
+  opVars[pInd].gridName = outPath + pValToks.front(); // concat
+
+  const std::filesystem::path filePath = opVars[pInd].gridName;
+  if (filePath.extension() == ".tif") // Heed the dot.
+  {
+      std::cout << filePath.stem() << " is a valid type.";
+      params[pInd].data.spType = pTif;
+  }
+  else
+  {
+      std::cout << filePath.filename() << " is an invalid filename. File extension must be '.tif'";
+      logAndExit(logfp, outstr);
+      // Output: "myFile.cfg is an invalid type"
   }
 
   // Optional second, and third tokens are recurring output start year, 
   // and recurral interval in years.  Fourth token is keyword 'monthly', or keyword 'month'.  
   // These are required as a set - ie tokens 2, 3 and 4 must be provided or none.  
-  cp = strtok(NULL, " \n\t\015");
-  if (cp != NULL) {
+  try {
+    cp = pValToks.at(1);
     yearlyOutput = true;
+  }
+  catch (const std::out_of_range& oor) {
+    std::cout << "No recurring year output detected.";
+  }
+
+  if (yearlyOutput == true) {
     // Look for start year
     if (sscanf(cp, "%d", &opVars[pInd].recurStart) != 1) {
       sprintf(outstr, "Expected an integer start year in recuring output specification on line %d\n", lineNo);
@@ -1272,7 +1298,7 @@ bool readInputManageParam(std::string *pName, FILE *paramFp, int &lineNo)
     }
 
     // Read the year
-    if (sscanf(tok, "%d", &tab[i].year) != 1) {
+    if (sscanf(tok.c_str(), "%d", &tab[i].year) != 1) {
       sprintf(outstr, "Could not read year in management table at line %d\n", lineNo);
       fprintf(logfp, outstr);
       logAndExit(logfp, outstr);
@@ -1350,7 +1376,7 @@ bool readParam( PPPG_VVAL &vval, std::string *pValue )
 
 //----------------------------------------------------------------------------------
 
-bool readInputSeriesParam(std::string*pName, std::string *pValue, FILE *paramFp, int &lineNo)
+bool readInputSeriesParam(std::string pName, std::string *pValue, FILE *paramFp, int &lineNo)
 {
   // Read 'series' input parameters, ie climate and NDVI. 
   // Two styles of input are permitted.  Firstly, the parameter name can be 
@@ -1518,6 +1544,8 @@ void readParamFile(std::string *paramFile)
   int readingOutput=0;
   int len;
 
+  // TODO: simplify this whole reading process using boost and std::string
+  // start with: https://stackoverflow.com/questions/7868936/read-file-line-by-line-using-ifstream-in-c
   // Open file
   fprintf(logfp, "Reading input parameters from file '%s'...\n", paramFile);
   if ((paramFp = fopen(paramFile, "rb")) == NULL) {
@@ -1599,7 +1627,7 @@ bool haveAllParams()
   bool missing = false;
 
   // Parameters needed for 3PG. 
-   std::string *iParam3PG[] = {
+   std::string iParam3PG[] = {
     "pFS2", "pFS20", "StemConst", "StemPower", "pRx", "pRn", 
     "growthTmin", "growthTopt", "growthTmax",        // Temperature modifier (fT) 
     "kF",                                            // Frost modifier
@@ -1626,7 +1654,7 @@ bool haveAllParams()
   };
 
   // Parameters needed for 3PGS.  
-  std::string*iParam3PGS[] = {
+  std::string iParam3PGS[] = {
     "growthTmin", "growthTopt", "growthTmax",           // Temperature modifier (fT)
     "kF",                                               // Frost modifier
     "MaxCond", "CoeffCond", "BLcond",       // conductances
@@ -1738,7 +1766,7 @@ bool haveAllParams()
 
 //----------------------------------------------------------------------------------
 
-bool loadParamVals(long k)
+bool loadParamVals(std::tuple<int, int> k)
 {
   // Load all model parameter values into their global variables.
   // Spatial parameters are taken from the current grid cell, and
@@ -1749,7 +1777,7 @@ bool loadParamVals(long k)
   float result;
   std::string ErrorString[100];
 
-  for (pn=1; params[pn].id != 0; pn++)  {
+  for (pn=1; params[pn].id != "-1"; pn++)  {
     if (params[pn].got == 0) 
     {
       //Ignore
@@ -1761,8 +1789,8 @@ bool loadParamVals(long k)
         sprintf(ErrorString, "Error reading grid: %s - File not open.\n", params[pn].data.gridName);
         logAndExit(logfp, ErrorString); 
       }
-      result = fg->GetVal(k);
-      if (result == fg->nodata) {
+      result = fg->GetVal(std::get<0>(k), std::get<1>(k));
+      if (result == fg->noData) {
         return false;
       }
       *(params[pn].adr) = result;
@@ -1795,7 +1823,7 @@ bool openGrid( PPPG_VVAL &vval )
   if (vval.spType == pTif)
     fprintf(logfp, "   opening grid from %s...", vval.gridName); 
     vval.g = new GDALRasterImage(vval.gridName)
-  else
+  else 
       return false;
     try {
   } catch (Exception &e) {
@@ -1949,7 +1977,7 @@ void openOutputGrids(GDALRasterImage *refGrid)
   // Open ordinary output grids. 
   fprintf(logfp, "Opening output grids...\n");
   fprintf(stdout, "Opening output grids...\r");
-  for (opn = 0; opVars[opn].id != 0; opn++) {
+  for (opn = 0; opVars[opn].id != "-1"; opn++) {
     if (opVars[opn].write) {
       fprintf(logfp, "   float grid %s\n", opVars[opn].gridName);
       opVars[opn].g = new GDALRasterImage;
@@ -2037,7 +2065,7 @@ void openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate sp
   roArrayLength = ( maxCy - minCy + 1 ) * 12 + 12; // ANL last 12 is short write fix.  
   
   // for each output variable. 
-  for (opn = 0; opVars[opn].id != 0; opn++) {
+  for (opn = 0; opVars[opn].id != "-1"; opn++) {
     // Is it marked for recurring output. 
     if ( !opVars[opn].recurYear )
       continue; 
@@ -2121,7 +2149,7 @@ int writeOutputGrids(void)
 
   fprintf(stdout, "Writing output grids...\r"); 
   fprintf(logfp, "Writing output grids...\n");
-  for (opn=0; opVars[opn].id != 0; opn++) {
+  for (opn=0; opVars[opn].id != "-1"; opn++) {
     if (opVars[opn].write) {
       try {
         opVars[opn].g->Write(opVars[opn].gridName);
@@ -2137,7 +2165,7 @@ int writeOutputGrids(void)
 
 //----------------------------------------------------------------------------------
 
-void writeSampleFiles(long cellIndex, int month, long calYear) 
+void writeSampleFiles(std::tuple<int,int> cellIndex, int month, long calYear) 
 {
   int opn, sInd, i;
   static bool firstTime = true;
@@ -2180,7 +2208,7 @@ void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
   maxInd = ( maxMY.year - minMY.year + 1 ) * 12 + 12;  // ANL see comment in openRegularOutputGrids
 
   // for each output variable. 
-  for (opn = 0; opVars[opn].id != 0; opn++) {
+  for (opn = 0; opVars[opn].id != "-1"; opn++) {
     // Is it marked for recurring output. 
     if ( !opVars[opn].recurYear )
       continue; 
@@ -2215,7 +2243,7 @@ void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
       fval = (float)*(opVars[opn].adr);
       fg = (GDALRasterImage *)opVars[opn].g;
       if ( hitNODATA )
-        fval = fg->nodata;
+        fval = fg->noData;
       fwrite( &fval, 4, 1, fp );
       /*sprintf(outstr, "Year: %d, Month: %d, Value: %f\n", calYear, calMonth, fval); 
       logOnly(logfp, outstr);*/
@@ -2237,7 +2265,7 @@ void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
   // Number of elements in the regular output array, for sanity checking. 
   maxInd = ( maxMY.year - minMY.year + 1 ) * 12; 
 
-  for (opn = 0; opVars[opn].id != 0; opn++) {
+  for (opn = 0; opVars[opn].id != "-1"; opn++) {
     // Skip variables not marked for recurring output. 
     if ( !opVars[opn].recurStart ) 
       continue;
@@ -2269,7 +2297,7 @@ void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
       fg = (GDALRasterImage *)opVars[opn].g;
       
       if ( hitNODATA )
-        fval = fg->nodata;
+        fval = fg->noData;
       fwrite( &fval, 4, 1, fp );
     }
   }
@@ -2283,12 +2311,12 @@ void saveVariableVals(long k, bool hitNODATA)
   int opn;
   GDALRasterImage *fg;
 
-  for (opn = 1; opVars[opn].id != 0; opn++) 
+  for (opn = 1; opVars[opn].id != "-1"; opn++) 
     if (opVars[opn].spType == pTif) {
       fg = (GDALRasterImage *)opVars[opn].g;
       fg->z[k] = (float)*(opVars[opn].adr);
       if (hitNODATA)
-        fg->z[k] = fg->nodata;
+        fg->z[k] = fg->noData;
     }
 }
 
@@ -2564,7 +2592,7 @@ void InitInputParams(void)
 {
   int pn;
 
-  for (pn=0; params[pn].id != 0; pn++) {
+  for (pn=0; params[pn].id != "-1"; pn++) {
     params[pn].got = 0;
   }
 
