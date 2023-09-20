@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
   // Copyright message for log file
   //copyright(logfp);
 
-  result = _setmaxstdio(2048);
+  // result = _setmaxstdio(2048);
   if (result == -1)
   {
     fprintf(logfp, "Maximum files number could not be increased\n");
