@@ -1,0 +1,1 @@
+This is very much a work in progress. This branch only deals with string/read related issues, and barely touched the logic of reading/writing to the GDAL datasets. Use this commit at your own risk
