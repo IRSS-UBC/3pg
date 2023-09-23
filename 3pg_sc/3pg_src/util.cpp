@@ -27,7 +27,7 @@ std::string strcpyTrim(std::string s, std::string ct)
 {
   boost::algorithm::trim(ct);
   s = ct;
-  return ct
+  return ct;
   // Copy ct to s, plus trim leading and trailing white space. 
   int i;
   char *start, *end, *cp;
