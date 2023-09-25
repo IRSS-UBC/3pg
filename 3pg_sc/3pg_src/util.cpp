@@ -23,47 +23,47 @@ Use of this software assumes agreement to this condition of use
 
 //--------------------------------------------------------------------------
 
-std::string strcpyTrim(std::string s, std::string ct)
-{
-  boost::algorithm::trim(ct);
-  s = ct;
-  return ct;
-  // Copy ct to s, plus trim leading and trailing white space. 
-  int i;
-  char *start, *end, *cp;
+// std::string strcpyTrim(std::string s, std::string ct)
+// {
+//   boost::algorithm::trim(ct);
+//   s = ct;
+//   return ct;
+//   // Copy ct to s, plus trim leading and trailing white space. 
+//   int i;
+//   char *start, *end, *cp;
 
-  if (ct == NULL) {
-    s[0] = '\0';
-    return NULL;
-  }
+//   if (ct == NULL) {
+//     s[0] = '\0';
+//     return NULL;
+//   }
 
-  // Trim the id string of leading whitespace.  
-  for (start = ct; isspace(*start); start++)
-    ;
+//   // Trim the id string of leading whitespace.  
+//   for (start = ct; isspace(*start); start++)
+//     ;
   
-  // Was the whole string whitespace. 
-  if (*start == '\0') {
-    s[0] = '\0';
-    return s;
-  }
+//   // Was the whole string whitespace. 
+//   if (*start == '\0') {
+//     s[0] = '\0';
+//     return s;
+//   }
 
-  // Copy it. 
-  // Trim trailing whitespace. 
-  for (end = start; *end != '\0'; end++)
-    ;
-  end--;
-  if (isspace(*end)) {
-    for ( ; isspace(*end); end--)
-      ;
-  }
-  end++;
-  *end = '\0';
+//   // Copy it. 
+//   // Trim trailing whitespace. 
+//   for (end = start; *end != '\0'; end++)
+//     ;
+//   end--;
+//   if (isspace(*end)) {
+//     for ( ; isspace(*end); end--)
+//       ;
+//   }
+//   end++;
+//   *end = '\0';
 
-  // Copy 
-  for (i=0, cp = start; cp <= end; cp++, i++)
-    s[i] = *cp;
-  return s;
-}
+//   // Copy 
+//   for (i=0, cp = start; cp <= end; cp++, i++)
+//     s[i] = *cp;
+//   return s;
+// }
 
 //--------------------------------------------------------------------------
 

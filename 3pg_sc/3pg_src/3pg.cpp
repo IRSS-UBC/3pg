@@ -165,7 +165,8 @@ int main(int argc, char *argv[])
 
   fprintf( stdout, "Expected run period of simulation: %d - %d\n", spMinMY.year, spMaxMY.year );
 
-  ResetGrids(); //findrun period has moved all grids to the end - move them back to the start...
+  // NOTE: don't this this is necessary for GDAL stuff... but I guess we'll see
+  // ResetGrids(); //findrun period has moved all grids to the end - move them back to the start...
 
   if (spatial) {
     // Open output grids. 

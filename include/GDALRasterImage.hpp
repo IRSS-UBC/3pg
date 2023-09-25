@@ -17,17 +17,21 @@ public:
 	double noData{ 0 };
 	int nRows { 0 };
 	int nCols { 0 };
-	int xMin { 0 };
-	int xMax { 0 };
-	int yMin { 0 };
-	int yMax { 0 };
+	double xMin { 0 };
+	double xMax { 0 };
+	double yMin { 0 };
+	double yMax { 0 };
 
 	GDALRasterImage(std::string filename);
+	GDALRasterImage(std::string filename, GDALRasterImage* refGrid);
 	~GDALRasterImage();
 	std::tuple<int, int> XYfrom(double lat, double lon);
 	float GetVal(int x, int y);
 	void Create(std::string fname);
 	bool Exists(std::string fname);
+	float GetMin();
+	float GetMax();
+	void Close();
 
 };
 

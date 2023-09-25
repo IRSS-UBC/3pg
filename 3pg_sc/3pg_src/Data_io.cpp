@@ -489,6 +489,8 @@ struct {
 
 int pNameToInd(const std::string& id)
 {
+  // TODO: this can be deprecated if the param arrays is just replaced with a map.
+
   // For a parameter name return its index in the parameter array. 
   // Return 0 on non-existant parameter name. Position zero in 
   // the parameter name array is occupied by an error marker. 
@@ -1615,7 +1617,7 @@ void readParamFile(std::string paramFile)
   // warning.  Lines which are not comments and cannot be identified
   // as parameters will cause the program to exit.  
   FILE *paramFp;
-  const std::string line, pName;
+  std::string line, pName;
   std::string pValue;
   std::string cp;
   int paramCount=0, lineLength=0, lineNo;
@@ -1632,8 +1634,6 @@ void readParamFile(std::string paramFile)
   // Second and subsequent tokens are the parameter values
   std::ifstream inFile(paramFile);
   // fprintf(logfp, "Reading input parameters from file '%s'...\n", paramFile);
-  std::string line;
-  // TODO: why is this error-ing? Bad VS-code parsing?
   while (std::getline(inFile, line))
   {
     // Skip blank lines
@@ -1869,7 +1869,7 @@ bool loadParamVals(std::tuple<int, int> k)
 
 //----------------------------------------------------------------------------------
 
-bool createGrid( PPPG_VVAL &vval )
+bool openGrid( PPPG_VVAL &vval )
 {
   if (vval.spType == pTif) {
     fprintf(logfp, "   opening grid from %s...", vval.gridName); 
@@ -1888,34 +1888,34 @@ bool createGrid( PPPG_VVAL &vval )
 }
 
 //----------------------------------------------------------------------------------
-void ResetGrids(void)
-{
-  //Only interested in resetting the findrunperiod grids which are not series.
-  for (int pn = 1; params[pn].data.spType != pNull; pn++) { // start at 1 to avoid error record. 
-    if ( params[pn].data.spType == pTif ) {
-      params[pn].data.g->ResetGrid();
-    }
-  }
-}
+// void ResetGrids(void)
+// {
+//   //Only interested in resetting the findrunperiod grids which are not series.
+//   for (int pn = 1; params[pn].data.spType != pNull; pn++) { // start at 1 to avoid error record. 
+//     if ( params[pn].data.spType == pTif ) {
+//       params[pn].data.g->ResetGrid();
+//     }
+//   }
+// }
 //----------------------------------------------------------------------------------
 void CloseGrids(void)
 {
   for (int pn = 1; params[pn].data.spType != pNull; pn++) { // start at 1 to avoid error record. 
     if ( params[pn].data.spType == pTif ) {
-      params[pn].data.g->CloseGrid();
+      params[pn].data.g->Close();
       delete params[pn].data.g;
     }
   }
 }
 //----------------------------------------------------------------------------------
-void PrintGrids(void)
-{
-  for (int pn = 1; params[pn].data.spType != pNull; pn++) { // start at 1 to avoid error record. 
-    if ( params[pn].data.spType == pTif ) {
-      params[pn].data.g->PrintGridState();
-    }
-  }
-}
+// void PrintGrids(void)
+// {
+//   for (int pn = 1; params[pn].data.spType != pNull; pn++) { // start at 1 to avoid error record. 
+//     if ( params[pn].data.spType == pTif ) {
+//       params[pn].data.g->PrintGridState();
+//     }
+//   }
+// }
 //----------------------------------------------------------------------------------
 
 GDALRasterImage* openInputGrids( )
@@ -1936,18 +1936,17 @@ GDALRasterImage* openInputGrids( )
     {
       //do nothing
     }
-    else if ( createGrid( params[pn].data ) ) {
+    else if ( openGrid( params[pn].data ) ) {
       spatial = true; 
       if ( first ) {
         refGrid = (GDALRasterImage *)params[pn].data.g;
         first = false; 
       }
-      // TODO: Had to remove these conditions... try to find some GDAL compat way to do this
-      //(fabs(refGrid->xmin - params[pn].data.g->xmin) > 0.0001)
-      //    || (fabs(refGrid->ymin - params[pn].data.g->ymin) > 0.0001)
-      //    || (fabs(refGrid->xmax - params[pn].data.g->xmax) > 0.0001)
-      //    || (fabs(refGrid->ymax - params[pn].data.g->ymax) > 0.0001)
-      else if (( refGrid->nRows != params[pn].data.g->nRows ) 
+      else if ((fabs(refGrid->xMin - params[pn].data.g->xMin) > 0.0001)
+         || (fabs(refGrid->yMin - params[pn].data.g->yMin) > 0.0001)
+         || (fabs(refGrid->xMax - params[pn].data.g->xMax) > 0.0001)
+         || (fabs(refGrid->yMax - params[pn].data.g->yMax) > 0.0001)
+        || ( refGrid->nRows != params[pn].data.g->nRows ) 
         || ( refGrid->nCols != params[pn].data.g->nCols ) ) {
         sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
           params[pn].data.gridName ); 
@@ -1963,7 +1962,7 @@ GDALRasterImage* openInputGrids( )
   for (j = 0; serlist[j] != NULL; j++) {
     ser = serlist[j];
     for (int i = 0; i < ser->vlen * 12; i++) {
-      if ( createGrid( ser->data[i] ) ) {
+      if ( openGrid( ser->data[i] ) ) {
         spatial = true; 
         if ( first ) {
           refGrid = (GDALRasterImage *)(ser->data[i].g);
@@ -1989,7 +1988,7 @@ GDALRasterImage* openInputGrids( )
   for (j = 0 ; tablist[j] != NULL; j++) {
     tab = tablist[j]; 
     for (int i = 0; tab[i].year > 0; i++) {
-      if ( createGrid( tab[i].data ) ) {
+      if ( openGrid( tab[i].data ) ) {
         spatial = true; 
         if ( first ) {
           refGrid = (GDALRasterImage *)tab[i].data.g;
@@ -2033,17 +2032,18 @@ void openOutputGrids(GDALRasterImage *refGrid)
   for (opn = 0; opVars[opn].id != "-1"; opn++) {
     if (opVars[opn].write) {
       fprintf(logfp, "   float grid %s\n", opVars[opn].gridName);
-      opVars[opn].g = new GDALRasterImage(opVars[opn].gridName);
+      // Open output grid at gridName with same class attributes as refGrid.
+      opVars[opn].g = new GDALRasterImage(opVars[opn].gridName, refGrid);
       if (opVars[opn].g->Exists(opVars[opn].gridName)) {
         sprintf(outstr, "Error, output grid named:\n"
           "   '%s'\nalready exists.\n", opVars[opn].gridName);
         fprintf(stderr, outstr);
         fprintf(logfp, outstr);
-        exit(1);
+
       }
-      // Copy the grid parameters 
-      *(opVars[opn].g) = *refGrid;
-      opVars[opn].g->Allocate();
+      
+      // *(opVars[opn].g) = *refGrid;
+      // opVars[opn].g->Allocate();
     }
   }
   return;
@@ -2168,11 +2168,11 @@ void openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate sp
             sprintf(outstr, "Couldn't open regular output file %s\n", fname);
             logAndExit(logfp, outstr);
           }
-          if ( ! copyHeader( refGrid, fname ) ) {
-            sprintf(outstr, "Couldn't open regular output header file %s\n", fname);
-            logAndExit(logfp, outstr);
-          }
-          opVars[opn].RO[mx] = fp; 
+          // if ( ! copyHeader( refGrid, fname ) ) {
+          //   sprintf(outstr, "Couldn't open regular output header file %s\n", fname);
+          //   logAndExit(logfp, outstr);
+          // }
+          opVars[opn].RO[mx] = fp; // pointer to start of month in array.
         }
       }
       // Is a monthly output ro grid and this is the output year. 
@@ -2183,10 +2183,10 @@ void openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate sp
           sprintf(outstr, "Couldn't open regular output file %s\n", fname);
           logAndExit(logfp, outstr);
         }
-        if ( ! copyHeader( refGrid, fname ) ) {
-          sprintf(outstr, "Couldn't open regular output header file %s\n", fname);
-          logAndExit(logfp, outstr);
-        }
+        // if ( ! copyHeader( refGrid, fname ) ) {
+        //   sprintf(outstr, "Couldn't open regular output header file %s\n", fname);
+        //   logAndExit(logfp, outstr);
+        // }
         opVars[opn].RO[mx] = fp; 
       }
     } // closes for ( mx = 0; mx < roArrayLength; mx++ )
@@ -2491,149 +2491,224 @@ void writeStandSummary(int year)
 
 void findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
 {
-  // Find the calendar months and years for which the model will actually run, over 
-  // the whole spatial area.  Cells with NODATA on any input cause that cell to 
-  // have no effect.  Cells with zero on yearPlanted get, in this version, 
-  // mapped to 1993.  THIS IS A BAD IDEA AND WILL COME BACK TO BITE US.  Likewise 
-  // zero in StartAge gets remapped to 1, and zero on monthPlanted gets remapped to 
-  // to 1 also.  This messing with values is duplicated in loadParamVals, which 
-  // is one more reason this is a bad idea.  
-  int cy, cm, minCy, maxCy, minCm, maxCm; 
-  float cy2, minCy2, maxCy2; 
-  bool spatial, hitNoData;
-  bool test;
-  int nrows, ncols; 
-  const int MINSEED = 999999; 
-  const int MAXSEED = -1; 
-  int adjAge; //Plant age and end age, taking into account endage being an actual year
+    // Find the calendar months and years for which the model will actually run, over 
+    // the whole spatial area.  Cells with NODATA on any input cause that cell to 
+    // have no effect.  Cells with zero on yearPlanted get, in this version, 
+    // mapped to 1993.  THIS IS A BAD IDEA AND WILL COME BACK TO BITE US.  Likewise 
+    // zero in StartAge gets remapped to 1, and zero on monthPlanted gets remapped to 
+    // to 1 also.  This messing with values is duplicated in loadParamVals, which 
+    // is one more reason this is a bad idea.  
+    int cy, cm, minCy, maxCy, minCm, maxCm; 
+    float cy2, minCy2, maxCy2; 
+    bool spatial, hitNoData;
+    bool test;
+    int nrows, ncols; 
+    const int MINSEED = 999999; 
+    const int MAXSEED = -1; 
+    int adjAge; //Plant age and end age, taking into account endage being an actual year
 
-  minCy = MINSEED;
-  maxCy = MAXSEED;
-  minCy2 = MINSEED; 
-  maxCy2 = MAXSEED; 
-  spatial = ( refGrid != NULL ); 
-  
-  // Point mode case.  If we are running in point mode yearPlanted, StartAge and 
-  // EndAge are already defined. 
-  if ( !haveSpatialRunYears() ) {
-    minMY.year = (int)yearPlanted + (int)StartAge; 
-    minMY.mon = (int)StartMonth;
-    if (EndAge > yearPlanted)
-      maxMY.year = (int)EndAge; //Take into account actual years rather than number of years
-    else
-      maxMY.year = (int)yearPlanted + (int)EndAge; 
-    maxMY.mon = (int)StartMonth;
-  }
-  // Spatial mode case.  For each cell get yearPlanted, monthPlanted, StartAge, 
-  // EndAge, endMonth, and find the earliest start and latest finish.  
-  else {
-    nrows = refGrid->nRows; 
-    ncols = refGrid->nCols; 
+    minCy = MINSEED;
+    maxCy = MAXSEED;
+    minCy2 = MINSEED; 
+    maxCy2 = MAXSEED; 
+    spatial = ( refGrid != NULL ); 
     
-    // For every cell
-    //for (int j = 0; j < nrows-2; j++) {
-    // long cellIndex = j * ncols + 1;
-    
-    //  for (int i = 1; i < ncols-1; i++, cellIndex++) {
-    for (int cellIndex = 0; cellIndex < ncols*nrows; cellIndex++)
-    {
-    // Load parameter values - only really want yearPlanted, EndAge, and 
-        // StartAge. 
-        
-        if (cellIndex == 159)
-          test = true;
+    // Point mode case.  If we are running in point mode yearPlanted, StartAge and 
+    // EndAge are already defined. 
+    if ( !haveSpatialRunYears() ) {
+      minMY.year = (int)yearPlanted + (int)StartAge; 
+      minMY.mon = (int)StartMonth;
+      if (EndAge > yearPlanted)
+        maxMY.year = (int)EndAge; //Take into account actual years rather than number of years
+      else
+        maxMY.year = (int)yearPlanted + (int)EndAge; 
+      maxMY.mon = (int)StartMonth;
+    }
+    // Spatial mode case.  For each cell get yearPlanted, monthPlanted, StartAge, 
+    // EndAge, endMonth, and find the earliest start and latest finish.  
+    else {
+      nrows = refGrid->nrows; 
+      ncols = refGrid->ncols; 
+      
+      // For every cell
+      //for (int j = 0; j < nrows-2; j++) {
+      // long cellIndex = j * ncols + 1;
+      
+      //  for (int i = 1; i < ncols-1; i++, cellIndex++) {
+      for (int cellIndex = 0; cellIndex < ncols*nrows; cellIndex++)
+      {
+      // Load parameter values - only really want yearPlanted, EndAge, and 
+          // StartAge. 
+          
+          if (cellIndex == 159)
+            test = true;
 
-        hitNoData = !loadParamVals(cellIndex);
+          hitNoData = !loadParamVals(cellIndex);
 
-        
-        // Look for NODATA, to skip it. 
-        if ( hitNoData )
-        {
-     //     logAndPrint(logfp, "Nodata\n");
-          continue; 
+          
+          // Look for NODATA, to skip it. 
+          if ( hitNoData )
+          {
+      //     logAndPrint(logfp, "Nodata\n");
+            continue; 
+          }
+          // Look for zero and do utterly bodgy things. 
+          if ( yearPlanted < 1)
+            continue;   //Treat years less than 1900 as nodata 
+          if ( StartAge < 1 )
+            StartAge = 1; 
+          if ( EndAge < 1 )
+            EndAge = 2; // Mimum end growth for a stand - just a reasonable value. AS.
+          if ( StartMonth < 1 ) {
+            StartMonth = 1; 
+          }
+
+          // Check reasonableness of StartMonth, must be in the range 1 - 12 inclusive. 
+          if ( StartMonth < 0.999 || StartMonth > 12.0001 )
+            logAndExit(logfp, "Found bad StartMonth value at XXXX\n" ); 
+          
+          // Minimum year
+          cy2 = yearPlanted + (float)StartAge + ( StartMonth / 100 ); 
+          if ( cy2 < minCy2 )
+            minCy2 = cy2; 
+
+          cy = (int)(yearPlanted + StartAge);
+          cm = (int)StartMonth; 
+          
+          if ( cy < minCy ) {
+            minCy = cy; 
+            minCm = 13;  // ensure that the current cm is found as a minimum. 
+          }
+
+          // Minimum month, only update when cy is at a minimum.  
+          if ( cy == minCy ) {
+            if ( cm < minCm )
+              minCm = cm; 
+          }
+
+          // Maximum year, month.  Currently we only allow EndAge to be a whole number 
+          // of years, so the last month is always one month earlier than StartMonth. 
+          // In the future might allow fractional EndAge and work out end month from that. 
+          
+          if (EndAge > yearPlanted)
+            adjAge = (int)EndAge;
+          else
+            adjAge = yearPlanted + (int)EndAge; 
+          cy2 = adjAge + ( ( StartMonth - 1 ) / 100 ); 
+          
+          if ( cy2 > maxCy2 )
+            maxCy2 = cy2; 
+          
+          cy = (int)(adjAge); 
+          cm = (int)StartMonth - 1; 
+          
+          if ( cm == 0 ) 
+            cm = 12; 
+          if ( cy > maxCy ) {
+            maxCy = cy; 
+            maxCm = 0;  // ensure that the current cm is found as a maximum.
+          }
+
+          // Maximum month. 
+          if ( cy == maxCy )
+            if ( cm > maxCm )
+              maxCm = cm; 
         }
-        // Look for zero and do utterly bodgy things. 
-        if ( yearPlanted < 1)
-          continue;   //Treat years less than 1900 as nodata 
-        if ( StartAge < 1 )
-          StartAge = 1; 
-        if ( EndAge < 1 )
-          EndAge = 2; // Mimum end growth for a stand - just a reasonable value. AS.
-        if ( StartMonth < 1 ) {
-          StartMonth = 1; 
-        }
+      //}
 
-        // Check reasonableness of StartMonth, must be in the range 1 - 12 inclusive. 
-        if ( StartMonth < 0.999 || StartMonth > 12.0001 )
-          logAndExit(logfp, "Found bad StartMonth value at XXXX\n" ); 
-        
-        // Minimum year
-        cy2 = yearPlanted + (float)StartAge + ( StartMonth / 100 ); 
-        if ( cy2 < minCy2 )
-          minCy2 = cy2; 
+      // Check if we found useful values
+      if ( minCy == MINSEED )
+        logAndExit( logfp, "Failed to find valid starting year.\n" ); 
+      if ( maxCy == MAXSEED )
+        logAndExit( logfp, "Failed to find valid ending year.\n" ); 
+      if ( minCm == 13 )
+        logAndExit( logfp, "Failed to find valid starting month.\n" ); 
+      if ( maxCm == 13 )
+        logAndExit( logfp, "Failed to find valid ending month.\n" ); 
 
-        cy = (int)(yearPlanted + StartAge);
-        cm = (int)StartMonth; 
-        
-        if ( cy < minCy ) {
-          minCy = cy; 
-          minCm = 13;  // ensure that the current cm is found as a minimum. 
-        }
+      minMY.year = minCy; 
+      minMY.mon = minCm; 
 
-        // Minimum month, only update when cy is at a minimum.  
-        if ( cy == minCy ) {
-          if ( cm < minCm )
-            minCm = cm; 
-        }
-
-        // Maximum year, month.  Currently we only allow EndAge to be a whole number 
-        // of years, so the last month is always one month earlier than StartMonth. 
-        // In the future might allow fractional EndAge and work out end month from that. 
-        
-        if (EndAge > yearPlanted)
-          adjAge = (int)EndAge;
-        else
-          adjAge = yearPlanted + (int)EndAge; 
-        cy2 = adjAge + ( ( StartMonth - 1 ) / 100 ); 
-        
-        if ( cy2 > maxCy2 )
-          maxCy2 = cy2; 
-        
-        cy = (int)(adjAge); 
-        cm = (int)StartMonth - 1; 
-        
-        if ( cm == 0 ) 
-          cm = 12; 
-        if ( cy > maxCy ) {
-          maxCy = cy; 
-          maxCm = 0;  // ensure that the current cm is found as a maximum.
-        }
-
-        // Maximum month. 
-        if ( cy == maxCy )
-          if ( cm > maxCm )
-            maxCm = cm; 
-      }
-    //}
-
-    // Check if we found useful values
-    if ( minCy == MINSEED )
-      logAndExit( logfp, "Failed to find valid starting year.\n" ); 
-    if ( maxCy == MAXSEED )
-      logAndExit( logfp, "Failed to find valid ending year.\n" ); 
-    if ( minCm == 13 )
-      logAndExit( logfp, "Failed to find valid starting month.\n" ); 
-    if ( maxCm == 13 )
-      logAndExit( logfp, "Failed to find valid ending month.\n" ); 
-
-    minMY.year = minCy; 
-    minMY.mon = minCm; 
-
-    maxMY.year = adjAge;        //minCy + EndAge - StartAge; 
-    maxMY.mon = maxCm; 
+      maxMY.year = adjAge;        //minCy + EndAge - StartAge; 
+      maxMY.mon = maxCm; 
+    }
+  // Below is a possible replacment for the above method. It is not tested but can take advantage of GDAL's min/max functions and avoids reading all params twice.
+  //   std::string paramNames[] = { "yearPlanted", "StartAge", "EndAge", "StartMonth", "" };
+  //   for (int i = 0; paramNames[i] != ""; i++) {
+  //     int pn = pNameToInd(paramNames[i]);
+  //     if (pn == -1) {
+  //       sprintf(outstr, "Couldn't find parameter %s in input file.\n", paramNames[i]);
+  //       logAndExit(logfp, outstr);
+  //     }
+  //     float minYearPlanted, maxYearPlanted, minStartAge, maxStartAge, startAgem, minEndAge, maxEndAge, endAge, minStartMonth, maxStartMonth;
+  //     if (params[pn].data.spType == pScalar) {
+  //         if (paramNames[i] == "yearPlanted") {
+  //           minYearPlanted = params[pn].data.sval;
+  //           maxYearPlanted = params[pn].data.sval;
+  //         }
+  //         else if (paramNames[i] == "StartAge") {
+  //           startAge = params[pn].data.sval;
+  //         }
+  //         else if (paramNames[i] == "EndAge") {
+  //           endAge = params[pn].data.sval;
+  //         }
+  //         else if (paramNames[i] == "StartMonth") {
+  //           minStartMonth = params[pn].data.sval;
+  //           maxStartMonth = params[pn].data.sval;
+  //         }
+  //     }
+  //     else { // the parameter is spatial, so get the value from the grid
+  //       if (params[pn].data.g != NULL) {
+  //         // Get min and max's from the grids using GDALRasterImage::getMin and getMax
+  //         if (paramNames[i] == "yearPlanted") {
+  //           minYearPlanted = params[pn].data.g->getMin();
+  //           maxYearPlanted = params[pn].data.g->getMax();
+  //           if (minYearPlanted < 1900 || maxYearPlanted < 1900)
+  //             logAndExit(logfp, "yearPlanted must be greater than 1900.\n");
+  //         }
+  //         else if (paramNames[i] == "StartAge") {
+  //           minStartAge = params[pn].data.g->getMin();
+  //           maxStartAge = params[pn].data.g->getMax();
+  //           // if min and max are not equal, bail out
+  //           if (minStartAge != maxStartAge) {
+  //             logAndExit(logfp, "2023 UPDATE, WIP: StartAge must be the same for all cells.\n");
+  //           }
+  //           startAge = minStartAge;
+  //           if (startAge < 1) {
+  //             logAndExit(logfp, "StartAge must be greater than 0.\n");
+  //           }
+  //           else if (paramNames[i] == "EndAge") {
+  //             minEndAge = params[pn].data.g->getMin();
+  //             maxEndAge = params[pn].data.g->getMax();
+  //             // if min and max are not equal, bail out
+  //             if (minEndAge != maxEndAge) {
+  //               logAndExit(logfp, "2023 UPDATE, WIP: EndAge must be the same for all cells.\n");
+  //             }
+  //             endAge = minEndAge;
+  //             if (endAge < 1) {
+  //               logAndExit(logfp, "2023 UPDATE, WIP: EndAge must be greater than 0... previous default was endAge=2. \n");
+  //             }
+  //           }
+  //           else if (paramNames[i] == "StartMonth") {
+  //             minStartMonth = params[pn].data.g->getMin();
+  //             maxStartMonth = params[pn].data.g->getMax();
+  //             if (minStartMonth < 1 || minStartMonth > 12 || maxStartMonth < 1 || maxStartMonth > 12)
+  //               logAndExit(logfp, "StartMonth must be in the range 1 - 12 inclusive.\n");
+  //           }
+  //         }
+  //       }
+  //     }
+  //     minMY.year = minYearPlanted + startAge;
+  //     int adj;
+  //     if (endAge > maxYearPlanted)
+  //       maxMY.year = endAge;
+  //     else {
+  //       adj = maxYearPlanted + endAge;
+  //     }
+  //     minMY.mon = minStartMonth;
+  //     maxMY.mon = minStartMonth - 1;
+  //   }     
   }
-
-  
   return;
 }
 

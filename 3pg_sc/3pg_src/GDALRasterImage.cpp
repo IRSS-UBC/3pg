@@ -8,6 +8,7 @@
 #include "GDALRasterImage.hpp"
 
 GDALRasterImage::GDALRasterImage(std::string filename) {
+	// Open the raster source located at `filename`
 	GDALAllRegister();
 	const GDALAccess eAccess = GA_ReadOnly;
 	dataset = GDALDataset::FromHandle(GDALOpen(filename.c_str(), eAccess));
@@ -30,7 +31,7 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 	}
 
 	// get crs
-	const char* crs = dataset->GetProjectionRef();
+	crs = dataset->GetProjectionRef();
 	if (crs == NULL) {
 		throw std::invalid_argument("CRS is not defined.");
 	}
@@ -40,14 +41,52 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 	nCols = band->GetXSize();
 
 	// get extent of raster
-	double xMin = datasetTransform[0];
-	double yMax = datasetTransform[3];
-	double xMax = xMin + datasetTransform[1] * nCols;
-	double yMin = yMax + datasetTransform[5] * nRows;
+	xMin = datasetTransform[0];
+	yMax = datasetTransform[3];
+	xMax = xMin + datasetTransform[1] * nCols;
+	yMin = yMax + datasetTransform[5] * nRows;
+
+};
+
+GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid) {
+	// Create a new GDALRasterImage dataset with one band with the same extent, transform, and crs as refGrid
+	if (Exists(filename)) {
+		throw std::invalid_argument("File already exists.");
+	};
+	GDALDriver* driver = GetGDALDriverManager()->GetDriverByName("GTiff");
+	GDALDataset* dataset = driver->Create(filename.c_str(), refGrid->nCols, refGrid->nRows, 1, GDT_Float32, NULL);
+	dataset->SetGeoTransform(refGrid->datasetTransform);
+	dataset->SetProjection(refGrid->crs);
+	GDALRasterBand* band = dataset->GetRasterBand(1);
+	band->SetNoDataValue(refGrid->noData);
+
+	noData = band->GetNoDataValue();
+	nRows = band->GetYSize();
+	nCols = band->GetXSize();
+
+	// set class variables
+	dataset->GetGeoTransform(datasetTransform);
+	if (GDALInvGeoTransform(datasetTransform, inverseTransform) != CE_None) {
+		throw std::invalid_argument("Cannot get inverse transform.");
+	}
+	crs = dataset->GetProjectionRef();
+	noData = band->GetNoDataValue();
+	xMin = datasetTransform[0];
+	yMax = datasetTransform[3];
+	xMax = xMin + datasetTransform[1] * nCols;
+	yMin = yMax + datasetTransform[5] * nRows;
 
 };
 
 GDALRasterImage::~GDALRasterImage() {
+	// From API docs, why `GDALClose()` and not `~GDALDataset()`: 
+	// Equivalent of the C callable GDALClose(). Except that GDALClose() first decrements the reference count, and then closes only if it has dropped to zero.
+	// For Windows users, it is not recommended to use the delete operator on the dataset object because of known issues when allocating and freeing memory
+	// across module boundaries. Calling GDALClose() is then a better option.
+	GDALClose(GDALDataset::ToHandle(dataset));
+};
+
+void GDALRasterImage::Close() {
 	// From API docs, why `GDALClose()` and not `~GDALDataset()`: 
 	// Equivalent of the C callable GDALClose(). Except that GDALClose() first decrements the reference count, and then closes only if it has dropped to zero.
 	// For Windows users, it is not recommended to use the delete operator on the dataset object because of known issues when allocating and freeing memory
@@ -99,5 +138,19 @@ bool GDALRasterImage::Exists(std::string fname) {
 		return true;
 	}
 	return false;
+};
+
+float GDALRasterImage::GetMin() {
+	float min;
+	float max;
+	band->ComputeRasterMinMax(&min, &max);
+	return min;
+};
+
+float GDALRasterImage::GetMax() {
+	float min;
+	float max;
+	band->ComputeRasterMinMax(&min, &max);
+	return max;
 };
 
