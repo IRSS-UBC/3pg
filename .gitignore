@@ -51,3 +51,7 @@ _deps
 
 # Builds/Outs
 out/*
+build/*
+
+# Vscode 
+.vscode/*
