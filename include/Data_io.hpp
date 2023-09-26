@@ -3,8 +3,6 @@
 
 #include "GDALRasterImage.hpp"
 #include <string>
-#include "gdal.h"
-#include "gdal_priv.h"
 // Must include FloatGrid.hpp prior to this. 
 #include "MYDate.h" 
 
