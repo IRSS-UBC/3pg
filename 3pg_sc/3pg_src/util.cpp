@@ -67,26 +67,26 @@ Use of this software assumes agreement to this condition of use
 
 //--------------------------------------------------------------------------
 
-void logAndExit(FILE *logfp, char *outstr)
-{
-  fprintf(logfp, outstr);
-  fprintf(stderr, outstr);
-  exit(1);
-}
+// void logAndExit(FILE *logfp, char *outstr)
+// {
+//   fprintf(logfp, outstr);
+//   fprintf(stderr, outstr);
+//   exit(1);
+// }
 
 //--------------------------------------------------------------------------
 
-void logAndPrint(FILE *logfp, char *outstr)
-{
-  fprintf(logfp, outstr);
-  fprintf(stderr, outstr);
-}
+// void logAndPrint(FILE *logfp, char *outstr)
+// {
+//   fprintf(logfp, outstr);
+//   fprintf(stderr, outstr);
+// }
 
 //--------------------------------------------------------------------------
-void logOnly(FILE *logfp, char *outstr)
-{
-  fprintf(logfp, outstr);
-}
+// void logOnly(FILE *logfp, char *outstr)
+// {
+//   fprintf(logfp, outstr);
+// }
 
 //--------------------------------------------------------------------------
 

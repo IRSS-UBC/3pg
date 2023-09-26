@@ -55,7 +55,7 @@ char * outstr;
 // two are handled by the JG Grid class.  
 typedef enum {pNull, pScalar, pTif} ParamSpatial;
 
-typedef struct {
+typedef struct PPPG_VVAL {
   ParamSpatial spType;                   // Scalar, grid, or null
   double sval;                           // Scalar value. 
   std::string gridName;                        // ptr to grid file name
@@ -67,7 +67,7 @@ typedef struct {
 // the model itself we don't reference the parameters via this type.  Its 
 // used to help identify parameter lines, and to help get grid values into 
 // the model.  
-typedef struct {
+typedef struct PPPG_PARAM {
   std::string id = "-1";                        // String version of the variable name. 
   double *adr;                     // The address of the model variable. 
   bool got;                        // Has the parameter been set? 
@@ -76,7 +76,7 @@ typedef struct {
 
 // 3PG output variables. In spatial mode output variables may be written 
 // repeatedly, on a time step defined by recurStart, recurYear, and recurMonthly. 
-typedef struct {
+typedef struct PPPG_OP_VAR {
   std::string id;                       // String version of the variable name. 
   double *adr;                    // The address of the model variable. 
   ParamSpatial spType;            // If its a spatial parameter and what grid type. 
@@ -478,9 +478,9 @@ FILE *sampleIpFp;
 struct {
   std::string id;
   FILE *fp; 
-  double x; 
-  double y; 
-  std::tuple<int, int> cellIndex;
+  double lat; 
+  double lon; 
+  int cellIndex;
 } samplePoints[MAX_SAMPLE_POINTS + 1];
 
 //----------------------------------------------------------------------------------
@@ -537,7 +537,7 @@ int opNameToInd(const std::string& id)
 
 //----------------------------------------------------------------------------------
 
-bool getVVal(double &val, PPPG_VVAL vval, std::tuple<int,int> k)
+bool getVVal(double &val, PPPG_VVAL vval, int k)
 {
   GDALRasterImage *fg;
   float result;
@@ -546,7 +546,7 @@ bool getVVal(double &val, PPPG_VVAL vval, std::tuple<int,int> k)
     val = vval.sval;
   else if (vval.spType == pTif) {
     fg = (GDALRasterImage *)vval.g;
-    result = fg->GetVal(std::get<0>(k), std::get<1>(k));
+    result = fg->GetVal(k);
     if (result == fg->noData)
       return false; 
     val = result;
@@ -559,7 +559,7 @@ bool getVVal(double &val, PPPG_VVAL vval, std::tuple<int,int> k)
 
 //-----------------------------------------------------------------------------
 
-double lookupManageTable( int year, int table, double def, std::tuple<int,int> k )
+double lookupManageTable( int year, int table, double def, int k )
 {
   // Lookup the value of a cell in a management table, for a year. 
   // Entries in management tables apply up to but not including the 
@@ -580,8 +580,10 @@ double lookupManageTable( int year, int table, double def, std::tuple<int,int> k
   else if (table == MT_IRRIGATION )
     mt = IrrigMT; 
   else {
-    sprintf(outstr, "Program error: called lookupManageTable with invalid table\n");
-    logAndExit(logfp, outstr);
+    std::cout << "Program error: called lookupManageTable with invalid table\n";
+    exit(EXIT_FAILURE);
+    // sprintf(outstr, "Program error: called lookupManageTable with invalid table\n");
+    // logAndExit(logfp, outstr);
   }
 
   // Load the table entries.  Unfortunately we have to reload every 
@@ -597,10 +599,10 @@ double lookupManageTable( int year, int table, double def, std::tuple<int,int> k
     }
     else if ( mt[i].data.spType == pTif ) {
       fg = (GDALRasterImage *)mt[i].data.g;
-      if ( fg->GetVal(std::get<0>(k), std::get<1>(k)) == fg->noData ) 
+      if ( fg->GetVal(k) == fg->noData ) 
         continue; 
       else
-        val = fg->GetVal(std::get<0>(k), std::get<1>(k));; 
+        val = fg->GetVal(k);
     }
     if ( mt[i].year >= year )
       break;
@@ -611,7 +613,7 @@ double lookupManageTable( int year, int table, double def, std::tuple<int,int> k
 
 //----------------------------------------------------------------------------------
 
-bool getSeriesVal(double &val, int ser, int calMonth, int calYear, std::tuple<int,int> k)
+bool getSeriesVal(double &val, int ser, int calMonth, int calYear, int k)
 {
   PPPG_SERIES_PARAM *series;
 
@@ -643,12 +645,16 @@ bool getSeriesVal(double &val, int ser, int calMonth, int calYear, std::tuple<in
       // Should not happen as we will sanity check series before running. 
       // sprintf(outstr.c_str(), "Attempted lookup of series element %d in series %d, only %d entries in series.\nCheck Start/End Ages.",
       //   i, ser, (series->vlen*12-1)); 
-      logAndExit(logfp, outstr);
+      std::cout << "Attempted lookup of series element " << i << " in series " << ser << ", only " << (series->vlen*12-1) << " entries in series.\nCheck Start/End Ages." << std::endl;
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     if (i < 0)
     {
       // sprintf(outstr, "Attempted lookup of year before start year\n");
-      logAndExit(logfp, outstr);
+      std::cout << "Attempted lookup of year before start year" << std::endl;
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
   }
   if ( getVVal(val, series->data[i], k) )
@@ -668,17 +674,18 @@ void readSampleFile(GDALRasterImage *refGrid)
   int ind=0;
   int opn;
   double lat, lon;
-  std::tuple<int, int> cellIndex;
+  int cellIndex;
 
   if (!samplePointsMonthly && !samplePointsYearly)
     return;
 
     if ((sampleIpFp = fopen(sampleIpFile.c_str(), "r")) == NULL) {
-      // std::cout << outstr << "\n";
+      std::cout << "Could not open sample point file " << sampleIpFile << std::endl;
+      exit(EXIT_FAILURE);
       // sprintf(outstr.c_str(), "Could not open sample point file %s\n", sampleIpFile);
       //fprintf(logfp, outstr.c_str());
       //fprintf(stderr, outstr.c_str());
-      exit(1);
+      // exit(1);
     }
   while (fgets(line, MAXLINE-1, sampleIpFp) != NULL) {
     if (sscanf(line, "%s %s %s", id, xstr, ystr) != 3)
@@ -698,17 +705,20 @@ void readSampleFile(GDALRasterImage *refGrid)
     samplePoints[ind].id = id;
     lat = atof(xstr);
     lon = atof(ystr);
+    std::cout << "id: " << id << "lat: " << lat << " lon: " << lon << std::endl;
     // TODO: Need to create a function that gets cell index from x/y with GDAL
-    cellIndex = refGrid->XYfrom(lat, lon);
-    samplePoints[ind].x = lat;
-    samplePoints[ind].y = lon;
+    cellIndex = refGrid->IndexFrom(lat, lon);
+    samplePoints[ind].lat = lat;
+    samplePoints[ind].lon = lon;
     samplePoints[ind].cellIndex = cellIndex;
 
     // Open output file for this point. Make sure its in outPath. 
     // sprintf(fname, "%s3pg.%s.txt", outPath, id);
     if ((samplePoints[ind].fp = fopen(fname, "w")) == NULL) {
-      sprintf(outstr, "Error opening output sample file %s\n", fname);
-      logAndExit(logfp, outstr);
+      std::cout << "Error opening output sample file " << fname << std::endl;
+      exit(EXIT_FAILURE);
+      // sprintf(outstr, "Error opening output sample file %s\n", fname);
+      // logAndExit(logfp, outstr);
     }
 
     // Write header line for each sample file. 
@@ -716,7 +726,7 @@ void readSampleFile(GDALRasterImage *refGrid)
     fprintf(samplePoints[ind].fp, "year, month, id, ");
     for (opn = 1; opVars[opn].adr != NULL; opn++)
     //for (opn = 1; opVars[opn].id != "-1"; opn++)
-      fprintf(samplePoints[ind].fp, "%s, ", opVars[opn].id);
+      fprintf(samplePoints[ind].fp, "%s, ", opVars[opn].id.c_str());
     fprintf(samplePoints[ind].fp, "\n");
 
     ind++;
@@ -939,33 +949,46 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
       else if (namesMatch("C", pValue.front()))
           pValue[0] = "4";
   }
-  
-  // Is the parameter a constant value (a float).
-  if (sscanf(pValue.front().c_str(), "%lf", params[pInd].adr) == 1) {
-    fprintf(logfp, "   %-40s constant:  % 9.3f\n", params[pInd].id, 
-      *(params[pInd].adr)); 
+  // if (sscanf(pValue.front().c_str(), "%lf", params[pInd].adr) == 1) {
+  //   // fprintf(logfp, "   %-40s constant:  % 9.3f\n", params[pInd].id, 
+  //   //   *(params[pInd].adr)); 
+    
+  // }
+  // Is the first value a number?  If so, its a constant.  If not, its a grid name.
+  try {
+    double f = std::stof(pValue.front());
+    *(params[pInd].adr) = f;
     params[pInd].data.spType = pScalar;
     params[pInd].got = 1;
   }
-  else {
+  catch (std::invalid_argument const& inv) {
     // Is the parameter a grid name (a string). 
     // REFERENCES: https://stackoverflow.com/questions/43114174/convert-a-string-to-std-filesystem-path
     // and https://stackoverflow.com/questions/51949/
     params[pInd].data.gridName = pValue.front();
-    const std::filesystem::path filePath = params[pInd].data.gridName;
-    if (filePath.extension() == ".tif") // Heed the dot.
-    {
-        std::cout << "The file extension is " << filePath.extension() << std::endl;
-        params[pInd].data.spType = pTif;
+    // catch filePath exceptions
+    try {
+      const std::filesystem::path filePath = params[pInd].data.gridName;
+      if (filePath.extension() == ".tif") // Heed the dot.
+      {
+          std::cout << "The file extension is " << filePath.extension() << std::endl;
+          params[pInd].data.spType = pTif;
+      }
+      else
+      {
+          std::cout << filePath.filename() << " is an invalid type. File extension must be '.tif'" << std::endl;
+          exit(EXIT_FAILURE);
+          // logAndExit(logfp, outstr);
+          // Output: "myFile.cfg is an invalid type"
+      }
+      std::cout << "   " << params[pInd].id << " grid: " << params[pInd].data.gridName << std::endl;
+      params[pInd].got = 1;
     }
-    else
-    {
-        std::cout << filePath.filename() << " is an invalid type. File extension must be '.tif'" << std::endl;
-        logAndExit(logfp, outstr);
-        // Output: "myFile.cfg is an invalid type"
+    catch (std::filesystem::filesystem_error const& e) {
+      std::cout << " " << pValue.front() << " could not be interpreted as a scalar or grid name" << std::endl;
+      std::cout << "Error: " << e.what() << std::endl;
+      exit(EXIT_FAILURE);
     }
-    std::cout << "   " << params[pInd].id << " grid: " << params[pInd].data.gridName << std::endl;
-    params[pInd].got = 1;
   }
   return true;
 }
@@ -1028,13 +1051,17 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   if (modelMode3PGS) {
     if (pInd1 != 0) {
       //sprintf(outstr, "The output variable %s is not supported in 3PGS mode\n", pName);
-      logAndExit(logfp, outstr);
+      std::cout << "The output variable " << pName << " is not supported in 3PGS mode" << std::endl;
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
   }
   else {
     if (pInd2 != 0) {
       //sprintf(outstr, "The output variable %s is not supported in 3PG mode\n", pName);
-      logAndExit(logfp, outstr);
+      std::cout << "The output variable " << pName << " is not supported in 3PG mode" << std::endl;
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
   }
   if (modelMode3PGS)
@@ -1074,11 +1101,15 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
 
   if (pValue.empty()) {
     std::cout << "No grid name for param " << pName << " on line: " << lineNo << std::endl;
-    logAndExit(logfp, outstr);
+    exit(EXIT_FAILURE);
+    // logAndExit(logfp, outstr);
+
   }
   if (pValue.size() > 5) {
     std::cout << "More than 5 value elements detected for param " << pName << " on line: " << lineNo << std::endl;
-    logAndExit(logfp, outstr);
+    exit(EXIT_FAILURE);
+    // logAndExit(logfp, outstr);
+
   }
   // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
   opVars[pInd].gridName = outPath + pValue.front(); 
@@ -1092,7 +1123,8 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   else
   {
       std::cout << filePath.filename() << " is an invalid filename. Found " << filePath.extension() << " but must be '.tif'" << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
   }
 
   // Check for optional second token, which is the output start year.
@@ -1127,7 +1159,8 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
     }
     catch (std::invalid_argument const& inv) {
       std::cout << "Expected an integer start year in recuring output specification on line " << lineNo << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
 
     }
     // Look for interval
@@ -1138,18 +1171,22 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
         if (interval == 0)
         {
           std::cout << "Found interval of zero years in recuring output specification on line " << lineNo << ". Expected non-zero" << std::endl;
-          logAndExit(logfp, outstr);
+          exit(EXIT_FAILURE);
+          // logAndExit(logfp, outstr);
+
         }
         opVars[pInd].recurYear = interval;
       }
       catch (std::invalid_argument const& inv) {
         std::cout << "Expected an integer interval in recuring output specification on line " << lineNo << std::endl;
-        logAndExit(logfp, outstr);
+        exit(EXIT_FAILURE);
+        // logAndExit(logfp, outstr);
       }
     }
     catch (const std::out_of_range& oor) {
       std::cout << "Found start year but no interval in recuring output specification on line " << lineNo << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     // Look for 'monthly' or 'month' keywords. 
     try {
@@ -1166,40 +1203,49 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
             if (opVars[pInd].recurMonth == 0)
             {
               std::cout << "Found month of zero in recuring output specification on line " << lineNo << ". Expected non-zero" << std::endl;
-              logAndExit(logfp, outstr);
+              exit(EXIT_FAILURE);
+              // logAndExit(logfp, outstr);
             }
           }
           catch (std::invalid_argument const& inv) {
             std::cout << "Expected an integer month in recuring output specification on line " << lineNo << std::endl;
-            logAndExit(logfp, outstr);
+            exit(EXIT_FAILURE);
+            // logAndExit(logfp, outstr);
           }
         }
         catch (const std::out_of_range& oor) {
           std::cout << "Found 'month' keyword but no month in recuring output specification on line " << lineNo << std::endl;
-          logAndExit(logfp, outstr);
+          exit(EXIT_FAILURE);
+          // logAndExit(logfp, outstr);
         }
       }
       else {
         std::cout << "Unrecognised keyword \"" << cp << "\" on line " << lineNo << std::endl;
-        logAndExit(logfp, outstr);
+        exit(EXIT_FAILURE);
+        // logAndExit(logfp, outstr);
       }
     }
     catch (const std::out_of_range& oor) {
       std::cout << "Found start year and interval but no keyword in recuring output specification on line " << lineNo << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
   }
   // Mark the variable for later writing
   opVars[pInd].write = true;
-  fprintf(logfp, "   variable: %-20s   grid: %-20s\n", opVars[pInd].id, opVars[pInd].gridName.c_str());
+  std::cout << "   variable: " << opVars[pInd].id << "   grid: " << opVars[pInd].gridName << std::endl;
+  // fprintf(logfp, "   variable: %-20s   grid: %-20s\n", opVars[pInd].id, opVars[pInd].gridName.c_str());
   if (opVars[pInd].recurStart) {
-    fprintf(logfp, "      starting in %4d, writing every %2d years", 
-      opVars[pInd].recurStart, opVars[pInd].recurYear);
+    std::cout << "      starting in " << opVars[pInd].recurStart << ", writing every " << opVars[pInd].recurYear << " years" << std::endl;
+    // fprintf(logfp, "      starting in %4d, writing every %2d years", 
+    //   opVars[pInd].recurStart, opVars[pInd].recurYear);
     if (opVars[pInd].recurMonthly)
-      fprintf(logfp, ", with monthly values");
+      std::cout << ", with monthly values" << std::endl;
+      // fprintf(logfp, ", with monthly values");
     else if ( opVars[pInd].recurMonth != 0 )
-      fprintf( logfp, ", on the %2d month", opVars[pInd].recurMonth ); 
-    fprintf(logfp, ".\n");
+      std::cout << ", on the " << opVars[pInd].recurMonth << " month" << std::endl;
+      // fprintf( logfp, ", on the %2d month", opVars[pInd].recurMonth ); 
+    // fprintf(logfp, ".\n");
   }
   return true;
 }
@@ -1217,11 +1263,13 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
   if (namesMatch("Output directory", pName)) {
     if (pValue.empty()) {
       std::cout << "No output directory specified." << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     else if (pValue.size() > 1) {
       std::cout << "More than one value element detected in output directory specification." << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     else {
       cp = pValue.front();
@@ -1240,10 +1288,12 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
         }
         else {
           std::cout << "Output directory " << cp << " does not exist." << std::endl;
-          logAndExit(logfp, outstr);
+          exit(EXIT_FAILURE);
+          // logAndExit(logfp, outstr);
         }
       }
-      fprintf(logfp, "   output path: %s\n", outPath);
+      std::cout << "   output path: " << outPath << std::endl; // "   output path: %s\n
+      // fprintf(logfp, "   output path: %s\n", outPath);
       return true;
     }
     
@@ -1255,11 +1305,13 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
   else if (namesMatch("sample points file", pName)) {
     if (pValue.empty()) {
       std::cout << "No sample points file specified." << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     else if (pValue.size() > 2) {
       std::cout << "More than two value elements detected in sample points file specification." << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     
     // Set first token to sampleIpFile
@@ -1276,7 +1328,8 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
       }
       else {
         std::cout << "Unrecognised keyword \"" << cp << "\" in sample points file specification." << std::endl;
-        logAndExit(logfp, outstr);
+        exit(EXIT_FAILURE);
+        // logAndExit(logfp, outstr);
       }
     }
     else {
@@ -1289,20 +1342,23 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
   else if (namesMatch("Model mode", pName)) {
     if (pValue.empty()) {
       std::cout << "No model mode specified." << std::endl;
-      logAndPrint(logfp, outstr);
+      // logAndPrint(logfp, outstr);
       return false;
     }
     if (pValue.size() > 1) {
       std::cout << "More than one value element detected in model mode specification." << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     if ("3PGS" == pValue.front())
       modelMode3PGS = true;
     else if ("3PG" == pValue.front())
       modelMode3PGS = false;
     else {
-      sprintf(outstr, "Invalid value for parameter 'Model mode': %s\n", pValue);
-      logAndExit(logfp, outstr);
+      std::cout << "Invalid value for parameter 'Model mode': " << pValue.front() << std::endl;
+      exit(EXIT_FAILURE);
+    //  sprintf(outstr, "Invalid value for parameter 'Model mode': %s\n", pValue);
+      // logAndExit(logfp, outstr);
     }
     return true;
   }
@@ -1311,22 +1367,60 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
   else if (namesMatch("point mode output file", pName)) {
     if (pValue.empty()) {
       std::cout << "No point mode output file specified." << std::endl;
-      logAndPrint(logfp, outstr);
+      // logAndPrint(logfp, outstr);
       return false;
     }
     if (pValue.size() > 1) {
       std::cout << "More than one value element detected in point mode output file specification." << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     cp = pValue.front();
     if ((pointModeFp = fopen(cp.c_str(), "w")) == NULL) {
-      fprintf(stderr, "Could not open point mode output file %s\n", pValue.front().c_str());
-      exit (1);
+      std::cout << "Could not open point mode output file " << cp << std::endl;
+      exit(EXIT_FAILURE);
+      // fprintf(stderr, "Could not open point mode output file %s\n", pValue.front().c_str());
+      // exit (1);
     }
     return true;
   }
   else
     return false;
+}
+
+//----------------------------------------------------------------------------------
+
+bool readParam( PPPG_VVAL &vval, std::string pValue )
+{
+  std::string cp;
+  double dv; 
+
+  try {
+    cp = pValue;
+    vval.sval = std::stof(cp);
+    vval.spType = pScalar;
+    return true;
+  }
+  catch (std::invalid_argument const& inv) {
+    // If not, then try a grid name
+    cp = pValue;
+    const std::filesystem::path filePath = cp;
+    // Check that the file is a TIF file
+    if (filePath.extension() == ".tif") // Heed the dot.
+    {
+        std::cout << filePath.stem() << " is a valid type: '.tif'" << std::endl;
+        vval.gridName = cp;
+        vval.spType = pTif;
+        return true;
+    }
+    else
+    {
+        std::cout << filePath.filename() << " is an invalid filetype " << filePath.extension() << std::endl;
+        exit(EXIT_FAILURE);
+        // logAndExit(logfp, outstr);
+    }
+    return false;
+  }
 }
 
 //----------------------------------------------------------------------------------
@@ -1377,7 +1471,8 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
     boost::split(tTokens, line, boost::is_any_of(", \n\t"));
     if (tTokens.size() != 2) {
       std::cout << "Could not read management table at line " << lineNo << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     // trim leading whitespace from each token using boost::trim
     for (int i = 0; i < tTokens.size(); i++)
@@ -1389,13 +1484,15 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
     }
     catch (std::invalid_argument const& inv) {
       std::cout << "Expected an integer year in management table at line " << lineNo << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     // Read the second token, which is either a constant or a grid name.
-    if( readParam( tab[i].data, tTokens.back() ) == false ) {
+    if( !readParam( tab[i].data, tTokens.back() )) {
       std::cout << "Could not read management table value at line " << lineNo << std::endl;
       std::cout << "   " << tTokens.back() << std::endl;
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
     }
     else {
       tab[i].got = 1;
@@ -1410,40 +1507,6 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
   }
   *nRead = i; 
   return true;  
-}
-
-//----------------------------------------------------------------------------------
-
-bool readParam( PPPG_VVAL &vval, std::string pValue )
-{
-  std::string cp;
-  double dv; 
-
-  try {
-    cp = pValue;
-    vval.sval = std::stof(cp);
-    vval.spType = pScalar;
-    return true;
-  }
-  catch (std::invalid_argument const& inv) {
-    // If not, then try a grid name
-    cp = pValue;
-    const std::filesystem::path filePath = cp;
-    // Check that the file is a TIF file
-    if (filePath.extension() == ".tif") // Heed the dot.
-    {
-        std::cout << filePath.stem() << " is a valid type: '.tif'" << std::endl;
-        vval.gridName = cp;
-        vval.spType = pTif;
-        return true;
-    }
-    else
-    {
-        std::cout << filePath.filename() << " is an invalid filetype " << filePath.extension() << std::endl;
-        logAndExit(logfp, outstr);
-    }
-    return false;
-  }
 }
 
 //----------------------------------------------------------------------------------
@@ -1516,23 +1579,28 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
       try{
         std::string mValue = pValue.at(i);
         if ( readParam( series->data[i], pValue[i] ) ) {
-        if ( series->data[i].spType == pScalar ) {
-          std::cout << "   " << pName << " month " << i+1 << " constant: " << series->data[i].sval << std::endl;
-          fprintf(logfp, "   %-34s month %2d constant: %12.6f\n", pName, i+1, series->data[i].sval );
-        }
-        else if (series->data[i].spType == pTif) {
-          std::cout << "   " << pName << " month " << i+1 << " grid: " << series->data[i].gridName << std::endl;
-          fprintf(logfp, "   %-34s month %2d grid: %s\n", pName, i+1, series->data[i].gridName );
-        }
+          if ( series->data[i].spType == pScalar ) {
+            std::cout << "   " << pName << " month " << i+1 << " constant: " << series->data[i].sval << std::endl;
+            exit(EXIT_FAILURE);
+            // fprintf(logfp, "   %-34s month %2d constant: %12.6f\n", pName, i+1, series->data[i].sval );
+          }
+          else if (series->data[i].spType == pTif) {
+            std::cout << "   " << pName << " month " << i+1 << " grid: " << series->data[i].gridName << std::endl;
+            exit(EXIT_FAILURE);
+            // fprintf(logfp, "   %-34s month %2d grid: %s\n", pName, i+1, series->data[i].gridName );
+          }
       }
       else {
-        sprintf( outstr, "Could not read parameter %s.\n", pName ); 
-        logAndExit( logfp, outstr ); 
+        std::cout << "Could not read parameter " << pName << " at month " << i+1 << std::endl;
+        exit(EXIT_FAILURE);
+        // sprintf( outstr, "Could not read parameter %s.\n", pName ); 
+        // logAndExit( logfp, outstr ); 
       }
     } catch (const std::out_of_range& oor) {
       std::cout << "No value for " << pName << " at month "  << i+1 << std::endl;
-      sprintf(outstr, "Incomplete series on line %d.\n", lineNo); 
-      logAndExit(logfp, outstr); 
+      exit(EXIT_FAILURE);
+      // sprintf(outstr, "Incomplete series on line %d.\n", lineNo); 
+      // logAndExit(logfp, outstr); 
     }
     series->got = true;
     }
@@ -1554,15 +1622,18 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
       }
       catch (const std::out_of_range& oor) {
         std::cout << "Could not read year in series data at line " << lineNo << std::endl;
-        logAndExit(logfp, outstr); 
+        exit(EXIT_FAILURE);
+        // logAndExit(logfp, outstr); 
       }
       if ( prev_yr < 0 ) {
         prev_yr = series_yr - 1;
         series->start = series_yr;
       }
       if (series_yr - 1 != prev_yr) {
-        sprintf(outstr, "series year on line %d is not consecutive\n", lineNo);
-        logAndExit(logfp, outstr);
+        std::cout << "Series year on line " << lineNo << " is not consecutive." << std::endl;
+        exit(EXIT_FAILURE);
+        // sprintf(outstr, "series year on line %d is not consecutive\n", lineNo);
+        // logAndExit(logfp, outstr);
       }
       prev_yr = series_yr; 
     }
@@ -1578,8 +1649,10 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
       std::vector<std::string> sTokens;
       sTokens = boost::split(sTokens, line, boost::is_any_of(", \n\t")); 
       if (sTokens.size() != 13) {
-        sprintf(outstr, "Cannot parse Year and 12 months on %d.\n", lineNo); 
-        logAndExit(logfp, outstr); 
+        std::cout << "Could not read series on line " << lineNo << std::endl;
+        exit(EXIT_FAILURE);
+        // sprintf(outstr, "Cannot parse Year and 12 months on %d.\n", lineNo); 
+        // logAndExit(logfp, outstr); 
       }
       series_yr = std::stoi(sTokens.front());
       // Read the monthly values. 
@@ -1589,13 +1662,17 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
         tok = pValue.at(mn);
         if ( readParam(series->data[si], tok ) ) {
           if ( series->data[si].spType == pScalar )
-            fprintf(logfp, "   %-34s  %4d/%02d constant: %12.6f\n", pName, series->start + ss, mn+1, series->data[si].sval );
+            std::cout << "   " << pName << " year " << series->start + ss << " month " << mn+1 << " constant: " << series->data[si].sval << std::endl;
+            // fprintf(logfp, "   %-34s  %4d/%02d constant: %12.6f\n", pName, series->start + ss, mn+1, series->data[si].sval );
           else if (series->data[si].spType == pTif)
-            fprintf(logfp, "   %-34s  %4d/%02d grid: %s\n", pName, series->start + ss, mn+1, series->data[si].gridName );
+            std::cout << "   " << pName << " year " << series->start + ss << " month " << mn+1 << " grid: " << series->data[si].gridName << std::endl;
+            // fprintf(logfp, "   %-34s  %4d/%02d grid: %s\n", pName, series->start + ss, mn+1, series->data[si].gridName );
         }
         else {
-          sprintf( outstr, "Could not read series on line %d.\n", lineNo); 
-          logAndExit( logfp, outstr ); 
+          std::cout << "Could not read parameter " << pName << " at line " << lineNo << std::endl;
+          exit(EXIT_FAILURE);
+          // sprintf( outstr, "Could not read series on line %d.\n", lineNo); 
+          // logAndExit( logfp, outstr ); 
         }
       }
     }
@@ -1606,7 +1683,7 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
 
 //----------------------------------------------------------------------------------
 
-void readParamFile(std::string paramFile)
+void readParamFile(const std::string& paramFile)
 {
   // Read a text file containing 3PG parameters.  Comments are allowed
   // and must begin with C++ style '//'.  Comments can begin at any
@@ -1662,8 +1739,9 @@ void readParamFile(std::string paramFile)
     else if (readInputManageParam(pName, inFile, lineNo));
     else {
       std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
-      sprintf(outstr, "Cannot read parameter in file %s, line: %d: %s\n", paramFile.c_str(), lineNo, pName.c_str());
-      logAndExit(logfp, outstr);
+      exit(EXIT_FAILURE);
+      // sprintf(outstr, "Cannot read parameter in file %s, line: %d: %s\n", paramFile.c_str(), lineNo, pName.c_str());
+      // logAndExit(logfp, outstr);
     }
   }
 }
@@ -1725,20 +1803,38 @@ bool haveAllParams()
   };
 
   // Temperature series
-  if ((!Tmax_vals.got) && (!userTavgSeries()))
-    logAndExit(logfp, "No Tmax or Tavg data");
-  if ((!Tmin_vals.got) && (!userTavgSeries()))
-    logAndExit(logfp, "No Tmin or Tavg data");
-  if (userTavgSeries())
+  if ((!Tmax_vals.got) && (!userTavgSeries())){
+    std::cout << "No Tmax or Tavg data" << std::endl;
+    exit(EXIT_FAILURE);
+    // logAndExit(logfp, "No Tmax or Tavg data");
+  }
+  if ((!Tmin_vals.got) && (!userTavgSeries())) {
+    std::cout << "No Tmin or Tavg data" << std::endl;
+    exit(EXIT_FAILURE);
+    // logAndExit(logfp, "No Tmin or Tavg data");
+  }
+  if (userTavgSeries()) {
+    std::cout << "Using Tavg series" << std::endl;
     if (!userVpdSeries())
-      logAndExit(logfp, "A VPD series is required if an average temperature series is used\n"); 
-
-  if (!Rain_vals.got)
-    logAndExit(logfp, "No Rain data");
-  if (!SolarRad_vals.got && !NetRad_vals.got)
-    logAndExit(logfp, "No Solar or Net Radiation data");
-  if (!FrostDays_vals.got)
-    logAndExit(logfp, "No Frost data");
+      std::cout << "No VPD series but VPD series is required if Tavg series is used" << std::endl;
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, "A VPD series is required if an average temperature series is used\n"); 
+  }
+  if (!Rain_vals.got) {
+    std::cout << "No Rain data" << std::endl;
+    exit(EXIT_FAILURE);
+    // logAndExit(logfp, "No Rain data");
+  }
+  if (!SolarRad_vals.got && !NetRad_vals.got) {
+    std::cout << "No Solar or Net Radiation data" << std::endl;
+    exit(EXIT_FAILURE);
+    // logAndExit(logfp, "No Solar or Net Radiation data");
+  }
+  if (!FrostDays_vals.got) {
+    std::cout << "No Frost data" << std::endl;
+    exit(EXIT_FAILURE);
+    // logAndExit(logfp, "No Frost data");
+  }
 
   //Check for SeedlingMass and WSi, WFi, WRi
 
@@ -1749,8 +1845,9 @@ bool haveAllParams()
 
   if (!params[indSeed].got && (!params[indWFi].got || !params[indWRi].got || !params[indWSi].got))
   {
-    sprintf(outstr, "Missing parameter for 3PGS mode, %s\n", params[indSeed].id);
-    logAndPrint(logfp, outstr);
+    std::cout << "Missing parameter for 3PGS mode, " << params[indSeed].id << std::endl;
+    // sprintf(outstr, "Missing parameter for 3PGS mode, %s\n", params[indSeed].id);
+    // logAndPrint(logfp, outstr);
     missing = true;
   }
 
@@ -1782,14 +1879,18 @@ bool haveAllParams()
       pInd = pNameToInd(text);
       if (pInd != 0) {
         if (!params[pInd].got) {
-          sprintf(outstr, "Missing parameter for 3PGS mode, %s\n", params[pInd].id);
-          logAndPrint(logfp, outstr);
+          std::cout << "Missing parameter for 3PGS mode, " << params[pInd].id << std::endl;
+          // sprintf(outstr, "Missing parameter for 3PGS mode, %s\n", params[pInd].id);
+          // logAndPrint(logfp, outstr);
           missing = true;
         }
       }
     }
-    if (!NdviAvh_vals.got) 
-      logAndExit(logfp, "No NDVIAHV data");
+    if (!NdviAvh_vals.got) {
+      std::cout << "No NDVI_AVH data" << std::endl;
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, "No NDVIAHV data");
+    }
   }
 
   // Check required parameters for standard 3PG
@@ -1798,8 +1899,9 @@ bool haveAllParams()
       pInd = pNameToInd(text);
       if (pInd != 0) {
         if (!params[pInd].got) {
-          sprintf(outstr, "Missing parameter for 3PG mode, %s\n", params[pInd].id);
-          logAndPrint(logfp, outstr);
+          std::cout << "Missing parameter for 3PG mode, " << params[pInd].id << std::endl;
+          // sprintf(outstr, "Missing parameter for 3PG mode, %s\n", params[pInd].id);
+          // logAndPrint(logfp, outstr);
           missing = true;
         }
       }
@@ -1809,15 +1911,16 @@ bool haveAllParams()
   // Check various optional parameters
   //if ( !modelMode3PGS && NdviAvh_vals->got) {
   if ( !modelMode3PGS && NdviAvh_vals.data) {
-    sprintf(outstr, "NDVI_AVH not used in 3PGS mode.\n"); 
-    logAndPrint(logfp, outstr);
+    std::cout << "NDVI_AVH not used in 3PG mode." << std::endl;
+    // sprintf(outstr, "NDVI_AVH not used in 3PGS mode.\n"); 
+    // logAndPrint(logfp, outstr);
   }
   return !missing;
 }
 
 //----------------------------------------------------------------------------------
 
-bool loadParamVals(std::tuple<int, int> k)
+bool loadParamVals(int k)
 {
   // Load all model parameter values into their global variables.
   // Spatial parameters are taken from the current grid cell, and
@@ -1837,10 +1940,12 @@ bool loadParamVals(std::tuple<int, int> k)
       fg = (GDALRasterImage *)params[pn].data.g;
       if (fg == NULL)
       {
-        sprintf(ErrorString, "Error reading grid: %s - File not open.\n", params[pn].data.gridName);
-        logAndExit(logfp, ErrorString); 
+        std::cout << "Error reading grid: " << params[pn].data.gridName << " - File not open." << std::endl;
+        exit(EXIT_FAILURE);
+        // sprintf(ErrorString, "Error reading grid: %s - File not open.\n", params[pn].data.gridName);
+        // logAndExit(logfp, ErrorString); 
       }
-      result = fg->GetVal(std::get<0>(k), std::get<1>(k));
+      result = fg->GetVal(k);
       if (result == fg->noData) {
         return false;
       }
@@ -1872,13 +1977,15 @@ bool loadParamVals(std::tuple<int, int> k)
 bool openGrid( PPPG_VVAL &vval )
 {
   if (vval.spType == pTif) {
-    fprintf(logfp, "   opening grid from %s...", vval.gridName); 
+    std::cout << "   opening grid from " << vval.gridName << "..." << std::endl;
+    // fprintf(logfp, "   opening grid from %s...", vval.gridName); 
     try {
       vval.g = new GDALRasterImage(vval.gridName);
     }
     catch (const std::exception& e) {
-      fprintf(logfp, "Could not open grid %s\n", vval.gridName);
-      exit(1);
+      std::cout << "Could not open grid " << vval.gridName << std::endl;
+      // fprintf(logfp, "Could not open grid %s\n", vval.gridName);
+      exit(EXIT_FAILURE);
     }
   }
   else {
@@ -1928,8 +2035,9 @@ GDALRasterImage* openInputGrids( )
   PPPG_SERIES_PARAM *ser; 
   GDALRasterImage *refGrid;
 
-  fprintf(logfp, "Opening input grids...\n");
-  fprintf(stdout, "Opening input grids...\r");
+  std::cout << "Opening input grids..." << std::endl;
+  // fprintf(logfp, "Opening input grids...\n");
+  // fprintf(stdout, "Opening input grids...\r");
 
   for (pn = 1; params[pn].data.spType != pNull; pn++) { // start at 1 to avoid error record. 
     if (params[pn].got != 1)
@@ -1948,9 +2056,11 @@ GDALRasterImage* openInputGrids( )
          || (fabs(refGrid->yMax - params[pn].data.g->yMax) > 0.0001)
         || ( refGrid->nRows != params[pn].data.g->nRows ) 
         || ( refGrid->nCols != params[pn].data.g->nCols ) ) {
-        sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
-          params[pn].data.gridName ); 
-        logAndExit(logfp, outstr); 
+          std::cout << "Grid dimensions must match, grid " << params[pn].data.gridName << " differs from first grid." << std::endl;
+          exit(EXIT_FAILURE);
+        // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
+        //   params[pn].data.gridName ); 
+        // logAndExit(logfp, outstr); 
       }
     }
   }
@@ -1974,9 +2084,11 @@ GDALRasterImage* openInputGrids( )
           || ( fabs( refGrid->yMax - ser->data[i].g->yMax ) > 0.0001 ) 
           || ( refGrid->nRows != ser->data[i].g->nRows ) 
           || ( refGrid->nCols != ser->data[i].g->nCols ) ) {
-          sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
-            ser->data[i].gridName ); 
-          logAndExit(logfp, outstr); 
+            std::cout << "Grid dimensions must match, grid " << ser->data[i].gridName << " differs from first grid." << std::endl;
+            exit(EXIT_FAILURE);
+          // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
+          //   ser->data[i].gridName ); 
+          // logAndExit(logfp, outstr); 
         }
       }
     }
@@ -2000,17 +2112,19 @@ GDALRasterImage* openInputGrids( )
           || ( fabs( refGrid->yMax - tab[i].data.g->yMax ) > 0.0001 ) 
           || ( refGrid->nRows != tab[i].data.g->nRows ) 
           || ( refGrid->nCols != tab[i].data.g->nCols ) ) {
-          sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
-            tab[i].data.gridName ); 
-          logAndExit(logfp, outstr); 
+            std::cout << "Grid dimensions must match, grid " << tab[i].data.gridName << " differs from first grid." << std::endl;
+            exit(EXIT_FAILURE);
+          // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
+          //   tab[i].data.gridName ); 
+          // logAndExit(logfp, outstr); 
         }
       }
     }
   }
 
   if (!spatial) {
-    fprintf(logfp, "none\n");
-    fprintf(stdout, "none\r");
+    std::cout << "None" << std::endl;
+    // fprintf(logfp, "none\n");
     refGrid = NULL; 
   }
 
@@ -2020,33 +2134,36 @@ GDALRasterImage* openInputGrids( )
 
 //----------------------------------------------------------------------------------
 
-void openOutputGrids(GDALRasterImage *refGrid)
+int openOutputGrids(GDALRasterImage *refGrid)
 {
   // Loop through opVars array and open output grid objects for all 
   // those variables marked for output.  
   int opn; 
 
   // Open ordinary output grids. 
-  fprintf(logfp, "Opening output grids...\n");
-  fprintf(stdout, "Opening output grids...\r");
+  std::cout << "Opening output grids..." << std::endl;
+  // fprintf(logfp, "Opening output grids...\n");
+  // fprintf(stdout, "Opening output grids...\r");
   for (opn = 0; opVars[opn].id != "-1"; opn++) {
     if (opVars[opn].write) {
-      fprintf(logfp, "   float grid %s\n", opVars[opn].gridName);
+      std::cout << "   float grid " << opVars[opn].gridName << std::endl;
+      // fprintf(logfp, "   float grid %s\n", opVars[opn].gridName);
       // Open output grid at gridName with same class attributes as refGrid.
       opVars[opn].g = new GDALRasterImage(opVars[opn].gridName, refGrid);
       if (opVars[opn].g->Exists(opVars[opn].gridName)) {
-        sprintf(outstr, "Error, output grid named:\n"
-          "   '%s'\nalready exists.\n", opVars[opn].gridName);
-        fprintf(stderr, outstr);
-        fprintf(logfp, outstr);
-
+        std::cout << "Error, output grid named: " << opVars[opn].gridName << " already exists." << std::endl;
+        // sprintf(outstr, "Error, output grid named:\n"
+        //   "   '%s'\nalready exists.\n", opVars[opn].gridName);
+        // fprintf(stderr, outstr);
+        // fprintf(logfp, outstr);
+        exit(EXIT_FAILURE);
       }
       
       // *(opVars[opn].g) = *refGrid;
       // opVars[opn].g->Allocate();
     }
   }
-  return;
+  return EXIT_SUCCESS;
 }
 
 //----------------------------------------------------------------------------------
@@ -2073,7 +2190,7 @@ void openOutputGrids(GDALRasterImage *refGrid)
 
 //----------------------------------------------------------------------------------
 
-void openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spMaxMY )
+int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spMaxMY )
 {
   // Open regular output grids. Unlike other grids in the program, these 
   // are managed as simple pointers to FILE.  This is because the current 
@@ -2089,8 +2206,8 @@ void openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate sp
   int calYear, calMonth; 
   int opn, roArrayLength; 
   FILE *fp; 
-  std::string roStemName[GRID_NAME_LENGTH];
-  std::string fname[GRID_NAME_LENGTH];
+  std::string roStemName;
+  std::string fname;
   std::string *cp;
   int len; 
   int maxCy, maxCm, minCy, minCm; 
@@ -2123,16 +2240,16 @@ void openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate sp
       continue; 
     
     // Allocate and null out array of *FILE. 
-    opVars[opn].RO = new FILE *[roArrayLength]; 
-    for (int i = 0; i < roArrayLength; i++)
-      opVars[opn].RO[i] = NULL;
+    // opVars[opn].RO = new FILE *[roArrayLength]; 
+    // for (int i = 0; i < roArrayLength; i++)
+    //   opVars[opn].RO[i] = NULL;
     
     // Find stem name for regular output files, just lacking the 
     // year/month/extension. 
-    cp = strrchr(opVars[opn].gridName, '.');
-    len = cp - opVars[opn].gridName;
-    strncpy( roStemName, opVars[opn].gridName, len ); 
-    roStemName[len] = '\0'; 
+    // cp = strrchr(opVars[opn].gridName, '.');
+    // len = cp - opVars[opn].gridName;
+    // strncpy( roStemName, opVars[opn].gridName, len ); 
+    // roStemName[len] = '\0'; 
     
     // Monthly output. mx indexes over entire ro array. 
     for ( mx = 0; mx < roArrayLength; mx++ ) {
@@ -2160,64 +2277,92 @@ void openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate sp
         continue; 
       
       // Is this an annual output?  If so only want 1 month as given in recurMonth. 
+      // Construct the filename by concatenating the stem name, year, month and extension.
+      // Open a GDALRasterImage object for the grid
+      fname = roStemName + std::to_string(calYear) + std::to_string(calMonth) + ".tif";
+      GDALRasterImage *fg;
       if ( !opVars[opn].recurMonthly ) {
         if ( calMonth == opVars[opn].recurMonth ) {
-          // Construct annual regular output grid name and open file. 
-          sprintf( fname, "%s%4d%02d.flt", roStemName, calYear, calMonth ); 
-          if ( ( fp = fopen( fname, "wb" ) ) == NULL ) {
-            sprintf(outstr, "Couldn't open regular output file %s\n", fname);
-            logAndExit(logfp, outstr);
+          std::cout << "   opening grid from " << fname << "..." << std::endl;
+          // fprintf(logfp, "   opening grid from %s...", fname.c_str());
+          try {
+            fg = new GDALRasterImage(fname, refGrid);
           }
-          // if ( ! copyHeader( refGrid, fname ) ) {
-          //   sprintf(outstr, "Couldn't open regular output header file %s\n", fname);
+          catch (const std::exception& e) {
+            std::cout << "Could not open grid " << fname << std::endl;
+            // fprintf(logfp, "Could not open grid %s\n", fname.c_str());
+            exit(EXIT_FAILURE);
+          }
+          opVars[opn].g = fg;
+          // Construct annual regular output grid name and open file. 
+          // Open a GDALRasterImage object for the grid
+          // sprintf( fname, "%s%4d%02d.flt", roStemName, calYear, calMonth ); 
+          // if (())
+          // if ( ( fp = fopen( fname, "wb" ) ) == NULL ) {
+          //   sprintf(outstr, "Couldn't open regular output file %s\n", fname);
           //   logAndExit(logfp, outstr);
           // }
-          opVars[opn].RO[mx] = fp; // pointer to start of month in array.
+          // // if ( ! copyHeader( refGrid, fname ) ) {
+          // //   sprintf(outstr, "Couldn't open regular output header file %s\n", fname);
+          // //   logAndExit(logfp, outstr);
+          // // }
+          // opVars[opn].RO[mx] = fp; // pointer to start of month in array.
         }
       }
       // Is a monthly output ro grid and this is the output year. 
       else {
-        // Construct monthly regular output grid names and open file. 
-        sprintf( fname, "%s%4d%02d.flt", roStemName, calYear, calMonth ); 
-        if ( ( fp = fopen( fname, "wb" ) ) == NULL ) {
-          sprintf(outstr, "Couldn't open regular output file %s\n", fname);
-          logAndExit(logfp, outstr);
+        std::cout << "   opening grid from " << fname << "..." << std::endl;
+        try {
+          fg = new GDALRasterImage(fname, refGrid);
         }
-        // if ( ! copyHeader( refGrid, fname ) ) {
-        //   sprintf(outstr, "Couldn't open regular output header file %s\n", fname);
+        catch (const std::exception& e) {
+          std::cout << "Could not open grid " << fname << std::endl;
+          // fprintf(logfp, "Could not open grid %s\n", fname.c_str());
+          exit(EXIT_FAILURE);
+        }
+        opVars[opn].g = fg;
+        // Construct monthly regular output grid names and open file. 
+        // sprintf( fname, "%s%4d%02d.flt", roStemName, calYear, calMonth ); 
+        // if ( ( fp = fopen( fname, "wb" ) ) == NULL ) {
+        //   sprintf(outstr, "Couldn't open regular output file %s\n", fname);
         //   logAndExit(logfp, outstr);
         // }
-        opVars[opn].RO[mx] = fp; 
+        // // if ( ! copyHeader( refGrid, fname ) ) {
+        // //   sprintf(outstr, "Couldn't open regular output header file %s\n", fname);
+        // //   logAndExit(logfp, outstr);
+        // // }
+        // opVars[opn].RO[mx] = fp; 
       }
     } // closes for ( mx = 0; mx < roArrayLength; mx++ )
   } // closes for each output variable. 
+  return EXIT_SUCCESS;
 }
   
 //----------------------------------------------------------------------------------
 
-int writeOutputGrids(void)
-{
-  int opn, gridsWritten=0;
+// int writeOutputGrids(void)
+// {
+//   int opn, gridsWritten=0;
 
-  fprintf(stdout, "Writing output grids...\r"); 
-  fprintf(logfp, "Writing output grids...\n");
-  for (opn=0; opVars[opn].id != "-1"; opn++) {
-    if (opVars[opn].write) {
-      try {
-        opVars[opn].g->Write(opVars[opn].gridName);
-      } catch (Exception &e) {
-        sprintf(outstr, "Exception: %s\n", e.Message());
-        return 0;
-      }
-      gridsWritten++;
-    }
-  }
-  return gridsWritten;
-}
+//   fprintf(stdout, "Writing output grids...\r"); 
+//   fprintf(logfp, "Writing output grids...\n");
+//   for (opn=0; opVars[opn].id != "-1"; opn++) {
+//     if (opVars[opn].write) {
+//       try {
+//         opVars[opn].g->Write(opVars[opn].gridName);
+//       } catch (Exception &e) {
+//         sprintf(outstr, "Exception: %s\n", e.Message());
+//         return 0;
+//       }
+//       gridsWritten++;
+//     }
+//   }
+//   return gridsWritten;
+// }
 
 //----------------------------------------------------------------------------------
 
-void writeSampleFiles(std::tuple<int,int> cellIndex, int month, long calYear) 
+void writeSampleFiles(int cellIndex, int month, long calYear) 
 {
   int opn, sInd, i;
   static bool firstTime = true;
@@ -2233,7 +2378,7 @@ void writeSampleFiles(std::tuple<int,int> cellIndex, int month, long calYear)
     return;
 
   fprintf(samplePoints[sInd].fp, "%d, %d, %s, ", calYear, 
-    month, samplePoints[sInd].id);
+    month, samplePoints[sInd].id.c_str());
   // For each variable
   for (opn = 1; opVars[opn].adr != NULL; opn++)
     fprintf(samplePoints[sInd].fp, "%f, ", *(opVars[opn].adr));
@@ -2248,7 +2393,7 @@ void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
   int opn, mx, maxInd; 
   float fval; 
   long lval; 
-  FILE *fp; 
+  // FILE *fp; 
   GDALRasterImage *fg;
 
   int crap; 
@@ -2280,23 +2425,27 @@ void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
     
     // Sanity check. 
     if ( mx > maxInd ) {
-      sprintf(outstr, "Program error, mx=%d too high in writeMonthlyOutputGrids at month/year %2d/%4d.\n", 
-        mx, calYear, calMonth);
-      logAndExit(logfp, outstr);
+      std::cout << "Program error, mx=" << mx << " too high in writeMonthlyOutputGrids at month/year " << calMonth << "/" << calYear << std::endl;
+      exit(EXIT_FAILURE);
+      // sprintf(outstr, "Program error, mx=%d too high in writeMonthlyOutputGrids at month/year %2d/%4d.\n", 
+      //   mx, calYear, calMonth);
+      // logAndExit(logfp, outstr);
     }
 
-    // Get file pointer for this regular output grid. 
-    fp = opVars[opn].RO[mx];
+    // // Get file pointer for this regular output grid. 
+    // fp = opVars[opn].RO[mx];
 
-    // Write it. 
-    if ( !fp )
+    // // Write it. 
+    // if ( !fp )
+    //   continue;
+    if (!fg)
       continue;
     if ( opVars[opn].spType == pTif ) {
       fval = (float)*(opVars[opn].adr);
       fg = (GDALRasterImage *)opVars[opn].g;
       if ( hitNODATA )
         fval = fg->noData;
-      fwrite( &fval, 4, 1, fp );
+      fg->SetVal(k, fval);
       /*sprintf(outstr, "Year: %d, Month: %d, Value: %f\n", calYear, calMonth, fval); 
       logOnly(logfp, outstr);*/
     }
@@ -2331,9 +2480,12 @@ void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
 
     // Sanity check. 
     if ( mx > maxInd ) {
-      sprintf(outstr, "Program error, mx=%d too high in writeYearlyOutputGrids at month/year %2d/%4d.\n", 
-        mx, calYear, calMonth);
-      logAndExit(logfp, outstr);
+      std::cout << "Program error, mx=" << mx << " too high in writeYearlyOutputGrids at month/year " 
+        << calMonth << "/" << calYear << std::endl;
+      exit(EXIT_FAILURE);
+      // sprintf(outstr, "Program error, mx=%d too high in writeYearlyOutputGrids at month/year %2d/%4d.\n", 
+      //   mx, calYear, calMonth);
+      // logAndExit(logfp, outstr);
     }
 
     // Get file pointer for this regular output grid. 
@@ -2356,88 +2508,90 @@ void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
 }
     
 //----------------------------------------------------------------------------------
+// NOTE: I _think_ that this is covered by the writeYearlyOutputGrids function above.
+//      If so, this function can be deleted.
 
-void saveVariableVals(long k, bool hitNODATA)
-{
-  // Copy variable values from the model to the current grid cell. 
-  int opn;
-  GDALRasterImage *fg;
+// void saveVariableVals(long k, bool hitNODATA)
+// {
+//   // Copy variable values from the model to the current grid cell. 
+//   int opn;
+//   GDALRasterImage *fg;
 
-  for (opn = 1; opVars[opn].id != "-1"; opn++) 
-    if (opVars[opn].spType == pTif) {
-      fg = (GDALRasterImage *)opVars[opn].g;
-      fg->z[k] = (float)*(opVars[opn].adr);
-      if (hitNODATA)
-        fg->z[k] = fg->noData;
-    }
-}
+//   for (opn = 1; opVars[opn].id != "-1"; opn++) 
+//     if (opVars[opn].spType == pTif) {
+//       fg = (GDALRasterImage *)opVars[opn].g;
+//       fg->z[k] = (float)*(opVars[opn].adr);
+//       if (hitNODATA)
+//         fg->z[k] = fg->noData;
+//     }
+// }
 
 //----------------------------------------------------------------------------------
+// TODO: Reaplce manual LogFile with external library for logging in modern C++
+// FILE *openLogFile(std::string siteParamFile)
+// {
+//   // Open the site parameter file, find the output directory 
+//   // specification, open the logfile in that directory, close the 
+//   // site parameter file.  
 
-FILE *openLogFile(std::string siteParamFile)
-{
-  // Open the site parameter file, find the output directory 
-  // specification, open the logfile in that directory, close the 
-  // site parameter file.  
+//   FILE *logFileFp, *paramFp; 
+//   std::string *cp, *line, *logFileName;
 
-  FILE *logFileFp, *paramFp; 
-  std::string *cp, *line, *logFileName;
+//   if ((paramFp = fopen(siteParamFile, "rb")) == NULL) {
+//     fprintf(stderr, "Could not open site parameter file %s\n", siteParamFile); 
+//     exit(1);
+//   }
 
-  if ((paramFp = fopen(siteParamFile, "rb")) == NULL) {
-    fprintf(stderr, "Could not open site parameter file %s\n", siteParamFile); 
-    exit(1);
-  }
+//   line = new std::string[1000];
+//   logFileName = new std::string[1000];
 
-  line = new std::string[1000];
-  logFileName = new std::string[1000];
+//   while (fgets(line, MAXLINE, paramFp) != NULL) {
+//     // Remove comments from end of line by inserting a null character. 
+//     cp = strstr(line, "//");
+//     if (cp != NULL)
+//       *cp = 0;
 
-  while (fgets(line, MAXLINE, paramFp) != NULL) {
-    // Remove comments from end of line by inserting a null character. 
-    cp = strstr(line, "//");
-    if (cp != NULL)
-      *cp = 0;
+//     // Consume leading whitespace. 
+//     cp = line + strspn(line, " \t");
 
-    // Consume leading whitespace. 
-    cp = line + strspn(line, " \t");
+//     // Tokenize the line. First token ends with a closing double quote.  
+//     cp = strtok(cp, "\"\n\015");
+//     if (cp == NULL)
+//       continue;
 
-    // Tokenize the line. First token ends with a closing double quote.  
-    cp = strtok(cp, "\"\n\015");
-    if (cp == NULL)
-      continue;
+//     // Find the output directory specifier.  Look for ^M (ascii 13), carriage return, in 
+//     // DOS text files. 
+//     if (namesMatch("output directory", cp)) {
+//       cp = strtok(NULL, " \t\n\015");
+//       if (cp == NULL) {
+//         line[0] = '.';
+//         line[1] = '\0';
+//         cp = line;
+//       }
+//       int len = strlen(cp);
+//       if (*(cp + len - 1) != '/') {
+//         *(cp + len) = '/';
+//         *(cp + len + 1) = 0;
+//       }
+//       strcpy(logFileName, cp); 
+//       strcat(logFileName, "logfile.txt");
 
-    // Find the output directory specifier.  Look for ^M (ascii 13), carriage return, in 
-    // DOS text files. 
-    if (namesMatch("output directory", cp)) {
-      cp = strtok(NULL, " \t\n\015");
-      if (cp == NULL) {
-        line[0] = '.';
-        line[1] = '\0';
-        cp = line;
-      }
-      int len = strlen(cp);
-      if (*(cp + len - 1) != '/') {
-        *(cp + len) = '/';
-        *(cp + len + 1) = 0;
-      }
-      strcpy(logFileName, cp); 
-      strcat(logFileName, "logfile.txt");
-
-      // Open the file
-      if ((logFileFp = fopen(logFileName, "w")) == NULL) {
-        fprintf(stderr, "Could not open log file %s\n", logFileName);
-        exit(1);
-      }
-      else {
-        fclose(paramFp);
-        delete line;
-        delete logFileName;
-        return logFileFp; 
-      }
-    }
-  }
-  fprintf(stderr, "Could not find \"output directory\" parameter in %s\n", siteParamFile);
-  exit(1);
-}
+//       // Open the file
+//       if ((logFileFp = fopen(logFileName, "w")) == NULL) {
+//         fprintf(stderr, "Could not open log file %s\n", logFileName);
+//         exit(1);
+//       }
+//       else {
+//         fclose(paramFp);
+//         delete line;
+//         delete logFileName;
+//         return logFileFp; 
+//       }
+//     }
+//   }
+//   fprintf(stderr, "Could not find \"output directory\" parameter in %s\n", siteParamFile);
+//   exit(1);
+// }
 
 //----------------------------------------------------------------------------------
 
@@ -2489,7 +2643,7 @@ void writeStandSummary(int year)
 
 //----------------------------------------------------------------------------------
 
-void findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
+int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
 {
     // Find the calendar months and years for which the model will actually run, over 
     // the whole spatial area.  Cells with NODATA on any input cause that cell to 
@@ -2527,8 +2681,8 @@ void findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
     // Spatial mode case.  For each cell get yearPlanted, monthPlanted, StartAge, 
     // EndAge, endMonth, and find the earliest start and latest finish.  
     else {
-      nrows = refGrid->nrows; 
-      ncols = refGrid->ncols; 
+      nrows = refGrid->nRows; 
+      ncols = refGrid->nCols; 
       
       // For every cell
       //for (int j = 0; j < nrows-2; j++) {
@@ -2564,9 +2718,11 @@ void findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
           }
 
           // Check reasonableness of StartMonth, must be in the range 1 - 12 inclusive. 
-          if ( StartMonth < 0.999 || StartMonth > 12.0001 )
-            logAndExit(logfp, "Found bad StartMonth value at XXXX\n" ); 
-          
+          if ( StartMonth < 0.999 || StartMonth > 12.0001 ) {
+            std::cout << "Found bad StartMonth value at XXXX" << std::endl;
+            exit(EXIT_FAILURE);
+            // logAndExit(logfp, "Found bad StartMonth value at XXXX\n" ); 
+          }
           // Minimum year
           cy2 = yearPlanted + (float)StartAge + ( StartMonth / 100 ); 
           if ( cy2 < minCy2 )
@@ -2617,14 +2773,26 @@ void findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
       //}
 
       // Check if we found useful values
-      if ( minCy == MINSEED )
-        logAndExit( logfp, "Failed to find valid starting year.\n" ); 
-      if ( maxCy == MAXSEED )
-        logAndExit( logfp, "Failed to find valid ending year.\n" ); 
-      if ( minCm == 13 )
-        logAndExit( logfp, "Failed to find valid starting month.\n" ); 
-      if ( maxCm == 13 )
-        logAndExit( logfp, "Failed to find valid ending month.\n" ); 
+      if ( minCy == MINSEED ) {
+        std::cout << "Failed to find valid starting year. Exiting..." << std::endl;
+        // logAndExit( logfp, "Failed to find valid starting year.\n" );
+        exit(EXIT_FAILURE);
+      }
+      if ( maxCy == MAXSEED ) {
+        std::cout << "Failed to find valid ending year. Exiting..." << std::endl;
+        // logAndExit( logfp, "Failed to find valid ending year.\n" );
+        exit(EXIT_FAILURE);
+      }
+      if ( minCm == 13 ) {
+        std::cout << "Failed to find valid starting month. Exiting..." << std::endl;
+        // logAndExit( logfp, "Failed to find valid starting month.\n" );
+        exit(EXIT_FAILURE); 
+      }
+      if ( maxCm == 13 ) {
+        std::cout << "Failed to find valid ending month. Exiting..." << std::endl;
+        // logAndExit( logfp, "Failed to find valid ending month.\n" ); 
+        exit(EXIT_FAILURE);
+      }
 
       minMY.year = minCy; 
       minMY.mon = minCm; 
@@ -2632,6 +2800,8 @@ void findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
       maxMY.year = adjAge;        //minCy + EndAge - StartAge; 
       maxMY.mon = maxCm; 
     }
+    return EXIT_SUCCESS;
+}
   // Below is a possible replacment for the above method. It is not tested but can take advantage of GDAL's min/max functions and avoids reading all params twice.
   //   std::string paramNames[] = { "yearPlanted", "StartAge", "EndAge", "StartMonth", "" };
   //   for (int i = 0; paramNames[i] != ""; i++) {
@@ -2708,9 +2878,9 @@ void findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
   //     minMY.mon = minStartMonth;
   //     maxMY.mon = minStartMonth - 1;
   //   }     
-  }
-  return;
-}
+//   }
+//   return;
+// }
 
 //----------------------------------------------------------------------------------
 //To ensure that if we don't have a variable, it doesn't get an accidental GOT value
@@ -2739,8 +2909,9 @@ void InitInputParams(void)
 bool havePointOpFile()
 {
   if (pointModeFp == NULL) {
-    sprintf(outstr, "Using point mode but parameter \"point mode output file\" not set\n");
-    logAndPrint(logfp, outstr);
+    // sprintf(outstr, "Using point mode but parameter \"point mode output file\" not set\n");
+    std::cout << "Using point mode but parameter point mode output file not set" << std::endl;
+    // logAndPrint(logfp, outstr);
     return false;
   }
   else

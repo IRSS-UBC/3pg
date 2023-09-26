@@ -24,24 +24,24 @@
 #define SS_VPD       7
 #define SS_TAVG      8
 
-bool loadParamVals(long k);
+bool loadParamVals(int k);
 // table must be one of MT_FERTILITY, MT_MINASW, MT_MINASW. 
-double lookupManageTable( int year, int table, double def, long cellIndex ); 
+double lookupManageTable( int year, int table, double def, int cellIndex ); 
 void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY );
 void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY );
-void writeSampleFiles(long cellIndex, int month, long calYear);
-void saveVariableVals(long k, bool hitNODATA);
-FILE *openLogFile(const std::string& siteParamFile);
+void writeSampleFiles(int cellIndex, int month, long calYear);
+void saveVariableVals(int k, bool hitNODATA);
+// FILE *openLogFile(const std::string& siteParamFile);
 void readParamFile(const std::string& paramFile);
 GDALRasterImage* openInputGrids();
 bool haveAllParams();
 bool havePointOpFile();
-void findRunPeriod( GDALRasterImage*refGrid, MYDate &minMY, MYDate &maxMY );
-void openOutputGrids( GDALRasterImage*refGrid);
+int findRunPeriod( GDALRasterImage*refGrid, MYDate &minMY, MYDate &maxMY );
+int openOutputGrids( GDALRasterImage*refGrid);
 void ResetGrids(void);
 void CloseGrids(void);
 void PrintGrids(void);
-void openRegularOutputGrids( GDALRasterImage*refGrid, MYDate spMinMY, MYDate spMaxMY );
+int openRegularOutputGrids( GDALRasterImage*refGrid, MYDate spMinMY, MYDate spMaxMY );
 void readSampleFile( GDALRasterImage*refGrid );
 int writeOutputGrids(void);
 void writeStandSummary(int year);
@@ -56,4 +56,4 @@ bool haveSpatialRunYears(void);
 bool haveRhoMin(void);  //Standage dependant Density 15/07/2002
 bool haveRhoMax(void);  //Standage dependant Density 15/07/2002
 bool haveTRho(void);    //Standage dependant Density 15/07/2002
-bool getSeriesVal(double &val, int ser, int calMonth, int calYear, long k);
+bool getSeriesVal(double &val, int ser, int calMonth, int calYear, int k);

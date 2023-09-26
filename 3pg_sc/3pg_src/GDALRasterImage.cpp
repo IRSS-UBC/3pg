@@ -54,10 +54,10 @@ GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid)
 		throw std::invalid_argument("File already exists.");
 	};
 	GDALDriver* driver = GetGDALDriverManager()->GetDriverByName("GTiff");
-	GDALDataset* dataset = driver->Create(filename.c_str(), refGrid->nCols, refGrid->nRows, 1, GDT_Float32, NULL);
+	dataset = driver->Create(filename.c_str(), refGrid->nCols, refGrid->nRows, 1, GDT_Float32, NULL);
 	dataset->SetGeoTransform(refGrid->datasetTransform);
 	dataset->SetProjection(refGrid->crs);
-	GDALRasterBand* band = dataset->GetRasterBand(1);
+	band = dataset->GetRasterBand(1);
 	band->SetNoDataValue(refGrid->noData);
 
 	noData = band->GetNoDataValue();
@@ -94,27 +94,48 @@ void GDALRasterImage::Close() {
 	GDALClose(GDALDataset::ToHandle(dataset));
 };
 
-void GDALRasterImage::Create(std::string fname) {
-	// Create a new dataset with the same extent, transform, and crs as the source
-	// TODO: possibly have this create a new GDALRasterImage object?
-
-	GDALDriver* driver = GetGDALDriverManager()->GetDriverByName("GTiff");
-	GDALDataset* outDataset = driver->Create(fname.c_str(), nCols, nRows, 1, GDT_Float32, NULL);
-	outDataset->SetGeoTransform(datasetTransform);
-	outDataset->SetProjection(crs);
-	GDALRasterBand* outBand = outDataset->GetRasterBand(1);
-	outBand->SetNoDataValue(noData);
-	GByte abyRaster[nCols*nRows];
-	outBand->RasterIO(GF_Write, 0, 0, nCols, nRows, abyRaster, nCols, nRows, GDT_Float32, 0, 0);
-	GDALClose(GDALDataset::ToHandle(outDataset));
-};
+// void GDALRasterImage::Create(std::string fname) {
+// 	// Create a new dataset with the same extent, transform, and crs as the source
+// 	GDALDriver* driver = GetGDALDriverManager()->GetDriverByName("GTiff");
+// 	GDALDataset* outDataset = driver->Create(fname.c_str(), nCols, nRows, 1, GDT_Float32, NULL);
+// 	outDataset->SetGeoTransform(datasetTransform);
+// 	outDataset->SetProjection(crs);
+// 	GDALRasterBand* outBand = outDataset->GetRasterBand(1);
+// 	outBand->SetNoDataValue(noData);
+// 	GByte abyRaster[nCols*nRows];
+// 	outBand->RasterIO(GF_Write, 0, 0, nCols, nRows, abyRaster, nCols, nRows, GDT_Float32, 0, 0);
+// 	GDALClose(GDALDataset::ToHandle(outDataset));
+// };
 
 float GDALRasterImage::GetVal(int x, int y) {
 	float pixelValue;
-	band->RasterIO(GF_Read, x, y, 1, 1, &pixelValue, 1, 1, GDT_Float32, 0, 0);
-	// check that dataset isn't CE_None
+	if (band->RasterIO(GF_Read, x, y, 1, 1, &pixelValue, 1, 1, GDT_Float32, 0, 0) != CE_None) {
+		throw std::invalid_argument("Cannot read pixel value.");
+	}
 	return pixelValue;
 
+};
+
+float GDALRasterImage::GetVal(int index) {
+	// Get the value of the pixel at the given index
+	std::tuple<int, int> xy = IndexToXY(index);
+	float pixelValue;
+
+	if (band->RasterIO(GF_Read, std::get<0>(xy), std::get<1>(xy), 1, 1, &pixelValue, 1, 1, GDT_Float32, 0, 0) != CE_None) {
+		throw std::invalid_argument("Cannot read pixel value.");
+	}
+	return pixelValue;
+};
+
+CPLErr GDALRasterImage::SetVal(int x, int y, float val) {
+	// Set the value of the pixel at the given x,y coordinates
+	return band->RasterIO(GF_Write, x, y, 1, 1, &val, 1, 1, GDT_Float32, 0, 0);
+};
+
+CPLErr GDALRasterImage::SetVal(int index, float val) {
+	// Set the value of the pixel at the given index
+	std::tuple<int, int> xy = IndexToXY(index);
+	return band->RasterIO(GF_Write, std::get<0>(xy), std::get<1>(xy), 1, 1, &val, 1, 1, GDT_Float32, 0, 0);
 };
 
 std::tuple<int, int> GDALRasterImage::XYfrom(double lat, double lon) {
@@ -129,6 +150,23 @@ std::tuple<int, int> GDALRasterImage::XYfrom(double lat, double lon) {
 	return std::make_tuple(x, y);
 };
 
+int GDALRasterImage::IndexFrom(double lat, double lon) {
+	// Get the index of the pixel at the given lat/lon
+	int x = static_cast<int>(floor(inverseTransform[0] + inverseTransform[1] * lon + inverseTransform[2] * lat));
+	int y = static_cast<int>(floor(inverseTransform[3] + inverseTransform[4] * lon + inverseTransform[5] * lat));
+	if ( x < 0 || x > nCols || y < 0 || y > nRows) {
+		throw std::invalid_argument("Lat/lon is outside of raster extent.");
+	}
+	return y * nCols + x;
+};
+
+std::tuple<int,int> GDALRasterImage::IndexToXY(int index) {
+	// Get the x,y coordinates of the pixel at the given index
+	int x = index % nCols;
+	int y = index / nCols;
+	return std::make_tuple(x, y);
+};
+
 bool GDALRasterImage::Exists(std::string fname) {
 	// Check if a GDALDataset already exists with the given filename
 	const GDALAccess eAccess = GA_ReadOnly;
@@ -140,17 +178,17 @@ bool GDALRasterImage::Exists(std::string fname) {
 	return false;
 };
 
-float GDALRasterImage::GetMin() {
-	float min;
-	float max;
-	band->ComputeRasterMinMax(&min, &max);
-	return min;
-};
+// float GDALRasterImage::GetMin() {
+// 	float min;
+// 	float max;
+// 	band->ComputeRasterMinMax(&min, &max);
+// 	return min;
+// };
 
-float GDALRasterImage::GetMax() {
-	float min;
-	float max;
-	band->ComputeRasterMinMax(&min, &max);
-	return max;
-};
+// float GDALRasterImage::GetMax() {
+// 	float min;
+// 	float max;
+// 	band->ComputeRasterMinMax(&min, &max);
+// 	return max;
+// };
 

@@ -26,7 +26,12 @@ public:
 	GDALRasterImage(std::string filename, GDALRasterImage* refGrid);
 	~GDALRasterImage();
 	std::tuple<int, int> XYfrom(double lat, double lon);
+	int IndexFrom(double lat, double lon);
+	std::tuple<int, int> IndexToXY(int index);
 	float GetVal(int x, int y);
+	float GetVal(int index);
+	CPLErr SetVal(int x, int y, float val);
+	CPLErr SetVal(int index, float val);
 	void Create(std::string fname);
 	bool Exists(std::string fname);
 	float GetMin();
