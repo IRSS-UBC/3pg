@@ -13,6 +13,9 @@ Use of this software assumes agreement to this condition of use
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <cctype>      // std::tolower
+#include <algorithm>   // std::equal
+#include <boost/algorithm/string/trim.hpp>
 
 #ifdef WIN32
 #define strncasecmp strnicmp
@@ -20,69 +23,83 @@ Use of this software assumes agreement to this condition of use
 
 //--------------------------------------------------------------------------
 
-char *strcpyTrim(char *s, char *ct)
-{
-  // Copy ct to s, plus trim leading and trailing white space. 
-  int i;
-  char *start, *end, *cp;
+// std::string strcpyTrim(std::string s, std::string ct)
+// {
+//   boost::algorithm::trim(ct);
+//   s = ct;
+//   return ct;
+//   // Copy ct to s, plus trim leading and trailing white space. 
+//   int i;
+//   char *start, *end, *cp;
 
-  if (ct == NULL) {
-    s[0] = '\0';
-    return NULL;
-  }
+//   if (ct == NULL) {
+//     s[0] = '\0';
+//     return NULL;
+//   }
 
-  // Trim the id string of leading whitespace.  
-  for (start = ct; isspace(*start); start++)
-    ;
+//   // Trim the id string of leading whitespace.  
+//   for (start = ct; isspace(*start); start++)
+//     ;
   
-  // Was the whole string whitespace. 
-  if (*start == '\0') {
-    s[0] = '\0';
-    return s;
-  }
+//   // Was the whole string whitespace. 
+//   if (*start == '\0') {
+//     s[0] = '\0';
+//     return s;
+//   }
 
-  // Copy it. 
-  // Trim trailing whitespace. 
-  for (end = start; *end != '\0'; end++)
-    ;
-  end--;
-  if (isspace(*end)) {
-    for ( ; isspace(*end); end--)
-      ;
-  }
-  end++;
-  *end = '\0';
+//   // Copy it. 
+//   // Trim trailing whitespace. 
+//   for (end = start; *end != '\0'; end++)
+//     ;
+//   end--;
+//   if (isspace(*end)) {
+//     for ( ; isspace(*end); end--)
+//       ;
+//   }
+//   end++;
+//   *end = '\0';
 
-  // Copy 
-  for (i=0, cp = start; cp <= end; cp++, i++)
-    s[i] = *cp;
-  return s;
-}
+//   // Copy 
+//   for (i=0, cp = start; cp <= end; cp++, i++)
+//     s[i] = *cp;
+//   return s;
+// }
 
 //--------------------------------------------------------------------------
 
-void logAndExit(FILE *logfp, char *outstr)
+// void logAndExit(FILE *logfp, char *outstr)
+// {
+//   fprintf(logfp, outstr);
+//   fprintf(stderr, outstr);
+//   exit(1);
+// }
+
+//--------------------------------------------------------------------------
+
+// void logAndPrint(FILE *logfp, char *outstr)
+// {
+//   fprintf(logfp, outstr);
+//   fprintf(stderr, outstr);
+// }
+
+//--------------------------------------------------------------------------
+// void logOnly(FILE *logfp, char *outstr)
+// {
+//   fprintf(logfp, outstr);
+// }
+
+//--------------------------------------------------------------------------
+
+bool ichar_equals(char a, char b)
 {
-  fprintf(logfp, outstr);
-  fprintf(stderr, outstr);
-  exit(1);
+    return std::tolower(static_cast<unsigned char>(a)) ==
+           std::tolower(static_cast<unsigned char>(b));
 }
 
-//--------------------------------------------------------------------------
-
-void logAndPrint(FILE *logfp, char *outstr)
+bool iequals(const std::string& a, const std::string& b)
 {
-  fprintf(logfp, outstr);
-  fprintf(stderr, outstr);
+    return std::equal(a.begin(), a.end(), b.begin(), b.end(), ichar_equals);
 }
-
-//--------------------------------------------------------------------------
-void logOnly(FILE *logfp, char *outstr)
-{
-  fprintf(logfp, outstr);
-}
-
-//--------------------------------------------------------------------------
 
 bool namesMatch(const std::string& n1, const std::string& n2)
 {
@@ -94,10 +111,8 @@ bool namesMatch(const std::string& n1, const std::string& n2)
   l2 = n2.length();
   if (l1 != l2)
     return false;
-  if (strncasecmp(n1, n2, l1) == 0)
-    return true;
-  else
-    return false;
+  return iequals(n1, n2);
+
 }
 
 //--------------------------------------------------------------------------

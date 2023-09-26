@@ -1,3 +1,0 @@
-H:/c_stuff/out/ARM-Debug/CMakeFiles/3pg.dir
-H:/c_stuff/out/ARM-Debug/CMakeFiles/ALL_BUILD.dir
-H:/c_stuff/out/ARM-Debug/CMakeFiles/ZERO_CHECK.dir

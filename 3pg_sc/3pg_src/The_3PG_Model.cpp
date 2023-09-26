@@ -480,7 +480,7 @@ void GetStandAge(void)
 }
 //-----------------------------------------------------------------------------
 
-bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
+bool AssignMonthlyMetData(int calMonth, int calYear, int cellIndex,
                           double &SolarRad, double &FrostDays, double &Rain,
                           double &NetRad, double &Tav, double &Tx, double &Tn,
                           double &VPD, double &NDVI_AVH)
@@ -527,7 +527,7 @@ bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
 // This is the main routine for the 3PG model
 
 //void runTreeModel(int minCy, int maxCy, bool spatial, long cellIndex)
-void runTreeModel( MYDate minMY, MYDate maxMY, bool spatial, long cellIndex )
+void runTreeModel( MYDate minMY, MYDate maxMY, bool spatial, int cellIndex )
 {
 //  int minCy, maxCy; 
   
@@ -1210,7 +1210,7 @@ skipYearEndCalcs:
   } 
 
   // ANL - Save wanted variables into grids. 
-  if (spatial)
-    saveVariableVals(cellIndex, hitNODATA);
+  // if (spatial)
+  //   saveVariableVals(cellIndex, hitNODATA);
 }
 
