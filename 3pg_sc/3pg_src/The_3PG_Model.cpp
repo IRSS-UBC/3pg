@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id: The_3PG_Model.cpp,v 1.6 2001/08/02 06:51:42 lou026 Exp $";
+// static char rcsid[] = "$Id: The_3PG_Model.cpp,v 1.6 2001/08/02 06:51:42 lou026 Exp $";
 
 /*
 All source code remains the property and copyright of CSIRO. 
@@ -21,6 +21,7 @@ Use of this software assumes agreement to this condition of use
 // variables, in particular the model parameters, declared in this file. 
 
 #include <math.h>
+#include <iostream>
 #include <stdio.h>
 #include "Data_io.hpp"
 
@@ -65,186 +66,160 @@ Use of this software assumes agreement to this condition of use
 //int StartMonth;                        // month of year to start run
 //int yearPlanted;                       // year trees planted
 // ANL changed these three from int to double
-double StartAge, EndAge;                 // age of trees at start/end of run
-double StartMonth;                       // month of year to start run
-double yearPlanted;                      // year trees planted
-int DaysInMonth[13] = {                  // array for days in months 
-  0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-};
-bool showDetailedResults;                // TRUE ==> show monthly results
-bool showStandSummary;                   // TRUE ==> show stand summary
+double StartAge = 0.0, EndAge = 0.0;
+double StartMonth = 0.0;
+double yearPlanted = 0.0;
+int DaysInMonth[13] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+bool showDetailedResults = false;
+bool showStandSummary = false;
 bool modelMode3PGS = false;
 
-// Site characteristics, site specific parameters
-char siteName[100];                      // name of site
-double Lat = 1000;                       // site latitude
-double MaxASW, MinASW, MinASWp;          // maximum & minimum available soil water, current, param file. 
-double FR, FRp;                          // site fertility rating, current, param file. 
-double FRstart, FRend, FRdec;            // Start, end and decrement % for fertility decrease with time
-//int soilIndex;                         // soil class index
-// ANL changed this from int to double
-double soilIndex;                        // soil class index
-double SWconst, SWpower;                 // soil parameters for soil class
+char siteName[100] = { 0 }; // Initialize with null characters
+double Lat = 1000.0;
+double MaxASW = 0.0, MinASW = 0.0, MinASWp = 0.0;
+double FR = 0.0, FRp = 0.0;
+double FRstart = 0.0, FRend = 0.0, FRdec = 0.0;
+double soilIndex = 0.0;
+double SWconst = 0.0, SWpower = 0.0;
 
-// Time variant management factors
-int nFertility;                          // size of site fertility array
-int nMinAvailSW;                         // size of MinAvailSW array
-int nIrrigation;                         // size of irrigation array
-double Irrig;                            // current annual irrigation (ML/y)
+int nFertility = 0;
+int nMinAvailSW = 0;
+int nIrrigation = 0;
+double Irrig = 0.0;
 
-// Mean monthly weather data
-//int mYears;                            // years of met data available
-// ANL changed this from int to double
-double mYears=1.0;                       // years of met data available
-double mDayLength[13];                   // day length
-//int mFrostDays[13];                    // frost days/month
-// ANL changed this from int to double
-double mFrostDays[13];                   // frost days/month
-double mSolarRad[13];                    // solar radiation (MJ/m2/day)
-double mTx[13];                          // maximum temperature
-double mTn[13];                          // minimum temperature
-double mTav[13];                         // mean daily temperature
-double mVPD[13];                         // mean daily VPD
-double mRain[13];                        // total monthly rain + irrigation
-double mNetRad[13];                      // ANL can use net instead of short wave
+double mYears = 1.0; // Default value 1.0 as per your code
+double mDayLength[13] = { 0.0 };
+double mFrostDays[13] = { 0.0 };
+double mSolarRad[13] = { 0.0 };
+double mTx[13] = { 0.0 };
+double mTn[13] = { 0.0 };
+double mTav[13] = { 0.0 };
+double mVPD[13] = { 0.0 };
+double mRain[13] = { 0.0 };
+double mNetRad[13] = { 0.0 };
 
-// Stand data
-char SpeciesName[100];                   // name of species
-// int StandAge;                         // stand age
+char SpeciesName[100] = { 0 }; // Initialize with null characters
+double SeedlingMass = 0.0;
+double StandAge = 0.0;
+double ASW = 0.0, ASWi = 0.0;
+double MinASWTG = 0.0;
+double StemNoi = 0.0, StemNo = 0.0;
+double WFi = 0.0, WF = 0.0;
+double WRi = 0.0, WR = 0.0;
+double WSi = 0.0, WS = 0.0;
+double LAIi = 0.0, LAI = 0.0;
+double MAIi = 0.0, MAI = 0.0;
+double avDBHi = 0.0, avDBH = 0.0;
+double TotalW = 0.0;
+double BasArea = 0.0;
+double StandVol = 0.0;
+double TotalLitter = 0.0;
+double LAIx = 0.0, ageLAIx = 0.0;
+double MAIx = 0.0, ageMAIx = 0.0;
+double cumTransp = 0.0;
+double cumIrrig = 0.0;
 
-double SeedlingMass;                     // Alternative way of deriving initial distribution 
-                                         // of mass using seedling mass constant
-// ANL changed StandAge from int to double
-double StandAge;                         // stand age
-double ASW, ASWi;                        // available soil water
-double MinASWTG;
-double StemNoi, StemNo;                  // stem numbers
-double WFi, WF;                          // foliage biomass
-double WRi, WR;                          // root biomass
-double WSi, WS;                          // stem biomass
-double LAIi, LAI;                        // canopy leaf area index
-double MAIi, MAI;                        // mean annual volume increment
-double avDBHi, avDBH;                    // average stem DBH
-double TotalW;                           // total biomass
-double BasArea;                          // basal area
-double StandVol;                         // stem volume
-double TotalLitter;                      //total litter produced
-double LAIx, ageLAIx;                    // peak LAI and age at peak LAI
-double MAIx, ageMAIx;                    // peak MAI and age at peak MAI
-double cumTransp;                        // annual stand transporation
-double cumIrrig;                         // annual irrig. to maintain MinASW
+double SLA = 0.0;
+double gammaF = 0.0;
+double fracBB = 0.0;
+double CanCover = 0.0;
 
-// Stand factors that are specifically age dependent
-double SLA;
-double gammaF;
-double fracBB;
-double CanCover;
+double MaxAge = 0.0;
+double gammaFx = 0.0, gammaF0 = 0.0, tgammaF = 0.0;
+double Rttover = 0.0;
+double SLA0 = 0.0, SLA1 = 0.0, tSLA = 0.0;
+double fullCanAge = 0.0;
+double k = 0.0;
+double pFS2 = 0.0, pFS20 = 0.0;
+double StemConst = 0.0, StemPower = 0.0;
+double SWconst0 = 0.0, SWpower0 = 0.0;
+double Interception = 0.0;
+double BLcond = 0.0;
+double MaxCond = 0.0, CoeffCond = 0.0;
+double y = 0.0;
+double growthTmax = 0.0, growthTmin = 0.0, growthTopt = 0.0;
+double wSx1000 = 0.0;
+double thinPower = 0.0;
+double mF = 0.0, mR = 0.0, mS = 0.0;
+double m0 = 0.0, fN0 = 0.0, fNn = 0.0;
+double alpha = 0.0;
+double pRx = 0.0, pRn = 0.0;
+double nAge = 0.0, rAge = 0.0;
+double kF = 0.0;
+double fracBB0 = 0.0, fracBB1 = 0.0, tBB = 0.0;
+double Density = 0.0;
+double rhoMin = 0.0, rhoMax = 0.0, tRho = 0.0;
+double pfsConst = 0.0, pfsPower = 0.0;
+double PhysMod = 0.0;
 
-// Parameter values
-// int MaxAge;
-// ANL changed MaxAge from int to double
-double MaxAge;
-double gammaFx, gammaF0, tgammaF;
-double Rttover;
-double SLA0, SLA1, tSLA;
-double fullCanAge;
-double k;
-double pFS2, pFS20;
-double StemConst, StemPower;
-double SWconst0, SWpower0;
-double Interception;
-double BLcond;
-double MaxCond, CoeffCond;
-double y;
-double growthTmax, growthTmin, growthTopt;
-double wSx1000;
-double thinPower;
-double mF, mR, mS;
-double m0, fN0, fNn;                      //added 22-07-02
-double alpha; 
-double pRx, pRn;
-double nAge, rAge;
-double kF;
-double fracBB0, fracBB1, tBB;
-double Density;
-double rhoMin, rhoMax, tRho;             // Standage varying density 3-06-02 
-double pfsConst, pfsPower;               // derived from pFS2, pFS20
-double PhysMod;
+double Qa = 0.0, Qb = 0.0;
+double gDM_mol = 0.0;
+double molPAR_MJ = 0.0;
 
-//Conversion factors
-double Qa, Qb; 
-double gDM_mol; 
-double molPAR_MJ; 
+double LAIgcx = 0.0;
+double MaxIntcptn = 0.0;
+double LAImaxIntcptn = 0.0;
 
-//Additional factors (conductance)
-double LAIgcx;
-double MaxIntcptn;
-double LAImaxIntcptn;
+double m = 0.0, alphaC = 0.0, epsilon = 0.0;
+double RAD = 0.0, PAR = 0.0, RADint = 0.0;
+double lightIntcptn = 0.0;
+double fAge = 0.0, fT = 0.0, fFrost = 0.0;
+double fVPD = 0.0, fSW = 0.0, fNutr = 0.0;
+double CanCond = 0.0;
+double Transp = 0.0, EvapTransp = 0.0, RainIntcptn = 0.0, WUE = 0.0;
+double AvStemMass = 0.0;
+double APAR = 0.0, APARu = 0.0;
+double GPPmolc = 0.0, GPPdm = 0.0, NPP = 0.0;
+double pR = 0.0, pS = 0.0, pF = 0.0, pFS = 0.0;
+double delWF = 0.0, delWR = 0.0, delWS = 0.0, delStems = 0.0;
+double delLitter = 0.0, delRloss = 0.0;
+double monthlyIrrig = 0.0;
+double CVI = 0.0;
 
-// Intermediate monthly results
-double m, alphaC, epsilon;
-double RAD, PAR, RADint;
-double lightIntcptn;
-double fAge, fT, fFrost;
-double fVPD, fSW, fNutr;
-double CanCond;
-double Transp, EvapTransp, RainIntcptn, WUE; //Added 16/07/02
+double cumGPP = 0.0, cumWabv = 0.0;
+double abvgrndEpsilon = 0.0, totalEpsilon = 0.0;
+double StemGrthRate = 0.0;
+double cumEvapTransp = 0.0;
+double CumdelWF = 0.0, CumdelWR = 0.0, CumdelWS = 0.0;
+double CumAPARU = 0.0, cumARAD = 0.0;
+double CumStemLoss = 0.0;
+double CutStemMass1 = 0.0, CutStemMass2 = 0.0, CutStemMass3 = 0.0;
 
-double AvStemMass;
-double APAR, APARu;
-double GPPmolc, GPPdm, NPP;
-double pR, pS, pF, pFS;
-double delWF, delWR, delWS, delStems;
-double delLitter, delRloss;
-double monthlyIrrig;
-double CVI;
+double cLAI = 0.0;
+double cRADint = 0.0;
+double aRADint = 0.0;
+double cGPP = 0.0;
+double aGPP = 0.0;
+double cNPP = 0.0;
+double aNPP = 0.0;
+double cStemDM = 0.0;
+double aStemDM = 0.0;
+double cCVI = 0.0;
+double cLitter = 0.0;
+double cWUE = 0.0;
+double aWUE = 0.0;
+double aSupIrrig = 0.0;
+double cSupIrrig = 0.0;
+double cRainInt = 0.0;
+double aTransp = 0.0;
+double cTransp = 0.0;
+double aEvapTransp = 0.0;
+double cEvapTransp = 0.0;
+double cEpsilonGross = 0.0;
+double aEpsilonGross = 0.0;
+double cEpsilonStem = 0.0;
+double aEpsilonStem = 0.0;
 
-// Annual results
-double cumGPP, cumWabv;
-double abvgrndEpsilon, totalEpsilon;
-double StemGrthRate;
-double cumEvapTransp;
-double CumdelWF, CumdelWR, CumdelWS;
-double CumAPARU, cumARAD;
-double CumStemLoss;
-double CutStemMass1, CutStemMass2, CutStemMass3;
-
-//Various additional oputputs
-double cLAI;                  //LAI averaged over output period
-double cRADint;               //intercepted radiation in output period
-double aRADint;               //annual intercepted radiation
-double cGPP;                  //GPP in output period
-double aGPP;                  //annual GPP
-double cNPP;                  //NPP in output period
-double aNPP;                  //annual NPP
-double cStemDM;               //stem DM increment in output period
-double aStemDM;               //annual stem DM increment
-double cCVI;                  //volume increment in output period
-double cLitter;               //litter fall in output period
-double cWUE;                  //WUE in current output period
-double aWUE;                  //annual WUE
-double aSupIrrig;             //annual supplemental irrigation
-double cSupIrrig;             //supplemental irrigation in output period
-double cRainInt;              //rainfall interception in output period
-double aTransp;               //annual transpiration
-double cTransp;               //transpiration in output period
-double aEvapTransp;           //annual evapotransporation
-double cEvapTransp;           //evapotransporation in output period
-double cEpsilonGross;         //gross epsilon in output period
-double aEpsilonGross;         //annual gross epsilon
-double cEpsilonStem;          //epsilon for stemDM in output period
-double aEpsilonStem;          //annual epsilon for stemDM
-
-// ANL - other globals
-double mNDVI[13];      // 3PGS - one years worth of NDVI 
-double delWAG;         // 3PGS - change in weight above ground. 
-double NDVI_FPAR_intercept, NDVI_FPAR_constant; 
+double mNDVI[13];
+double delWAG = 0.0;
+double NDVI_FPAR_intercept = 0.0, NDVI_FPAR_constant = 0.0;
 
 extern bool samplePointsMonthly;
-extern bool samplePointsYearly; 
+extern bool samplePointsYearly;
+
 
 // ANL - globals defined in 3pg.cpp
-extern FILE *logfp;
+//extern FILE *logfp;
 extern char outstr[];
 
 //-----------------------------------------------------------------------------
@@ -472,10 +447,12 @@ void GetStandAge(void)
   StandAge = (StartAge + StartMonth / 12) - (yearPlanted + StartMonth / 12);
   //Get and check StartAge
   StartAge = int(StandAge);
-  if (StartAge < 0) 
-    fprintf(logfp, "Invalid Age Limits: StartAge must be greater than 0");
+  if (StartAge < 0)
+      std::cout << "Invalid Age Limits: StartAge must be greater than 0" << std::endl;
+    //fprintf(logfp, "Invalid Age Limits: StartAge must be greater than 0");
   else if (StartAge > EndAge) 
-    fprintf(logfp, "Invalid Age Limits: StartAge is greater than EndAge");
+      std::cout << "Invalid Age Limits: StartAge is greater than EndAge" << std::endl;
+    //fprintf(logfp, "Invalid Age Limits: StartAge is greater than EndAge");
 
 }
 //-----------------------------------------------------------------------------
@@ -1049,7 +1026,8 @@ skipYearStartCalcs:
      
       if (StandAge < 0)
       {
-        fprintf(logfp, "Negative StandAge");
+          std::cout << "Negative StandAge" << std::endl;
+        //fprintf(logfp, "Negative StandAge");
       }
       
 

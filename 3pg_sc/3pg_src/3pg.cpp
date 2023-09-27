@@ -10,7 +10,7 @@ of relying on this software.
 Use of this software assumes agreement to this condition of use
 */
 
-static char rcsid[] = "$Id: 3pg.cpp,v 1.10 2001/08/02 06:34:10 lou026 Exp $";
+// static char rcsid[] = "$Id: 3pg.cpp,v 1.10 2001/08/02 06:34:10 lou026 Exp $";
 
 #include <cstdlib>
 #include <cstring>
@@ -23,27 +23,27 @@ static char rcsid[] = "$Id: 3pg.cpp,v 1.10 2001/08/02 06:34:10 lou026 Exp $";
 #include <boost/program_options.hpp>
 
 // Need to provide getopt on MSVC. 
-#ifdef WIN32
-extern "C"
-{
-  extern int getopt(int argc, char **argv, char *opts);
-  extern char *optarg;
-}
-#endif
+//#ifdef WIN32
+//extern "C"
+//{
+//  extern int getopt(int argc, char **argv, char *opts);
+//  extern char *optarg;
+//}
+//#endif
 
 // Maximum file path length. 
 #define MAXFILE 1000
 
-FILE *logfp;
-char usage[] = 
-"-d <default parameter file> -s <site parameter file>\n";
-char program[] = "3pg";
+// FILE *logfp;
+// char usage[] = 
+// "-d <default parameter file> -s <site parameter file>\n";
+// char program[] = "3pg";
 
 //----------------------------------------------------------------------------------------
 
-void copyright(FILE *fp)
+void copyright()
 { 
-  char copymessage[]=
+    std::string copymessage =
     "This version of 3-PG(S) has been developed by:\n"
     //"Nicholas Coops [Nicholas.Coops@csiro.au],\n"
     //"Anders Siggins [Anders.Siggins@csiro.au],\n"
@@ -106,24 +106,24 @@ void parseCommandLine(int argc, char *argv[], std::string& defParamFile, std::st
 
 int main(int argc, char *argv[])
 {
+    std::cout << "hi." << std::endl;
   std::string optarg;
-  extern int optind;
-  int c;
-  int result;
+  //extern int optind;
+  //int c;
+  //int result;
 
   GDALRasterImage *refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
   bool spatial=0;
   long nrows, ncols;
   MYDate spMinMY, spMaxMY; 
-  std::string defParamFile = ""; 
-  std::string siteParamFile = "";
+  std::string defParamFile = "Y:\\Francois\\_Vaughan\\species_lpp.txt"; 
+  std::string siteParamFile = "Y:\\Francois\\_Vaughan\\Site_SUBAREA.txt";
 
   // Copyright message for stdout
-  copyright(stdout);
+  //copyright();
   
   /* Command line options */
-  parseCommandLine(argc, argv, defParamFile, siteParamFile);
-  
+  //parseCommandLine(argc, argv, defParamFile, siteParamFile);
   // while (((c = getopt(argc, argv, "d:s:")) != EOF))
   // {
   //   switch (c) {
@@ -144,9 +144,10 @@ int main(int argc, char *argv[])
 
   // Check for params files using isspace.
   if (defParamFile.empty() || siteParamFile.empty()) {
-    std::cout << "Usage: " << program << " " << usage << std::endl;
-    // fprintf(stderr, "Usage: %s %s", program, usage);
-    exit(EXIT_FAILURE);
+
+      std::cout << "Usage: 3pg <default parameter file> -s <site param%eter file>" << std::endl;
+      // fprintf(stderr, "Usage: %s %s", program, usage);
+      exit(EXIT_FAILURE);
   }
 
   // Open the log file. 

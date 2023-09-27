@@ -55,3 +55,4 @@ build/*
 
 # Vscode 
 .vscode/*
+.vs/*

@@ -44,7 +44,7 @@ static std::string rcsid = "$Id: Data_io.cpp,v 1.10 2001/08/02 06:41:01 lou026 E
 #endif
 
 extern FILE *logfp;
-char * outstr;
+// char * outstr;
 
 #define GRID_NAME_LENGTH 300
 #define PPPG_MAX_SERIES_YEARS 150
@@ -68,9 +68,9 @@ typedef struct PPPG_VVAL {
 // used to help identify parameter lines, and to help get grid values into 
 // the model.  
 typedef struct PPPG_PARAM {
-  std::string id = "-1";                        // String version of the variable name. 
+  std::string id = "";                        // String version of the variable name. 
   double *adr;                     // The address of the model variable. 
-  bool got;                        // Has the parameter been set? 
+  bool got = 0;                        // Has the parameter been set? 
   PPPG_VVAL data;                  // Variant value
 } PPPG_PARAM; 
 
@@ -92,18 +92,18 @@ typedef struct PPPG_OP_VAR {
 
 // 3PG 'series' parameters.  This is any parameter with a time series for value, 
 // in particular the climate parameters, and NDVI.  
-typedef struct {
+typedef struct PPPG_SERIES_PARAM {
   int start;                             // Calendar year of first entry. 
   PPPG_VVAL *data;                       // Array of variant values.
   int vlen;                              // Number of entries in array. 
   bool oneYear;                          // Array is of a single 'average' year (eg esoclim). 
-  bool got;                              // Have read the series. 
+  bool got = 0;                              // Have read the series. 
 } PPPG_SERIES_PARAM; 
 
 // 3PG 'management table' parameters.  Only one value per year is allowed.  
-typedef struct {
+typedef struct PPPG_MT_PARAM {
   int year;                                   // Calendar year
-  bool got;
+  bool got = 0;
   PPPG_VVAL data; 
 } PPPG_MT_PARAM; 
 
@@ -280,7 +280,10 @@ std::string outPath = "./";
 //----------------------------------------------------------------------------------
 
 // Initialisation of parameter array. This sets up the mapping between the variable 
-// and its name, which is used in parsing the parameter files. 
+// and its name, which is used in parsing the parameter files.
+
+//const std::string paramError = "paramError";
+
 PPPG_PARAM params[] = 
 {
   {"paramError", NULL},
@@ -400,7 +403,7 @@ PPPG_PARAM params[] =
 // and sets up the mapping of the output variable to its name, which is used in 
 // parsing the parameter file.  
 PPPG_OP_VAR opVars[] = {
-  {"opVarError", NULL}, 
+  //{"opVarError", NULL}, 
   {"StemNo",     &StemNo},
   {"WF",         &WF}, 
   {"WR",         &WR}, 
@@ -445,7 +448,7 @@ PPPG_OP_VAR opVars[] = {
   {"cCVI",       &cCVI},    //Added 08/11/02
   {"TotalLitter", &TotalLitter}, //Added 16/07/02
   {"cLitter",    &cLitter},
-  {NULL,         NULL}
+  {"",         NULL}
 };
  
 //----------------------------------------------------------------------------------
@@ -476,7 +479,7 @@ std::string sampleIpFile;
 
 FILE *sampleIpFp; 
 struct {
-  std::string id;
+  std::string id = "-1";
   FILE *fp; 
   double lat; 
   double lon; 
@@ -524,7 +527,7 @@ int opNameToInd(const std::string& id)
   std::size_t w1, w2;
 
   w1 = id.length();
-  for (pn=0; opVars[pn].id != "-1"; pn++) {
+  for (pn=0; opVars[pn].id != ""; pn++) {
     w2 = opVars[pn].id.length();
     if (id.compare(opVars[pn].id) == 0)
       if (w1 == w2)
@@ -891,7 +894,7 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
            namesMatch("Fertility rating", pName)) pInd = pNameToInd("FRp");
   else if (namesMatch("soilIndex", pName) ||
            namesMatch("Soil Index", pName) ||
-           namesMatch("soil class", pName)) pInd = pNameToInd("soilIndex");
+           namesMatch("Soil class", pName)) pInd = pNameToInd("soilIndex");
   else if (namesMatch("MaxASW", pName) ||
            namesMatch("Maximum ASW", pName)) pInd = pNameToInd("MaxASW");
   else if (namesMatch("MinASW", pName) ||
@@ -925,7 +928,7 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
   else if (namesMatch("rhoMax", pName) ||   //Standage varying density 15/07/2002
            namesMatch("Maximum basic density - for older trees", pName)) pInd = pNameToInd("rhoMax");
   else if (namesMatch("tRho", pName)   ||
-           namesMatch("Age at which rho = (rhoMin+rhoMax)/2", pName)) pInd = pNameToInd("tRho");      //Standage varying density 15/07/2002 
+           namesMatch("Age at which rho = (rho0+rho1)/2", pName)) pInd = pNameToInd("tRho");      //Standage varying density 15/07/2002 
   else if (namesMatch("yearPlanted", pName) ||
            namesMatch("Year Planted", pName)) pInd = pNameToInd("yearPlanted");
 
@@ -1000,12 +1003,12 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   // For a parameter name pName and a parameter value, pValue, both as strings, read 
   // the value into an appropriate variable. The parameter name can be either the 
   // same as the variable name, or it can be a long descriptive name.  
-  int pInd, pInd1, pInd2;
+   int pInd, pInd1, pInd2;
   std::string cp;
 
   pInd = pInd1 = pInd2 = 0;
 
-  // Find the index for the param in the opVars array. 
+  // Find the index for the p1aram in the opVars array. 
   // 3PG only output variables. 
   if (namesMatch("StemNo", pName) ||
     namesMatch("Stocking density", pName)) pInd1 = opNameToInd("StemNo");
@@ -1040,7 +1043,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   else if (namesMatch("TotalLitter", pName)) pInd1 = opNameToInd("TotalLitter");
   else if (namesMatch("cLitter", pName)) pInd1 = opNameToInd("cLitter");
   
-  
+  std::cout << "BLAHHHHH" << std::endl;
   // 3PGS only output variables
   if (namesMatch("delWAG", pName) ||
     namesMatch("change in aboveground biomass (tDM/ha)", pName)) pInd2 = opNameToInd("delWAG");
@@ -1069,6 +1072,8 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   else
     pInd = pInd1; 
 
+  std::cout << "BLAHHHHH2" << std::endl;
+
   // Output variables common to both modes. 
   if (namesMatch("NPP", pName) ||
     namesMatch("Net Primary Production (tDM/ha)", pName)) pInd = opNameToInd("NPP"); //Modified 26/07/02
@@ -1094,8 +1099,9 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   else if (namesMatch("APARu", pName))    pInd = opNameToInd("APARu");
   else if (namesMatch("MAIx", pName))    pInd = opNameToInd("MAIx");
   else if (namesMatch("ageMAIx", pName))    pInd = opNameToInd("ageMAIx");
-
+  std::cout << "BLAHHHHH2.5" << std::endl;
   // Did we match a name?  
+  std::cout << "pInd1="<< pInd2 << "and pInd=" << pInd << std::endl;
   if (pInd == 0)
     return false;
 
@@ -1111,6 +1117,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
     // logAndExit(logfp, outstr);
 
   }
+  std::cout << "BLAHHHHH4" << std::endl;
   // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
   opVars[pInd].gridName = outPath + pValue.front(); 
 
@@ -1574,19 +1581,18 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
   if ( series->oneYear ) {
     series->vlen = 1; 
     series->data = new PPPG_VVAL[series->vlen * 12]; 
-    int i; 
+    int i;
+
     for ( i = 0; i < 12; i++ ) {
       try{
         std::string mValue = pValue.at(i);
         if ( readParam( series->data[i], pValue[i] ) ) {
           if ( series->data[i].spType == pScalar ) {
             std::cout << "   " << pName << " month " << i+1 << " constant: " << series->data[i].sval << std::endl;
-            exit(EXIT_FAILURE);
             // fprintf(logfp, "   %-34s month %2d constant: %12.6f\n", pName, i+1, series->data[i].sval );
           }
           else if (series->data[i].spType == pTif) {
             std::cout << "   " << pName << " month " << i+1 << " grid: " << series->data[i].gridName << std::endl;
-            exit(EXIT_FAILURE);
             // fprintf(logfp, "   %-34s month %2d grid: %s\n", pName, i+1, series->data[i].gridName );
           }
       }
@@ -1654,7 +1660,13 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
         // sprintf(outstr, "Cannot parse Year and 12 months on %d.\n", lineNo); 
         // logAndExit(logfp, outstr); 
       }
-      series_yr = std::stoi(sTokens.front());
+      try {
+        series_yr = std::stoi(sTokens.front());
+      }
+      catch (std::invalid_argument const& inv) {
+          std::cout << "Could not read series year on line " << lineNo << std::endl;
+          exit(EXIT_FAILURE);
+      }
       // Read the monthly values. 
       int si; 
       for (int mn = 0; mn < 12; mn++) {
@@ -1697,7 +1709,7 @@ void readParamFile(const std::string& paramFile)
   std::string line, pName;
   std::string pValue;
   std::string cp;
-  int paramCount=0, lineLength=0, lineNo;
+  int paramCount=0, lineLength=0, lineNo=0;
   int readingOutput=0;
   int len;
 
@@ -1709,10 +1721,12 @@ void readParamFile(const std::string& paramFile)
   // Tokenize each line using boost::split
   // First token is the parameter name
   // Second and subsequent tokens are the parameter values
+  auto isDoubleQuote = [](char c) { return c == '\"'; };
   std::ifstream inFile(paramFile);
   // fprintf(logfp, "Reading input parameters from file '%s'...\n", paramFile);
   while (std::getline(inFile, line))
   {
+      lineNo++;
     // Skip blank lines
     if (line.empty())
       continue;
@@ -1721,16 +1735,25 @@ void readParamFile(const std::string& paramFile)
       continue;
     // Tokenize the line
     std::vector<std::string> tokens;
-    boost::split(tokens, line, boost::is_any_of(", "));
+    /*for (std::string& i : tokens)
+        std::cout << i << ' ' << std::endl;*/
+    boost::split(tokens, line, boost::is_any_of(","), boost::token_compress_on);
+
     // trim leading whitespace from each token using boost::trim
     for (int i = 0; i < tokens.size(); i++)
       boost::trim(tokens[i]);
     // First token is the parameter name
     std::string pName = tokens.front();
+    // Trim double quotations from the name
+    boost::trim_if(pName, boost::is_any_of("\""));
+
     // Second and subsequent tokens are the parameter values
     std::vector<std::string> pValues;
-    for (int i = 1; i < tokens.size(); i++)
-      pValues.push_back(tokens[i]);
+    boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+    std::cout << "    pName: " << pName << ' ' << std::endl;
+    for (std::string& i : pValues )
+        std::cout << "    Pvalue: " << i << ' ' << std::endl;
+
     // Read the parameters by trying 
     if (readInputParam(pName, pValues));
     else if (readOutputParam(pName, pValues, lineNo));
@@ -1744,6 +1767,7 @@ void readParamFile(const std::string& paramFile)
       // logAndExit(logfp, outstr);
     }
   }
+  std::cout << "Successfully read all parameters in " << paramFile << std::endl;
 }
 
 //----------------------------------------------------------------------------------
@@ -2405,7 +2429,7 @@ void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
   maxInd = ( maxMY.year - minMY.year + 1 ) * 12 + 12;  // ANL see comment in openRegularOutputGrids
 
   // for each output variable. 
-  for (opn = 0; opVars[opn].id != "-1"; opn++) {
+  for (opn = 0; opVars[opn].id != ""; opn++) {
     // Is it marked for recurring output. 
     if ( !opVars[opn].recurYear )
       continue; 
@@ -2466,7 +2490,7 @@ void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
   // Number of elements in the regular output array, for sanity checking. 
   maxInd = ( maxMY.year - minMY.year + 1 ) * 12; 
 
-  for (opn = 0; opVars[opn].id != "-1"; opn++) {
+  for (opn = 0; opVars[opn].id != ""; opn++) {
     // Skip variables not marked for recurring output. 
     if ( !opVars[opn].recurStart ) 
       continue;
@@ -2884,14 +2908,14 @@ int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
 
 //----------------------------------------------------------------------------------
 //To ensure that if we don't have a variable, it doesn't get an accidental GOT value
-//Initialise the params list so that everything in missing.
+//Initialise the params list so that everything in missinIg.
 void InitInputParams(void)
 {
   int pn;
 
-  for (pn=0; params[pn].id != "-1"; pn++) {
+  /*for (pn=0; params[pn].id != ""; pn++) {
     params[pn].got = 0;
-  }
+  }*/
 
   //The following parameters need to be set to scalar or grids do not open.
 

@@ -103,15 +103,18 @@ bool iequals(const std::string& a, const std::string& b)
 
 bool namesMatch(const std::string& n1, const std::string& n2)
 {
+    // This is much easier with strings
+    return n1 == n2;
+
   // Basically strcmp, but we compare length also so that substrings don't 
-  // match. 
-  std::size_t l1, l2;
+  //// match. 
+  /*std::size_t l1, l2;
 
   l1 = n1.length();
   l2 = n2.length();
   if (l1 != l2)
     return false;
-  return iequals(n1, n2);
+  return iequals(n1, n2);*/
 
 }
 
