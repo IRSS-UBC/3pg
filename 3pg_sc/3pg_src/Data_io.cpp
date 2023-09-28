@@ -56,7 +56,7 @@ extern FILE *logfp;
 typedef enum {pNull, pScalar, pTif} ParamSpatial;
 
 typedef struct PPPG_VVAL {
-  ParamSpatial spType;                   // Scalar, grid, or null
+  ParamSpatial spType = pNull;                   // Scalar, grid, or null
   double sval;                           // Scalar value. 
   std::string gridName;                        // ptr to grid file name
   GDALRasterImage *g;                               // ptr to grid value
@@ -403,7 +403,7 @@ PPPG_PARAM params[] =
 // and sets up the mapping of the output variable to its name, which is used in 
 // parsing the parameter file.  
 PPPG_OP_VAR opVars[] = {
-  //{"opVarError", NULL}, 
+  {"opVarError", NULL}, 
   {"StemNo",     &StemNo},
   {"WF",         &WF}, 
   {"WR",         &WR}, 
@@ -507,7 +507,7 @@ int pNameToInd(const std::string& id)
   int w1, w2;
 
   w1 = id.length();
-  for (pn=0; params[pn].id != "-1"; pn++) {
+  for (pn=0; params[pn].id != ""; pn++) {
     w2 = params[pn].id.length();
     if (id.compare(params[pn].id) == 0)
       if (w1 == w2)
@@ -963,6 +963,8 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
     *(params[pInd].adr) = f;
     params[pInd].data.spType = pScalar;
     params[pInd].got = 1;
+    std::cout << "Found scalar input. Set spType: " << params[pInd].data.spType << std::endl;
+    return true;
   }
   catch (std::invalid_argument const& inv) {
     // Is the parameter a grid name (a string). 
@@ -976,6 +978,9 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
       {
           std::cout << "The file extension is " << filePath.extension() << std::endl;
           params[pInd].data.spType = pTif;
+          std::cout << "   " << params[pInd].id << " grid: " << params[pInd].data.gridName << std::endl;
+          params[pInd].got = 1;
+          return true;
       }
       else
       {
@@ -984,8 +989,6 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
           // logAndExit(logfp, outstr);
           // Output: "myFile.cfg is an invalid type"
       }
-      std::cout << "   " << params[pInd].id << " grid: " << params[pInd].data.gridName << std::endl;
-      params[pInd].got = 1;
     }
     catch (std::filesystem::filesystem_error const& e) {
       std::cout << " " << pValue.front() << " could not be interpreted as a scalar or grid name" << std::endl;
@@ -993,7 +996,6 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
       exit(EXIT_FAILURE);
     }
   }
-  return true;
 }
 
 //----------------------------------------------------------------------------------
@@ -1043,7 +1045,6 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   else if (namesMatch("TotalLitter", pName)) pInd1 = opNameToInd("TotalLitter");
   else if (namesMatch("cLitter", pName)) pInd1 = opNameToInd("cLitter");
   
-  std::cout << "BLAHHHHH" << std::endl;
   // 3PGS only output variables
   if (namesMatch("delWAG", pName) ||
     namesMatch("change in aboveground biomass (tDM/ha)", pName)) pInd2 = opNameToInd("delWAG");
@@ -1072,8 +1073,6 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   else
     pInd = pInd1; 
 
-  std::cout << "BLAHHHHH2" << std::endl;
-
   // Output variables common to both modes. 
   if (namesMatch("NPP", pName) ||
     namesMatch("Net Primary Production (tDM/ha)", pName)) pInd = opNameToInd("NPP"); //Modified 26/07/02
@@ -1099,7 +1098,6 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   else if (namesMatch("APARu", pName))    pInd = opNameToInd("APARu");
   else if (namesMatch("MAIx", pName))    pInd = opNameToInd("MAIx");
   else if (namesMatch("ageMAIx", pName))    pInd = opNameToInd("ageMAIx");
-  std::cout << "BLAHHHHH2.5" << std::endl;
   // Did we match a name?  
   std::cout << "pInd1="<< pInd2 << "and pInd=" << pInd << std::endl;
   if (pInd == 0)
@@ -1112,12 +1110,10 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
 
   }
   if (pValue.size() > 5) {
-    std::cout << "More than 5 value elements detected for param " << pName << " on line: " << lineNo << std::endl;
-    exit(EXIT_FAILURE);
-    // logAndExit(logfp, outstr);
-
+      std::cout << "More than 5 value elements detected for param " << pName << " on line: " << lineNo << std::endl;
+      exit(EXIT_FAILURE);
+      // logAndExit(logfp, outstr);
   }
-  std::cout << "BLAHHHHH4" << std::endl;
   // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
   opVars[pInd].gridName = outPath + pValue.front(); 
 
@@ -1125,7 +1121,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   if (filePath.extension() == ".tif") // Heed the dot.
   {
       std::cout << filePath.stem() << " is a valid type: '.tif'" << std::endl;
-      params[pInd].data.spType = pTif;
+      opVars[pInd].spType = pTif;
   }
   else
   {
@@ -1287,8 +1283,8 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
       else {
         // Check that the directory exists. 
         // Make sure of the trailing /
-        if (cp.back() != '/')
-          cp += '/';
+        if (cp.back() != '\\')
+          cp += '\\';
         if (std::filesystem::exists(cp)) {
           outPath = cp;
           return true;
@@ -1402,8 +1398,8 @@ bool readParam( PPPG_VVAL &vval, std::string pValue )
   std::string cp;
   double dv; 
 
+   cp = pValue;
   try {
-    cp = pValue;
     vval.sval = std::stof(cp);
     vval.spType = pScalar;
     return true;
@@ -1768,6 +1764,7 @@ void readParamFile(const std::string& paramFile)
     }
   }
   std::cout << "Successfully read all parameters in " << paramFile << std::endl;
+  std::cout << "Here's pFS2:" << params[1].id << ", " << params[1].data.spType << " " << std::endl;
 }
 
 //----------------------------------------------------------------------------------
@@ -1803,7 +1800,7 @@ bool haveAllParams()
    "StartMonth", 
     "LAImaxIntcptn", 
     "thinPower", "mF", "mR", "mS",    //Thinning coefficients
-    NULL
+    ""
   };
 
   // Parameters needed for 3PGS.  
@@ -1823,7 +1820,7 @@ bool haveAllParams()
     "LAIgcx", "MaxIntcptn",
    "StartMonth", 
     "LAImaxIntcptn", 
-    NULL
+    ""
   };
 
   // Temperature series
@@ -1955,13 +1952,13 @@ bool loadParamVals(int k)
   float result;
   char ErrorString[100];
 
-  for (pn=1; params[pn].id != "-1"; pn++)  {
+  for (pn=1; params[pn].id != ""; pn++)  {
     if (params[pn].got == 0) 
     {
       //Ignore
     }
     else if (params[pn].data.spType == pTif) {
-      fg = (GDALRasterImage *)params[pn].data.g;
+      fg = params[pn].data.g;
       if (fg == NULL)
       {
         std::cout << "Error reading grid: " << params[pn].data.gridName << " - File not open." << std::endl;
@@ -1973,7 +1970,9 @@ bool loadParamVals(int k)
       if (result == fg->noData) {
         return false;
       }
-      *(params[pn].adr) = result;
+      else {
+		*(params[pn].adr) = result;
+	  }
     }
   }
 
@@ -2027,7 +2026,7 @@ bool openGrid( PPPG_VVAL &vval )
 //       params[pn].data.g->ResetGrid();
 //     }
 //   }
-// }
+// } 
 //----------------------------------------------------------------------------------
 void CloseGrids(void)
 {
@@ -2063,11 +2062,17 @@ GDALRasterImage* openInputGrids( )
   // fprintf(logfp, "Opening input grids...\n");
   // fprintf(stdout, "Opening input grids...\r");
 
-  for (pn = 1; params[pn].data.spType != pNull; pn++) { // start at 1 to avoid error record. 
-    if (params[pn].got != 1)
+  for (pn = 1; params[pn].id != ""; pn++) { // start at 1 to avoid error record. 
+    std::cout << "   opening parm " << params[pn].id << "..." << std::endl;
+    std::cout << "   opening type " << params[pn].data.spType << "..." << std::endl;
+    if (params[pn].data.spType == pNull || params[pn].data.spType == pScalar){
+        //do nothing
+    }
+    else if (params[pn].got != 1)
     {
       //do nothing
     }
+
     else if ( openGrid( params[pn].data ) ) {
       spatial = true; 
       if ( first ) {
@@ -2168,7 +2173,7 @@ int openOutputGrids(GDALRasterImage *refGrid)
   std::cout << "Opening output grids..." << std::endl;
   // fprintf(logfp, "Opening output grids...\n");
   // fprintf(stdout, "Opening output grids...\r");
-  for (opn = 0; opVars[opn].id != "-1"; opn++) {
+  for (opn = 0; opVars[opn].id != ""; opn++) {
     if (opVars[opn].write) {
       std::cout << "   float grid " << opVars[opn].gridName << std::endl;
       // fprintf(logfp, "   float grid %s\n", opVars[opn].gridName);

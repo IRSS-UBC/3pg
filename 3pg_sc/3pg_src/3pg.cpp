@@ -219,39 +219,39 @@ int main(int argc, char *argv[])
   }
 
  
-//if (spatial) {
-//    int cellsDone = 0; 
-//    int cellsTotal = (nrows - 2) * (ncols - 2); 
-//    int lastProgress = -1; 
-//    fprintf(stdout, "                              \r");
-
+  if (spatial) {
+      int cellsDone = 0;
+      int cellsTotal = (nrows - 2) * (ncols - 2);
+      int lastProgress = -1;
+      //fprintf(stdout, "                              \r");
+  }
 // Run the model. 
-//   if (spatial) {
+  if (spatial) {
 
-//     int cellsDone = 0;
-//     int cellsTotal = (nrows) * (ncols); 
-//     int lastProgress = -1; 
-//     fprintf(stdout, "                              \r");
-//     for (int j = 0; j < cellsTotal ; j++)
-//     {
-//       //PrintGrids();
-//       if (j == 16080)
-//         bool test = true;
-//       int progress = ((100 * cellsDone) / cellsTotal);
-//       if (progress > lastProgress)
-//         fprintf(stdout, "Completed %2u%%\r", progress);
-//       runTreeModel( spMinMY, spMaxMY, spatial, j);
-//       cellsDone++;
-//       lastProgress = progress;
+     int cellsDone = 0;
+     int cellsTotal = (nrows) * (ncols); 
+     int lastProgress = -1; 
+     fprintf(stdout, "                              \r");
+     for (int j = 0; j < cellsTotal ; j++)
+     {
+       //PrintGrids();
+       if (j == 16080)
+         bool test = true;
+       int progress = ((100 * cellsDone) / cellsTotal);
+       if (progress > lastProgress)
+         fprintf(stdout, "Completed %2u%%\r", progress);
+       runTreeModel( spMinMY, spMaxMY, spatial, j);
+       cellsDone++;
+       lastProgress = progress;
       
-//     //   fprintf(logfp, "   row %u\n", j); fflush(logfp);
-//     }
+     //   fprintf(logfp, "   row %u\n", j); fflush(logfp);
+     }
 
 //     fprintf(stdout, "Completed %2u%%\r", 100);
 
 //     // Write output grids. 
-// //    writeOutputGrids();
-// //  }
+    //writeOutputGrids();
+  }
 
 //     // Write output grids. 
 //     writeOutputGrids();

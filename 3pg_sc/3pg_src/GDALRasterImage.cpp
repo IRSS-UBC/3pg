@@ -18,6 +18,7 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 
 	// Assume there is only one band in the raster source and use that
 	if (dataset->GetRasterCount() != 1) {
+		GDALClose(GDALDataset::ToHandle(dataset));
 		throw std::invalid_argument("TIF must have only one band.");
 	}
 	band = dataset->GetRasterBand(1);
@@ -25,14 +26,19 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 	// Get the inverse geo transform to map from geo location -> pixel location
 	double datasetTransform[6] = {};
 	double inverseTransform[6] = {};
-	dataset->GetGeoTransform(datasetTransform);
-	if (GDALInvGeoTransform(datasetTransform, inverseTransform) != CE_None) {
-		throw std::invalid_argument("Cannot get inverse transform.");
+	if (dataset->GetGeoTransform(datasetTransform) == CE_Failure) {
+		GDALClose(GDALDataset::ToHandle(dataset));
+		throw std::runtime_error("Cannot get transform.");
+	}
+	if (GDALInvGeoTransform(datasetTransform, inverseTransform) == false) {
+		GDALClose(GDALDataset::ToHandle(dataset));
+		throw std::runtime_error("Cannot get inverse transform.");
 	}
 
 	// get crs
 	crs = dataset->GetProjectionRef();
 	if (crs == NULL) {
+		GDALClose(GDALDataset::ToHandle(dataset));
 		throw std::invalid_argument("CRS is not defined.");
 	}
 
@@ -50,6 +56,7 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 
 GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid) {
 	// Create a new GDALRasterImage dataset with one band with the same extent, transform, and crs as refGrid
+	GDALAllRegister();
 	if (Exists(filename)) {
 		throw std::invalid_argument("File already exists.");
 	};
@@ -66,7 +73,8 @@ GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid)
 
 	// set class variables
 	dataset->GetGeoTransform(datasetTransform);
-	if (GDALInvGeoTransform(datasetTransform, inverseTransform) != CE_None) {
+	if (GDALInvGeoTransform(datasetTransform, inverseTransform)) {
+		GDALClose(GDALDataset::ToHandle(dataset));
 		throw std::invalid_argument("Cannot get inverse transform.");
 	}
 	crs = dataset->GetProjectionRef();
