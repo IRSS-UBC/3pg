@@ -2029,12 +2029,20 @@ bool openGrid( PPPG_VVAL &vval )
 //----------------------------------------------------------------------------------
 void CloseGrids(void)
 {
-  for (int pn = 1; params[pn].data.spType != pNull; pn++) { // start at 1 to avoid error record. 
+    for (int pn = 1; params[pn].id != ""; pn++) { // start at 1 to avoid error record. 
     if ( params[pn].data.spType == pTif ) {
       params[pn].data.g->Close();
       delete params[pn].data.g;
     }
   }
+    for (int op = 1; opVars[op].id != ""; op++) {  
+      if (opVars[op].spType == pTif) {
+          for (GDALRasterImage* g : opVars[op].RO) {
+			  g->Close();
+			  delete g;
+		  }
+	  }
+   }
 }
 //----------------------------------------------------------------------------------
 // void PrintGrids(void)
