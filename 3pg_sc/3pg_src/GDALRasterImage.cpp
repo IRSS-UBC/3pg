@@ -9,7 +9,6 @@
 
 GDALRasterImage::GDALRasterImage(std::string filename) {
 	// Open the raster source located at `filename`
-	GDALAllRegister();
 	const GDALAccess eAccess = GA_ReadOnly;
 	dataset = GDALDataset::FromHandle(GDALOpen(filename.c_str(), eAccess));
 	if (!dataset) {
@@ -56,7 +55,6 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 
 GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid) {
 	// Create a new GDALRasterImage dataset with one band with the same extent, transform, and crs as refGrid
-	GDALAllRegister();
 	if (Exists(filename)) {
 		throw std::invalid_argument("File already exists.");
 	};
@@ -143,6 +141,7 @@ CPLErr GDALRasterImage::SetVal(int x, int y, float val) {
 CPLErr GDALRasterImage::SetVal(int index, float val) {
 	// Set the value of the pixel at the given index
 	std::tuple<int, int> xy = IndexToXY(index);
+	//std::cout << "From " << index << " Setting pixel value at " << std::get<0>(xy) << ", " << std::get<1>(xy) << " to " << val << std::endl;
 	return band->RasterIO(GF_Write, std::get<0>(xy), std::get<1>(xy), 1, 1, &val, 1, 1, GDT_Float32, 0, 0);
 };
 
@@ -165,6 +164,7 @@ int GDALRasterImage::IndexFrom(double lat, double lon) {
 	if ( x < 0 || x > nCols || y < 0 || y > nRows) {
 		throw std::invalid_argument("Lat/lon is outside of raster extent.");
 	}
+	//std::cout << "From " << lat << ", " << lon << " got " << x << ", " << y << std::endl;
 	return y * nCols + x;
 };
 

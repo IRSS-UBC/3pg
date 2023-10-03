@@ -82,12 +82,12 @@ typedef struct PPPG_OP_VAR {
   ParamSpatial spType;            // If its a spatial parameter and what grid type. 
   std::string gridName;  // The gridname, in spatial mode. 
   GDALRasterImage *g;                        // The final output grid, in spatial mode. 
-  bool write;                     // Whether the variable is wanted. 
+  bool write; // Whether the variable is wanted. 
   int recurStart;                 // First year to write regular output. 
-  int recurYear;                  // Interval on which to write regular output. 
+  int recurYear = -1;                  // Interval on which to write regular output. 
   int recurMonth;                 // Single month number we want output in. 
   bool recurMonthly;              // Whether to write every month in an output year. 
-  FILE **RO;                      // The output files for regular output. 
+  std::vector<GDALRasterImage*> RO;                      // The output tifs for regular output. 
 } PPPG_OP_VAR;
 
 // 3PG 'series' parameters.  This is any parameter with a time series for value, 
@@ -1953,26 +1953,25 @@ bool loadParamVals(int k)
   char ErrorString[100];
 
   for (pn=1; params[pn].id != ""; pn++)  {
-    if (params[pn].got == 0) 
+    if (params[pn].got == true) 
     {
-      //Ignore
-    }
-    else if (params[pn].data.spType == pTif) {
-      fg = params[pn].data.g;
-      if (fg == NULL)
-      {
-        std::cout << "Error reading grid: " << params[pn].data.gridName << " - File not open." << std::endl;
-        exit(EXIT_FAILURE);
-        // sprintf(ErrorString, "Error reading grid: %s - File not open.\n", params[pn].data.gridName);
-        // logAndExit(logfp, ErrorString); 
-      }
-      result = fg->GetVal(k);
-      if (result == fg->noData) {
-        return false;
-      }
-      else {
-		*(params[pn].adr) = result;
-	  }
+        if (params[pn].data.spType == pTif) {
+            fg = params[pn].data.g;
+            if (fg == NULL)
+            {
+                std::cout << "Error reading grid: " << params[pn].data.gridName << " - File not open." << std::endl;
+                exit(EXIT_FAILURE);
+                // sprintf(ErrorString, "Error reading grid: %s - File not open.\n", params[pn].data.gridName);
+                // logAndExit(logfp, ErrorString); 
+            }
+            result = fg->GetVal(k);
+            if (result == fg->noData) {
+                return false;
+            }
+            else {
+                *(params[pn].adr) = result;
+            }
+        }
     }
   }
 
@@ -1981,7 +1980,7 @@ bool loadParamVals(int k)
     //However, this is specifically for Aracruz...
 
     
-    if ( yearPlanted < 1 ) 
+    if ( yearPlanted < 1 || isnan(yearPlanted) ) 
           return false;  //Return nodata for years less than 1.
     if ( StartAge < 1 )
       StartAge = 1; 
@@ -2234,7 +2233,7 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
   //int runYear, runMonth; 
   int calYear, calMonth; 
   int opn, roArrayLength; 
-  FILE *fp; 
+  //FILE *fp; 
   std::string roStemName;
   std::string fname;
   std::string *cp;
@@ -2263,15 +2262,15 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
   roArrayLength = ( maxCy - minCy + 1 ) * 12 + 12; // ANL last 12 is short write fix.  
   
   // for each output variable. 
-  for (opn = 0; opVars[opn].id != "-1"; opn++) {
+  for (opn = 0; opVars[opn].id != ""; opn++) {
     // Is it marked for recurring output. 
-    if ( !opVars[opn].recurYear )
+    if ( opVars[opn].recurYear == -1)
       continue; 
     
     // Allocate and null out array of *FILE. 
-    // opVars[opn].RO = new FILE *[roArrayLength]; 
-    // for (int i = 0; i < roArrayLength; i++)
-    //   opVars[opn].RO[i] = NULL;
+     //std::vector<GDALRasterImage*> regOut;
+     for (int i = 0; i < roArrayLength; i++)
+       opVars[opn].RO.push_back(NULL);
     
     // Find stem name for regular output files, just lacking the 
     // year/month/extension. 
@@ -2279,7 +2278,7 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
     // len = cp - opVars[opn].gridName;
     // strncpy( roStemName, opVars[opn].gridName, len ); 
     // roStemName[len] = '\0'; 
-    
+    roStemName = opVars[opn].gridName.substr(0, opVars[opn].gridName.find_last_of("."));
     // Monthly output. mx indexes over entire ro array. 
     for ( mx = 0; mx < roArrayLength; mx++ ) {
       calYear = minCy + ( mx / 12); 
@@ -2312,7 +2311,7 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
       GDALRasterImage *fg;
       if ( !opVars[opn].recurMonthly ) {
         if ( calMonth == opVars[opn].recurMonth ) {
-          std::cout << "   opening grid from " << fname << "..." << std::endl;
+          std::cout << "   opening regular out grid from " << fname << "..." << std::endl;
           // fprintf(logfp, "   opening grid from %s...", fname.c_str());
           try {
             fg = new GDALRasterImage(fname, refGrid);
@@ -2322,7 +2321,7 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
             // fprintf(logfp, "Could not open grid %s\n", fname.c_str());
             exit(EXIT_FAILURE);
           }
-          opVars[opn].g = fg;
+          opVars[opn].RO[mx] = fg; // pointer to GDALRasterImage object for this year/month combo
           // Construct annual regular output grid name and open file. 
           // Open a GDALRasterImage object for the grid
           // sprintf( fname, "%s%4d%02d.flt", roStemName, calYear, calMonth ); 
@@ -2340,7 +2339,7 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
       }
       // Is a monthly output ro grid and this is the output year. 
       else {
-        std::cout << "   opening grid from " << fname << "..." << std::endl;
+        std::cout << "   opening regular output grid from " << fname << "..." << std::endl;
         try {
           fg = new GDALRasterImage(fname, refGrid);
         }
@@ -2349,7 +2348,7 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
           // fprintf(logfp, "Could not open grid %s\n", fname.c_str());
           exit(EXIT_FAILURE);
         }
-        opVars[opn].g = fg;
+        opVars[opn].RO[mx] = fg; // pointer to GDALRasterImage object for this year/month combo
         // Construct monthly regular output grid names and open file. 
         // sprintf( fname, "%s%4d%02d.flt", roStemName, calYear, calMonth ); 
         // if ( ( fp = fopen( fname, "wb" ) ) == NULL ) {
@@ -2417,12 +2416,12 @@ void writeSampleFiles(int cellIndex, int month, long calYear)
 //----------------------------------------------------------------------------------
 
 void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA, 
-                              MYDate minMY, MYDate maxMY )
+                              MYDate minMY, MYDate maxMY, long cellIndex )
 {
   int opn, mx, maxInd; 
   float fval; 
   long lval; 
-  // FILE *fp; 
+  GDALRasterImage* fp;
   GDALRasterImage *fg;
 
   int crap; 
@@ -2436,16 +2435,16 @@ void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
   // for each output variable. 
   for (opn = 0; opVars[opn].id != ""; opn++) {
     // Is it marked for recurring output. 
-    if ( !opVars[opn].recurYear )
+    if ( opVars[opn].recurYear == -1 )
       continue; 
     
     // Skip variables not marked for recurring output. 
     if ( !opVars[opn].recurStart ) 
       continue;
     
-//    // Skip variables not marked for monthly recurrence. 
-//    if ( !opVars[opn].recurMonthly )
-//      continue; 
+    // Skip variables not marked for monthly recurrence. 
+  /*  if ( !opVars[opn].recurMonthly )
+      continue; */
 
     mx = ( calYear - minMY.year ) * 12 + ( calMonth - 1 );
     
@@ -2460,36 +2459,33 @@ void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
       //   mx, calYear, calMonth);
       // logAndExit(logfp, outstr);
     }
+    fp = opVars[opn].RO[mx];
+    if (fp != NULL) {
+        if (opVars[opn].spType == pTif) {
 
-    // // Get file pointer for this regular output grid. 
-    // fp = opVars[opn].RO[mx];
+            fval = (float)*(opVars[opn].adr);
+            fg = opVars[opn].RO[mx];
 
-    // // Write it. 
-    // if ( !fp )
-    //   continue;
-    if (!fg)
-      continue;
-    if ( opVars[opn].spType == pTif ) {
-      fval = (float)*(opVars[opn].adr);
-      fg = (GDALRasterImage *)opVars[opn].g;
-      if ( hitNODATA )
-        fval = fg->noData;
-      fg->SetVal(k, fval);
+            if (hitNODATA) {
+                fval = fg->noData;
+            }
+            fp->SetVal(cellIndex, fval);
+        }
+    }
       /*sprintf(outstr, "Year: %d, Month: %d, Value: %f\n", calYear, calMonth, fval); 
       logOnly(logfp, outstr);*/
     }
-  }
-}
+ }
 
 //----------------------------------------------------------------------------------
 
 void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA, 
-                            MYDate minMY, MYDate maxMY )
+                            MYDate minMY, MYDate maxMY, long cellIndex )
 {
   int opn, mx, maxInd; 
   float fval; 
   long lval; 
-  FILE *fp; 
+  GDALRasterImage* fp;
   GDALRasterImage *fg;
 
   // Number of elements in the regular output array, for sanity checking. 
@@ -2519,19 +2515,15 @@ void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
 
     // Get file pointer for this regular output grid. 
     fp = opVars[opn].RO[mx];
-
-    // Write it. 
-    if ( !fp )
-      continue;
-    if ( opVars[opn].spType == pTif ) {
-      fval = (float)*(opVars[opn].adr);
-
-      
-      fg = (GDALRasterImage *)opVars[opn].g;
-      
-      if ( hitNODATA )
-        fval = fg->noData;
-      fwrite( &fval, 4, 1, fp );
+    if (fp != NULL) {
+        if (opVars[opn].spType == pTif) {
+            fval = (float)*(opVars[opn].adr);
+            if (hitNODATA) {
+                fval = fg->noData;
+            }
+            fg = (GDALRasterImage*)opVars[opn].g;
+            fp->SetVal(cellIndex, fval);
+        }
     }
   }
 }

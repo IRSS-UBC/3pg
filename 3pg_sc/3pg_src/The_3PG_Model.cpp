@@ -504,7 +504,7 @@ bool AssignMonthlyMetData(int calMonth, int calYear, int cellIndex,
 // This is the main routine for the 3PG model
 
 //void runTreeModel(int minCy, int maxCy, bool spatial, long cellIndex)
-void runTreeModel( MYDate minMY, MYDate maxMY, bool spatial, int cellIndex )
+void runTreeModel( MYDate minMY, MYDate maxMY, bool spatial, long cellIndex )
 {
 //  int minCy, maxCy; 
   
@@ -670,7 +670,7 @@ skipPreYearCalcs:
       // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
       //previous calculated values are written instead of nodata
       
-      writeMonthlyOutputGrids( calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY ); 
+      writeMonthlyOutputGrids( calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex ); 
 
       // Monthly sample point output
       if (samplePointsMonthly)
@@ -761,7 +761,7 @@ skipYearStartCalcs:
       if (calYear == minMY.year)
 
         for(int beforeCalcMonth = 1; beforeCalcMonth < StartMonth; beforeCalcMonth++)
-          writeMonthlyOutputGrids( calYear, beforeCalcMonth, true, minMY, maxMY );
+          writeMonthlyOutputGrids( calYear, beforeCalcMonth, true, minMY, maxMY, cellIndex );
     }
 
     //Initialise output step cumulative variables
@@ -1121,7 +1121,7 @@ skipMonthCalcs:
       if (spatial) {
         // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
         //previous calculated values are written instead of nodata
-        writeMonthlyOutputGrids( calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY ); 
+        writeMonthlyOutputGrids( calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex ); 
 
         // Monthly sample point output
         if (samplePointsMonthly)

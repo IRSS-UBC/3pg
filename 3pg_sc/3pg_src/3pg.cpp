@@ -106,7 +106,7 @@ void parseCommandLine(int argc, char *argv[], std::string& defParamFile, std::st
 
 int main(int argc, char *argv[])
 {
-    std::cout << "hi." << std::endl;
+  GDALAllRegister();
   std::string optarg;
   //extern int optind;
   //int c;
@@ -149,7 +149,6 @@ int main(int argc, char *argv[])
       // fprintf(stderr, "Usage: %s %s", program, usage);
       exit(EXIT_FAILURE);
   }
-
   // Open the log file. 
   // logfp = openLogFile(siteParamFile); 
 
@@ -192,6 +191,7 @@ int main(int argc, char *argv[])
 
   // Find the over all start year and end year. 
   // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
+  std::cout << "Finding run period..." << std::endl;
   findRunPeriod( refGrid, spMinMY, spMaxMY ); 
   // fprintf( logfp, "first run mon/year = %2d/%4d, last run mon/year = %2d/%4d\n", spMinMY.mon, 
 	//   spMinMY.year, spMaxMY.mon, spMaxMY.year );
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
   }
 // Run the model. 
   if (spatial) {
-
+     std::cout << "Running model..." << std::endl;
      int cellsDone = 0;
      int cellsTotal = (nrows) * (ncols); 
      int lastProgress = -1; 
