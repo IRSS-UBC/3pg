@@ -56,3 +56,5 @@ build/*
 # Vscode 
 .vscode/*
 .vs/*
+
+ enc_temp_folder/*
