@@ -2030,19 +2030,19 @@ bool openGrid( PPPG_VVAL &vval )
 void CloseGrids(void)
 {
     for (int pn = 1; params[pn].id != ""; pn++) { // start at 1 to avoid error record. 
-    if ( params[pn].data.spType == pTif ) {
-      params[pn].data.g->Close();
-      delete params[pn].data.g;
+        if ( params[pn].data.spType == pTif ) {
+          params[pn].data.g->Close();
+        }
     }
-  }
     for (int op = 1; opVars[op].id != ""; op++) {  
-      if (opVars[op].spType == pTif) {
+        if (opVars[op].spType == pTif) {
           for (GDALRasterImage* g : opVars[op].RO) {
-			  g->Close();
-			  delete g;
+              if (g != NULL) {
+			    g->Close();
+              }
 		  }
-	  }
-   }
+	    }
+    }
 }
 //----------------------------------------------------------------------------------
 // void PrintGrids(void)
@@ -2083,6 +2083,7 @@ GDALRasterImage* openInputGrids( )
     else if ( openGrid( params[pn].data ) ) {
       spatial = true; 
       if ( first ) {
+        std::cout << "   setting refGrid... " << std::endl;
         refGrid = (GDALRasterImage *)params[pn].data.g;
         first = false; 
       }
@@ -2316,6 +2317,11 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
       // Construct the filename by concatenating the stem name, year, month and extension.
       // Open a GDALRasterImage object for the grid
       fname = roStemName + std::to_string(calYear) + std::to_string(calMonth) + ".tif";
+      // if there is a leading slash, remove it.
+  //    if (fname[0] == '/')
+		//fname = fname.substr(1);
+  //    if (fname[0] == '\\')
+  //      fname = fname.substr(1);
       GDALRasterImage *fg;
       if ( !opVars[opn].recurMonthly ) {
         if ( calMonth == opVars[opn].recurMonth ) {

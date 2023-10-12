@@ -106,7 +106,6 @@ void parseCommandLine(int argc, char *argv[], std::string& defParamFile, std::st
 
 int main(int argc, char *argv[])
 {
-  GDALAllRegister();
   std::string optarg;
   //extern int optind;
   //int c;
