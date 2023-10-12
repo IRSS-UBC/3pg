@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <tuple>
-#include <gdal.h>
 #include <gdal_priv.h>
+#include <gdal.h>
 #include <math.h>
 #include <iostream>
 #include <string>
@@ -9,6 +9,7 @@
 
 GDALRasterImage::GDALRasterImage(std::string filename) {
 	// Open the raster source located at `filename`
+	GDALAllRegister();
 	const GDALAccess eAccess = GA_ReadOnly;
 	dataset = GDALDataset::FromHandle(GDALOpen(filename.c_str(), eAccess));
 	if (!dataset) {
@@ -23,8 +24,6 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 	band = dataset->GetRasterBand(1);
 
 	// Get the inverse geo transform to map from geo location -> pixel location
-	double datasetTransform[6] = {};
-	double inverseTransform[6] = {};
 	if (dataset->GetGeoTransform(datasetTransform) == CE_Failure) {
 		GDALClose(GDALDataset::ToHandle(dataset));
 		throw std::runtime_error("Cannot get transform.");
@@ -55,6 +54,8 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 
 GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid) {
 	// Create a new GDALRasterImage dataset with one band with the same extent, transform, and crs as refGrid
+	GDALAllRegister();
+	CPLPushErrorHandler(CPLQuietErrorHandler); // suppress error messages that Exists() throws for non-existent files
 	if (Exists(filename)) {
 		throw std::invalid_argument("File already exists.");
 	};
@@ -71,7 +72,7 @@ GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid)
 
 	// set class variables
 	dataset->GetGeoTransform(datasetTransform);
-	if (GDALInvGeoTransform(datasetTransform, inverseTransform)) {
+	if (GDALInvGeoTransform(datasetTransform, inverseTransform) == false) {
 		GDALClose(GDALDataset::ToHandle(dataset));
 		throw std::invalid_argument("Cannot get inverse transform.");
 	}
@@ -178,10 +179,15 @@ std::tuple<int,int> GDALRasterImage::IndexToXY(int index) {
 bool GDALRasterImage::Exists(std::string fname) {
 	// Check if a GDALDataset already exists with the given filename
 	const GDALAccess eAccess = GA_ReadOnly;
-	GDALDataset* dataset = GDALDataset::FromHandle(GDALOpen(fname.c_str(), eAccess));
-	if (dataset) {
-		GDALClose(GDALDataset::ToHandle(dataset));
-		return true;
+	try {
+		GDALDataset* dataset = GDALDataset::FromHandle(GDALOpen(fname.c_str(), eAccess));
+		if (dataset) {
+			GDALClose(GDALDataset::ToHandle(dataset));
+			return true;
+		}
+	}
+	catch (std::exception& e) {
+		return false;
 	}
 	return false;
 };
