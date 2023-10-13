@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
   long nrows, ncols;
   MYDate spMinMY, spMaxMY; 
   std::string defParamFile = "Y:\\Francois\\_Vaughan\\species_lpp.txt"; 
-  std::string siteParamFile = "Y:\\Francois\\_Vaughan\\Site_SUBAREA.txt";
+  std::string siteParamFile = "Y:\\Francois\\_Vaughan\\site_subarea.txt";
 
   // Copyright message for stdout
   //copyright();

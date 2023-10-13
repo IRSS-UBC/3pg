@@ -513,6 +513,7 @@ int pNameToInd(const std::string& id)
       if (w1 == w2)
         return pn;
   }
+  std::cout << "Warning, lookup of non-existent parameter name: " << id << std::endl;
   //fprintf(stderr, "Warning, lookup of non-existent parameter name: %s\n", 
   //        id);
   return 0;
@@ -533,6 +534,7 @@ int opNameToInd(const std::string& id)
       if (w1 == w2)
         return pn;
   }
+  std::cout << "Warning, lookup of non-existent output variable name: " << id << std::endl;
   //fprintf(stderr, "Warning, lookup of non-existent output variable name: %s\n", 
   //        id);
   return 0;
@@ -550,9 +552,13 @@ bool getVVal(double &val, PPPG_VVAL vval, int k)
   else if (vval.spType == pTif) {
     fg = (GDALRasterImage *)vval.g;
     result = fg->GetVal(k);
-    if (result == fg->noData)
+    if (fg->IsNoData(result)) {
       return false; 
-    val = result;
+    }
+    else
+    {
+       val = result;
+    }
   }
   else { // pNull
     return false; 
@@ -602,7 +608,7 @@ double lookupManageTable( int year, int table, double def, int k )
     }
     else if ( mt[i].data.spType == pTif ) {
       fg = (GDALRasterImage *)mt[i].data.g;
-      if ( fg->GetVal(k) == fg->noData ) 
+      if (fg->IsNoData(fg->GetVal(k)))
         continue; 
       else
         val = fg->GetVal(k);
@@ -616,52 +622,57 @@ double lookupManageTable( int year, int table, double def, int k )
 
 //----------------------------------------------------------------------------------
 
-bool getSeriesVal(double &val, int ser, int calMonth, int calYear, int k)
+bool getSeriesVal(double& val, int ser, int calMonth, int calYear, int k)
 {
-  PPPG_SERIES_PARAM *series;
+    PPPG_SERIES_PARAM* series;
 
-  // Which series. 
-  switch (ser) {
-  case SS_TMAX:      series = &Tmax_vals;      break; 
-  case SS_TMIN:      series = &Tmin_vals;      break;
-  case SS_TAVG:      series = &Tavg_vals;      break; 
-  case SS_RAIN:      series = &Rain_vals;      break; 
-  case SS_SOLARRAD:  series = &SolarRad_vals;  break; 
-  case SS_FROSTDAYS: series = &FrostDays_vals; break; 
-  case SS_NDVI_AVH:  series = &NdviAvh_vals;   break; 
-  case SS_NETRAD:    series = &NetRad_vals;    break; 
-  case SS_VPD:       series = &Vpd_vals;       break; 
-  default: break;
-  }
+    // Which series. 
+    switch (ser) {
+    case SS_TMAX:      series = &Tmax_vals;      break;
+    case SS_TMIN:      series = &Tmin_vals;      break;
+    case SS_TAVG:      series = &Tavg_vals;      break;
+    case SS_RAIN:      series = &Rain_vals;      break;
+    case SS_SOLARRAD:  series = &SolarRad_vals;  break;
+    case SS_FROSTDAYS: series = &FrostDays_vals; break;
+    case SS_NDVI_AVH:  series = &NdviAvh_vals;   break;
+    case SS_NETRAD:    series = &NetRad_vals;    break;
+    case SS_VPD:       series = &Vpd_vals;       break;
+    default: break;
+    }
 
-  // Long run or 1 year data.
-  int i; 
-  if (series->oneYear) {
-    // calYear is irrelevant, calMonth will range from 1 to 12, series elements will 
-    // be indexed from 0 to 11. 
-    i = calMonth -1; 
-  }
-  else {
-    // Long run data. 
-    i = (calYear - series->start) * 12 + calMonth -1; 
-    if (i > series->vlen * 12 - 1) {
-      // Should not happen as we will sanity check series before running. 
-      // sprintf(outstr.c_str(), "Attempted lookup of series element %d in series %d, only %d entries in series.\nCheck Start/End Ages.",
-      //   i, ser, (series->vlen*12-1)); 
-      std::cout << "Attempted lookup of series element " << i << " in series " << ser << ", only " << (series->vlen*12-1) << " entries in series.\nCheck Start/End Ages." << std::endl;
-      exit(EXIT_FAILURE);
-      // logAndExit(logfp, outstr);
+    // Long run or 1 year data.
+    int i;
+    if (series->oneYear) {
+        // calYear is irrelevant, calMonth will range from 1 to 12, series elements will 
+        // be indexed from 0 to 11. 
+        i = calMonth - 1;
     }
-    if (i < 0)
-    {
-      // sprintf(outstr, "Attempted lookup of year before start year\n");
-      std::cout << "Attempted lookup of year before start year" << std::endl;
-      exit(EXIT_FAILURE);
-      // logAndExit(logfp, outstr);
+    else {
+        // Long run data. 
+        i = (calYear - series->start) * 12 + calMonth - 1;
+        if (i > series->vlen * 12 - 1) {
+            // Should not happen as we will sanity check series before running. 
+            // sprintf(outstr.c_str(), "Attempted lookup of series element %d in series %d, only %d entries in series.\nCheck Start/End Ages.",
+            //   i, ser, (series->vlen*12-1)); 
+            std::cout << "Attempted lookup of series element " << i << " in series " << ser << ", only " << (series->vlen * 12 - 1) << " entries in series.\nCheck Start/End Ages." << std::endl;
+            exit(EXIT_FAILURE);
+            // logAndExit(logfp, outstr);
+        }
+        if (i < 0)
+        {
+            // sprintf(outstr, "Attempted lookup of year before start year\n");
+            std::cout << "Attempted lookup of year before start year" << std::endl;
+            exit(EXIT_FAILURE);
+            // logAndExit(logfp, outstr);
+        }
     }
-  }
-  if ( getVVal(val, series->data[i], k) )
-    return true;
+    if (getVVal(val, series->data[i], k))
+        if (series->data[i].g->IsNoData(val)) {
+            return false;
+        }
+        else {
+            return true;
+        }  
   else 
     return false; 
 
@@ -708,7 +719,6 @@ void readSampleFile(GDALRasterImage *refGrid)
     samplePoints[ind].id = id;
     lat = atof(xstr);
     lon = atof(ystr);
-    std::cout << "id: " << id << "lat: " << lat << " lon: " << lon << std::endl;
     // TODO: Need to create a function that gets cell index from x/y with GDAL
     cellIndex = refGrid->IndexFrom(lat, lon);
     samplePoints[ind].lat = lat;
@@ -963,7 +973,8 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
     *(params[pInd].adr) = f;
     params[pInd].data.spType = pScalar;
     params[pInd].got = 1;
-    std::cout << "Found scalar input. Set spType: " << params[pInd].data.spType << std::endl;
+    std::cout << "   " << params[pInd].id << "         constant: " << *(params[pInd].adr) << std::endl;
+    //std::cout << "Found scalar input. Set spType: " << params[pInd].data.spType << std::endl;
     return true;
   }
   catch (std::invalid_argument const& inv) {
@@ -976,9 +987,8 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
       const std::filesystem::path filePath = params[pInd].data.gridName;
       if (filePath.extension() == ".tif") // Heed the dot.
       {
-          std::cout << "The file extension is " << filePath.extension() << std::endl;
           params[pInd].data.spType = pTif;
-          std::cout << "   " << params[pInd].id << " grid: " << params[pInd].data.gridName << std::endl;
+          std::cout << "   " << params[pInd].id << "         grid: " << params[pInd].data.gridName << std::endl;
           params[pInd].got = 1;
           return true;
       }
@@ -1098,8 +1108,8 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   else if (namesMatch("APARu", pName))    pInd = opNameToInd("APARu");
   else if (namesMatch("MAIx", pName))    pInd = opNameToInd("MAIx");
   else if (namesMatch("ageMAIx", pName))    pInd = opNameToInd("ageMAIx");
+  
   // Did we match a name?  
-  std::cout << "pInd1="<< pInd2 << "and pInd=" << pInd << std::endl;
   if (pInd == 0)
     return false;
 
@@ -1120,7 +1130,6 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   const std::filesystem::path filePath = opVars[pInd].gridName;
   if (filePath.extension() == ".tif") // Heed the dot.
   {
-      std::cout << filePath.stem() << " is a valid type: '.tif'" << std::endl;
       opVars[pInd].spType = pTif;
   }
   else
@@ -1130,20 +1139,13 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
       // logAndExit(logfp, outstr);
   }
 
-  // Check for optional second token, which is the output start year.
-  // If second token exists, then a third and fourth token must also exist.
-  // If second token does not exist, then third, fourth, and fifth tokens must not exist.
-  // If second token exists, then third token must be an integer.
-  // If second token exists, then fourth token must be 'monthly' or 'month'.
-  // If fourth token is 'monthly', then fifth token must not exist.
-  // If fourth token is 'month', then fifth token must be an integer.
-  // If fifth token exists, then it must be an integer between 1 and 12.
-  // If fifth token does not exist, then it is assumed to be 1.
-  // If second token does not exist, then third token must not exist.
-  // If third token exists, then it must be an integer.
-  // If fourth token exists, then it must be 'monthly' or 'month'.
-  // If fourth token is 'monthly', then fifth token must not exist.
-  // If fourth token is 'month', then fifth token must be an integer.
+  // Check for optional second, third, fourth and fifth tokens; these are used to specify recurring output pattern.
+  // The following parsing rules apply:
+  //    - If second token exists, then a third and fourth token must also exist. A fifth token is optional.
+  //    - The third token must be an integer, representing the start year of the recurrence pattern.
+  //    - The fourth token must be 'monthly' or 'month'
+  //    - If fourth token is 'monthly', then fifth token must not exist (assumed to be 1).
+  //    - If fourth token is 'month', then fifth token must be an integer between 1 and 12.
   try {
     // NOTE: using .at() accessor here to ensure an exception is thrown if the index is out of range
     // There is likely a better way to do this whole flow of logic, but for now we are sticking as close
@@ -1239,17 +1241,18 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   std::cout << "   variable: " << opVars[pInd].id << "   grid: " << opVars[pInd].gridName << std::endl;
   // fprintf(logfp, "   variable: %-20s   grid: %-20s\n", opVars[pInd].id, opVars[pInd].gridName.c_str());
   if (opVars[pInd].recurStart) {
-    std::cout << "      starting in " << opVars[pInd].recurStart << ", writing every " << opVars[pInd].recurYear << " years" << std::endl;
+    std::cout << "      starting in " << opVars[pInd].recurStart << ", writing every " << opVars[pInd].recurYear << " years";
     // fprintf(logfp, "      starting in %4d, writing every %2d years", 
     //   opVars[pInd].recurStart, opVars[pInd].recurYear);
     if (opVars[pInd].recurMonthly)
-      std::cout << ", with monthly values" << std::endl;
+      std::cout << ", with monthly values";
       // fprintf(logfp, ", with monthly values");
     else if ( opVars[pInd].recurMonth != 0 )
-      std::cout << ", on the " << opVars[pInd].recurMonth << " month" << std::endl;
+      std::cout << ", on the " << opVars[pInd].recurMonth << " month";
       // fprintf( logfp, ", on the %2d month", opVars[pInd].recurMonth ); 
     // fprintf(logfp, ".\n");
   }
+  std::cout << std::endl;
   return true;
 }
 
@@ -1411,7 +1414,6 @@ bool readParam( PPPG_VVAL &vval, std::string pValue )
     // Check that the file is a TIF file
     if (filePath.extension() == ".tif") // Heed the dot.
     {
-        std::cout << filePath.stem() << " is a valid type: '.tif'" << std::endl;
         vval.gridName = cp;
         vval.spType = pTif;
         return true;
@@ -1719,6 +1721,7 @@ void readParamFile(const std::string& paramFile)
   // Second and subsequent tokens are the parameter values
   auto isDoubleQuote = [](char c) { return c == '\"'; };
   std::ifstream inFile(paramFile);
+  std::cout << "Reading input parameters from file '" << paramFile << "'..." << std::endl;
   // fprintf(logfp, "Reading input parameters from file '%s'...\n", paramFile);
   while (std::getline(inFile, line))
   {
@@ -1743,28 +1746,22 @@ void readParamFile(const std::string& paramFile)
     // Trim double quotations from the name
     boost::trim_if(pName, boost::is_any_of("\""));
 
-    // Second and subsequent tokens are the parameter values
+    // Second and subsequent tokens are the parameter values, put them all into a vector
     std::vector<std::string> pValues;
     boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
-    std::cout << "    pName: " << pName << ' ' << std::endl;
-    for (std::string& i : pValues )
-        std::cout << "    Pvalue: " << i << ' ' << std::endl;
 
-    // Read the parameters by trying 
-    if (readInputParam(pName, pValues));
-    else if (readOutputParam(pName, pValues, lineNo));
-    else if (readOtherParam(pName, pValues));
-    else if (readInputSeriesParam(pName, pValues, inFile, lineNo));
-    else if (readInputManageParam(pName, inFile, lineNo));
+    if (readInputParam(pName, pValues)) { continue; }
+    else if (readOutputParam(pName, pValues, lineNo)) { continue; }
+    else if (readOtherParam(pName, pValues)) { continue; }
+    else if (readInputSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
+    else if (readInputManageParam(pName, inFile, lineNo)) { continue; }
     else {
-      std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
-      exit(EXIT_FAILURE);
-      // sprintf(outstr, "Cannot read parameter in file %s, line: %d: %s\n", paramFile.c_str(), lineNo, pName.c_str());
-      // logAndExit(logfp, outstr);
+        std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
+        exit(EXIT_FAILURE);
+        // sprintf(outstr, "Cannot read parameter in file %s, line: %d: %s\n", paramFile.c_str(), lineNo, pName.c_str());
+        // logAndExit(logfp, outstr);
     }
   }
-  std::cout << "Successfully read all parameters in " << paramFile << std::endl;
-  std::cout << "Here's pFS2:" << params[1].id << ", " << params[1].data.spType << " " << std::endl;
 }
 
 //----------------------------------------------------------------------------------
@@ -1965,7 +1962,7 @@ bool loadParamVals(int k)
                 // logAndExit(logfp, ErrorString); 
             }
             result = fg->GetVal(k);
-            if (result == fg->noData) {
+            if (fg->IsNoData(result)) {
                 return false;
             }
             else {
@@ -2070,8 +2067,6 @@ GDALRasterImage* openInputGrids( )
   // fprintf(stdout, "Opening input grids...\r");
 
   for (pn = 1; params[pn].id != ""; pn++) { // start at 1 to avoid error record. 
-    std::cout << "   opening parm " << params[pn].id << "..." << std::endl;
-    std::cout << "   opening type " << params[pn].data.spType << "..." << std::endl;
     if (params[pn].data.spType == pNull || params[pn].data.spType == pScalar){
         //do nothing
     }
@@ -2083,7 +2078,6 @@ GDALRasterImage* openInputGrids( )
     else if ( openGrid( params[pn].data ) ) {
       spatial = true; 
       if ( first ) {
-        std::cout << "   setting refGrid... " << std::endl;
         refGrid = (GDALRasterImage *)params[pn].data.g;
         first = false; 
       }

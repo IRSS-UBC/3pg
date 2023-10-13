@@ -495,7 +495,17 @@ bool AssignMonthlyMetData(int calMonth, int calYear, int cellIndex,
   if (modelMode3PGS) {
     if ( !getSeriesVal( NDVI_AVH, SS_NDVI_AVH, calMonth, calYear, cellIndex ) ) 
       hitNODATA = true; 
-  }
+  };
+  //std::cout << " For month " << calMonth << ", year " << calYear << " at cell " << cellIndex << ": ";
+  //std::cout << "          " << "SolarRad: " << SolarRad;
+  //std::cout << "          " << "FrostDays: " << FrostDays;
+  //std::cout << "          " << "Rain: " << Rain;
+  //std::cout << "          " << "NetRad: " << NetRad;
+  //std::cout << "          " << "Tav: " << Tav;
+  //std::cout << "          " << "Tx: " << Tx;
+  //std::cout << "          " << "Tn: " << Tn;
+  //std::cout << "          " << "VPD: " << VPD;
+  //std::cout << "          " << "NDVI_AVH: " << NDVI_AVH << std::endl;
   return hitNODATA;
 }
 
