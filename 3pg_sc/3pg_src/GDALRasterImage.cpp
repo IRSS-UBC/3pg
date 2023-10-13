@@ -192,6 +192,15 @@ bool GDALRasterImage::Exists(std::string fname) {
 	return false;
 };
 
+bool GDALRasterImage::IsNoData(float val) {
+	if (std::isnan(noData)) {
+		return (std::isnan(val));
+	}
+	else {
+		return (val == noData);
+	}
+};
+
 // float GDALRasterImage::GetMin() {
 // 	float min;
 // 	float max;

@@ -32,6 +32,7 @@ public:
 	float GetVal(int index);
 	CPLErr SetVal(int x, int y, float val);
 	CPLErr SetVal(int index, float val);
+	bool IsNoData(float val);
 	void Create(std::string fname);
 	bool Exists(std::string fname);
 	float GetMin();
