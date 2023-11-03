@@ -2197,6 +2197,34 @@ int openOutputGrids(GDALRasterImage *refGrid)
   return EXIT_SUCCESS;
 }
 
+int writeOutputGrids(bool hitNODATA, long cellIndex) {
+  /*
+    Write the final output grids. 
+  */
+  int opn;
+  GDALRasterImage* fp;
+  float fval;
+
+  for (opn = 0; opVars[opn].id != ""; opn++) {
+      if (opVars[opn].write) {
+          fval = (float)*(opVars[opn].adr);
+          fp = opVars[opn].g;
+          if (fp != NULL) {
+              if (hitNODATA) {
+                  fval = fp->noData;
+              }
+              fp->SetVal(cellIndex, fval);
+
+          }
+          else {
+              std::cout << "ERROR: Output grid " << opVars[opn].id << " is NULL... could not write." << std::endl;
+              exit(EXIT_FAILURE);
+          }
+      }
+  }
+  return EXIT_SUCCESS;
+}
+
 //----------------------------------------------------------------------------------
 
 //bool copyHeader(GDALRasterImage *refGrid, char *fname )

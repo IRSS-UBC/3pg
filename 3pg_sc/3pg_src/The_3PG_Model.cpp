@@ -1224,7 +1224,9 @@ skipPreYearCalcs:
         // Restore LAI
         LAI = WF * SLA * 0.1;
 
-  // ANL - Save wanted variables into grids. 
-  // if (spatial)
-  //   saveVariableVals(cellIndex, hitNODATA);
+    }
+    // if spatial mode, write the final result of the variables to files.
+    if (spatial) {
+		writeOutputGrids(hitNODATA, cellIndex);
+	}
 }
