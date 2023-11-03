@@ -24,7 +24,6 @@ Use of this software assumes agreement to this condition of use
 #include <sstream>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
-
 #include "GDALRasterImage.hpp"
 #include "util.hpp"
 #include "Data_io.hpp"
@@ -130,7 +129,7 @@ extern double DaysInMonth[13];                  // array for days in months
 extern bool modelMode3PGS;
 
 // Site characteristics, site specific parameters
-extern std::string siteName[100];                      // name of site
+extern std::string siteName;                      // name of site
 extern double Lat;                              // site latitude
 extern double MaxASW, MinASWp;                  // maximum & minimum available soil water
 extern double FRp, FR;                              // current site fertility rating
@@ -284,7 +283,7 @@ std::string outPath = "./";
 
 //const std::string paramError = "paramError";
 
-PPPG_PARAM params[] = 
+PPPG_PARAM params[] =
 {
   {"paramError", NULL},
   {"pFS2",         &pFS2},
@@ -300,7 +299,7 @@ PPPG_PARAM params[] =
   {"growthTmin",   &growthTmin},
   {"growthTopt",   &growthTopt},
   {"growthTmax",   &growthTmax},
-    
+
   // Frost modifier
   {"kF",           &kF},
 
@@ -325,7 +324,7 @@ PPPG_PARAM params[] =
   {"mF",           &mF},
   {"mR",           &mR},
   {"mS",           &mS},
-  
+
   // Soil water modifier (fSW) | soil characteristics
   {"SWconst0",     &SWconst0},
   {"SWpower0",     &SWpower0},
@@ -354,7 +353,7 @@ PPPG_PARAM params[] =
   {"rhoMin",       &rhoMin},
   {"rhoMax",       &rhoMax},
   {"tRho",         &tRho},             // Standage varying density 3-06-02 
-  
+
   //Conversions
   {"Qa",           &Qa},
   {"Qb",           &Qb},
@@ -372,7 +371,7 @@ PPPG_PARAM params[] =
   {"FRstart",      &FRstart},  //These three variables relate to fertility decrease with age
   {"FRend",        &FRend},
   {"FRdec",        &FRdec},
-  {"soilIndex",    &soilIndex}, 
+  {"soilIndex",    &soilIndex},
   {"MaxASW",       &MaxASW},
   {"MinASWp",      &MinASWp},
 
@@ -380,7 +379,7 @@ PPPG_PARAM params[] =
   {"StartAge",     &StartAge},
   {"EndAge",       &EndAge},
   {"StartMonth",   &StartMonth},
-  {"yearPlanted",  &yearPlanted},  /* CHECK! do we still use this?*/  
+  {"yearPlanted",  &yearPlanted},  /* CHECK! do we still use this?*/
   {"SeedlingMass", &SeedlingMass},
   {"WFi",          &WFi},
   {"WRi",          &WRi},
@@ -388,13 +387,13 @@ PPPG_PARAM params[] =
   {"StemNoi",      &StemNoi},
   {"ASWi",         &ASWi},
   {"MinASWTG",     &MinASWTG},
-//  {"yearPlanted",  &yearPlanted},  /* This has been moved as strange errors were occuring with grids here*/
+  //  {"yearPlanted",  &yearPlanted},  /* This has been moved as strange errors were occuring with grids here*/
 
-  // ANL - extras for 3PGS mode
-  {"NDVI_FPAR_intercept", &NDVI_FPAR_intercept}, 
-  {"NDVI_FPAR_constant",  &NDVI_FPAR_constant}, 
+    // ANL - extras for 3PGS mode
+    {"NDVI_FPAR_intercept", &NDVI_FPAR_intercept},
+    {"NDVI_FPAR_constant",  &NDVI_FPAR_constant},
 
-  {"", NULL}  // NULL entries used to mark array ends. 
+    {"", NULL}  // NULL entries used to mark array ends. 
 };
 
 //----------------------------------------------------------------------------------
@@ -403,34 +402,34 @@ PPPG_PARAM params[] =
 // and sets up the mapping of the output variable to its name, which is used in 
 // parsing the parameter file.  
 PPPG_OP_VAR opVars[] = {
-  {"opVarError", NULL}, 
+  {"opVarError", NULL},
   {"StemNo",     &StemNo},
-  {"WF",         &WF}, 
-  {"WR",         &WR}, 
-  {"WS",         &WS}, 
-  {"TotalW",     &TotalW}, 
+  {"WF",         &WF},
+  {"WR",         &WR},
+  {"WS",         &WS},
+  {"TotalW",     &TotalW},
   {"LAI",        &LAI},
   {"cLAI",       &cLAI},
-  {"MAI",        &MAI}, 
-  {"avDBH",      &avDBH}, 
-  {"BasArea",    &BasArea}, 
+  {"MAI",        &MAI},
+  {"avDBH",      &avDBH},
+  {"BasArea",    &BasArea},
   {"StandVol",   &StandVol},
   {"GPP",        &GPPdm},
   {"cGPP",       &cGPP},
-  {"NPP",        &NPP}, 
+  {"NPP",        &NPP},
   {"cNPP",       &cNPP},
-  {"delWAG",     &delWAG}, 
-  {"cumWabv",    &cumWabv}, 
+  {"delWAG",     &delWAG},
+  {"cumWabv",    &cumWabv},
   {"Transp",     &Transp},
   {"cTransp",    &cTransp},
   {"ASW",        &ASW},
   {"fSW",        &fSW},
   {"fVPD",       &fVPD},
-  {"fT",         &fT}, 
-  {"fNutr",      &fNutr}, 
-  {"fFrost",     &fAge}, 
-  {"APAR",       &APAR}, 
-  {"APARu",      &APARu}, 
+  {"fT",         &fT},
+  {"fNutr",      &fNutr},
+  {"fFrost",     &fAge},
+  {"APAR",       &APAR},
+  {"APARu",      &APARu},
   {"EvapTransp", &EvapTransp},
   {"cEvapTransp",&cEvapTransp}, //Added 08/11/02
   {"LAIx",       &LAIx},
@@ -513,7 +512,7 @@ int pNameToInd(const std::string& id)
       if (w1 == w2)
         return pn;
   }
-  std::cout << "Warning, lookup of non-existent parameter name: " << id << std::endl;
+ /* std::cout << "Warning, lookup of non-existent parameter name: " << id << std::endl;*/
   //fprintf(stderr, "Warning, lookup of non-existent parameter name: %s\n", 
   //        id);
   return 0;
@@ -528,7 +527,7 @@ int opNameToInd(const std::string& id)
   std::size_t w1, w2;
 
   w1 = id.length();
-  for (pn=0; opVars[pn].id != ""; pn++) {
+  for (pn = 0; opVars[pn].id != ""; pn++) {
     w2 = opVars[pn].id.length();
     if (id.compare(opVars[pn].id) == 0)
       if (w1 == w2)
@@ -550,7 +549,7 @@ bool getVVal(double &val, PPPG_VVAL vval, int k)
   if (vval.spType == pScalar)
     val = vval.sval;
   else if (vval.spType == pTif) {
-    fg = (GDALRasterImage *)vval.g;
+    fg = vval.g;
     result = fg->GetVal(k);
     if (fg->IsNoData(result)) {
       return false; 
@@ -580,7 +579,7 @@ double lookupManageTable( int year, int table, double def, int k )
   PPPG_MT_PARAM *mt;  
   GDALRasterImage *fg;
   int i;
-  double val; 
+  float val; 
 
   if ( table == MT_FERTILITY ) 
     mt = FertMT; 
@@ -667,13 +666,13 @@ bool getSeriesVal(double& val, int ser, int calMonth, int calYear, int k)
         }
     }
     if (getVVal(val, series->data[i], k))
+        //std::cout << "For month " << calMonth << " and Year " << calYear << ", getting values from file : " << series->data[i].gridName << std::endl;
         if (series->data[i].g->IsNoData(val)) {
             return false;
         }
         else {
             return true;
         }  
-  else 
     return false; 
 
 }
@@ -938,7 +937,7 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
   else if (namesMatch("rhoMax", pName) ||   //Standage varying density 15/07/2002
            namesMatch("Maximum basic density - for older trees", pName)) pInd = pNameToInd("rhoMax");
   else if (namesMatch("tRho", pName)   ||
-           namesMatch("Age at which rho = (rho0+rho1)/2", pName)) pInd = pNameToInd("tRho");      //Standage varying density 15/07/2002 
+           namesMatch("Age at which rho = (rhoMin+rhoMax)/2", pName)) pInd = pNameToInd("tRho");      //Standage varying density 15/07/2002 
   else if (namesMatch("yearPlanted", pName) ||
            namesMatch("Year Planted", pName)) pInd = pNameToInd("yearPlanted");
 
@@ -969,7 +968,8 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
   // }
   // Is the first value a number?  If so, its a constant.  If not, its a grid name.
   try {
-    double f = std::stof(pValue.front());
+
+    double f = std::stod(pValue.front());
     *(params[pInd].adr) = f;
     params[pInd].data.spType = pScalar;
     params[pInd].got = 1;
@@ -977,7 +977,7 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
     //std::cout << "Found scalar input. Set spType: " << params[pInd].data.spType << std::endl;
     return true;
   }
-  catch (std::invalid_argument const& inv) {
+  catch (std::invalid_argument const& e) {
     // Is the parameter a grid name (a string). 
     // REFERENCES: https://stackoverflow.com/questions/43114174/convert-a-string-to-std-filesystem-path
     // and https://stackoverflow.com/questions/51949/
@@ -1149,7 +1149,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   try {
     // NOTE: using .at() accessor here to ensure an exception is thrown if the index is out of range
     // There is likely a better way to do this whole flow of logic, but for now we are sticking as close
-    // as possible to the original flow of logic.
+    // as possible to the original code.
     cp = pValue.at(1);
     yearlyOutput = true;
   }
@@ -1162,7 +1162,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
     try {
       opVars[pInd].recurStart = std::stoi(cp);
     }
-    catch (std::invalid_argument const& inv) {
+    catch (std::invalid_argument const& e) {
       std::cout << "Expected an integer start year in recuring output specification on line " << lineNo << std::endl;
       exit(EXIT_FAILURE);
       // logAndExit(logfp, outstr);
@@ -1182,7 +1182,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
         }
         opVars[pInd].recurYear = interval;
       }
-      catch (std::invalid_argument const& inv) {
+      catch (std::invalid_argument const& e) {
         std::cout << "Expected an integer interval in recuring output specification on line " << lineNo << std::endl;
         exit(EXIT_FAILURE);
         // logAndExit(logfp, outstr);
@@ -1212,7 +1212,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
               // logAndExit(logfp, outstr);
             }
           }
-          catch (std::invalid_argument const& inv) {
+          catch (std::invalid_argument const& e) {
             std::cout << "Expected an integer month in recuring output specification on line " << lineNo << std::endl;
             exit(EXIT_FAILURE);
             // logAndExit(logfp, outstr);
@@ -1403,7 +1403,7 @@ bool readParam( PPPG_VVAL &vval, std::string pValue )
 
    cp = pValue;
   try {
-    vval.sval = std::stof(cp);
+    vval.sval = std::stod(cp);
     vval.spType = pScalar;
     return true;
   }
@@ -1593,20 +1593,25 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
             std::cout << "   " << pName << " month " << i+1 << " grid: " << series->data[i].gridName << std::endl;
             // fprintf(logfp, "   %-34s month %2d grid: %s\n", pName, i+1, series->data[i].gridName );
           }
+          }
+          else {
+            std::cout << "Could not read parameter " << pName << " at month " << i+1 << std::endl;
+            exit(EXIT_FAILURE);
+            // sprintf( outstr, "Could not read parameter %s.\n", pName ); 
+            // logAndExit( logfp, outstr ); 
+          }
+      } catch (const std::out_of_range& oor) {
+          std::cout << "No value for " << pName << " at month "  << i+1 << std::endl;
+          exit(EXIT_FAILURE);
+          // sprintf(outstr, "Incomplete series on line %d.\n", lineNo); 
+          // logAndExit(logfp, outstr); 
       }
-      else {
-        std::cout << "Could not read parameter " << pName << " at month " << i+1 << std::endl;
-        exit(EXIT_FAILURE);
-        // sprintf( outstr, "Could not read parameter %s.\n", pName ); 
-        // logAndExit( logfp, outstr ); 
-      }
-    } catch (const std::out_of_range& oor) {
-      std::cout << "No value for " << pName << " at month "  << i+1 << std::endl;
-      exit(EXIT_FAILURE);
-      // sprintf(outstr, "Incomplete series on line %d.\n", lineNo); 
-      // logAndExit(logfp, outstr); 
     }
     series->got = true;
+
+    if (i < 12) {
+        std::cout << "Incomplete series on line " << lineNo << std::endl;
+        exit(EXIT_FAILURE);
     }
   }
   // Time series style
@@ -1616,7 +1621,7 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
     int ss_lineNo = lineNo; 
     prev_yr = -1; 
     while ( std::getline( paramFp, line )) {
-      lineNo++; 
+      lineNo++;
       std::vector<std::string> sTokens;
       sTokens = boost::split(sTokens, line, boost::is_any_of(", \n\t"));
       if ( sTokens.empty() )
@@ -1749,7 +1754,6 @@ void readParamFile(const std::string& paramFile)
     // Second and subsequent tokens are the parameter values, put them all into a vector
     std::vector<std::string> pValues;
     boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
-
     if (readInputParam(pName, pValues)) { continue; }
     else if (readOutputParam(pName, pValues, lineNo)) { continue; }
     else if (readOtherParam(pName, pValues)) { continue; }
@@ -1773,6 +1777,8 @@ bool haveAllParams()
   int indSeed, indWRi, indWFi, indWSi;  //indexes for values to check if required variable available
   bool missing = false;
 
+  std::cout << "Checking all required parameters have been set.." << std::endl;
+
   // Parameters needed for 3PG. 
    std::string iParam3PG[] = {
     "pFS2", "pFS20", "StemConst", "StemPower", "pRx", "pRn", 
@@ -1787,7 +1793,7 @@ bool haveAllParams()
     "SLA0", "SLA1", "tSLA", "k", "fullCanAge",       // Canopy structure and processes
     "alpha", "fracBB0", "fracBB1", "tBB", // Canopy structure and processes
     "y",                                  // various
-    "Lat", "FR", "soilIndex", "MaxASW", "MinASW",    // 3PG site parameters. 
+    "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",    // 3PG site parameters. 
     "StartAge", "EndAge",              //Initial conditions
     //"WFi", "WRi", "WSi",             //Now checked along with SeedlingMass
     "StemNoi", "ASWi", "yearPlanted",  // Initial conditions. 
@@ -1809,7 +1815,7 @@ bool haveAllParams()
     "SWconst0", "SWpower0",                             // Soil water modifier (fSW)
     "SLA1", "alpha",                    // Canopy structure 
     "y",                                     // various
-    "Lat", "FR", "soilIndex", "MaxASW", "MinASW",       // 3PG site parameters.
+    "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",       // 3PG site parameters.
     "StartAge", "EndAge",                               // Initial conditions
     "NDVI_FPAR_intercept", "NDVI_FPAR_constant",        // FPAR from NDVI equation.
     "Qa", "Qb",
@@ -1872,17 +1878,18 @@ bool haveAllParams()
   //fill in Seedling Mass or others just in case - seems to cause errors if not there...
   if ( !haveSeedlingMass() )
   {
-    sscanf("0.0", "%lf", params[indSeed].adr); 
+    // set the values of SeedlingMass ti
+    *(params[indSeed].adr) = 0.0;
     params[indSeed].data.spType = pScalar;
     params[indSeed].got = 0;
   } else {
-    sscanf("0.0", "%lf", params[indWFi].adr); 
+    *(params[indWFi].adr) = 0.0; 
     params[indWFi].data.spType = pScalar;
     params[indWFi].got = 0;
-    sscanf("0.0", "%lf", params[indWRi].adr); 
+    *(params[indWRi].adr) = 0.0; 
     params[indWRi].data.spType = pScalar;
     params[indWRi].got = 0;
-    sscanf("0.0", "%lf", params[indWSi].adr); 
+    *(params[indWSi].adr) = 0.0; 
     params[indWSi].data.spType = pScalar;
     params[indWSi].got = 0;
   }
@@ -1928,12 +1935,13 @@ bool haveAllParams()
 
   // Check various optional parameters
   //if ( !modelMode3PGS && NdviAvh_vals->got) {
-  if ( !modelMode3PGS && NdviAvh_vals.data) {
-    std::cout << "NDVI_AVH not used in 3PG mode." << std::endl;
+  if ( !modelMode3PGS && NdviAvh_vals.got) {
+    std::cout << "NdviAvh_vals not used in 3PGS mode." << std::endl;
     // sprintf(outstr, "NDVI_AVH not used in 3PGS mode.\n"); 
     // logAndPrint(logfp, outstr);
   }
   return !missing;
+  
 }
 
 //----------------------------------------------------------------------------------
@@ -2461,7 +2469,7 @@ void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
   GDALRasterImage *fg;
 
   int crap; 
-  if ( calYear == 2008 )
+  if ( calYear == 2008  || calYear == 2020 )
     crap = 1; 
 
   // Number of elements in the regular output array, for sanity checking. 
@@ -2505,6 +2513,7 @@ void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA,
             if (hitNODATA) {
                 fval = fg->noData;
             }
+            //std::cout << "Writing value of: " << fval << " to " << fp->name << std::endl;
             fp->SetVal(cellIndex, fval);
         }
     }
@@ -2860,6 +2869,7 @@ int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
     return EXIT_SUCCESS;
 }
   // Below is a possible replacment for the above method. It is not tested but can take advantage of GDAL's min/max functions and avoids reading all params twice.
+  // 
   //   std::string paramNames[] = { "yearPlanted", "StartAge", "EndAge", "StartMonth", "" };
   //   for (int i = 0; paramNames[i] != ""; i++) {
   //     int pn = pNameToInd(paramNames[i]);
