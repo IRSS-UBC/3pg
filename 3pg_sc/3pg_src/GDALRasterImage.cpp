@@ -16,6 +16,7 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 		throw std::invalid_argument("File cannot be opened.");
 	}
 
+	name = filename;
 	// Assume there is only one band in the raster source and use that
 	if (dataset->GetRasterCount() != 1) {
 		GDALClose(GDALDataset::ToHandle(dataset));
@@ -61,6 +62,7 @@ GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid)
 	};
 	GDALDriver* driver = GetGDALDriverManager()->GetDriverByName("GTiff");
 	dataset = driver->Create(filename.c_str(), refGrid->nCols, refGrid->nRows, 1, GDT_Float32, NULL);
+	name = filename;
 	dataset->SetGeoTransform(refGrid->datasetTransform);
 	dataset->SetProjection(refGrid->crs);
 	band = dataset->GetRasterBand(1);
@@ -85,6 +87,7 @@ GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid)
 
 };
 
+
 GDALRasterImage::~GDALRasterImage() {
 	// From API docs, why `GDALClose()` and not `~GDALDataset()`: 
 	// Equivalent of the C callable GDALClose(). Except that GDALClose() first decrements the reference count, and then closes only if it has dropped to zero.
@@ -101,26 +104,12 @@ void GDALRasterImage::Close() {
 	GDALClose(GDALDataset::ToHandle(dataset));
 };
 
-// void GDALRasterImage::Create(std::string fname) {
-// 	// Create a new dataset with the same extent, transform, and crs as the source
-// 	GDALDriver* driver = GetGDALDriverManager()->GetDriverByName("GTiff");
-// 	GDALDataset* outDataset = driver->Create(fname.c_str(), nCols, nRows, 1, GDT_Float32, NULL);
-// 	outDataset->SetGeoTransform(datasetTransform);
-// 	outDataset->SetProjection(crs);
-// 	GDALRasterBand* outBand = outDataset->GetRasterBand(1);
-// 	outBand->SetNoDataValue(noData);
-// 	GByte abyRaster[nCols*nRows];
-// 	outBand->RasterIO(GF_Write, 0, 0, nCols, nRows, abyRaster, nCols, nRows, GDT_Float32, 0, 0);
-// 	GDALClose(GDALDataset::ToHandle(outDataset));
-// };
-
 float GDALRasterImage::GetVal(int x, int y) {
 	float pixelValue;
 	if (band->RasterIO(GF_Read, x, y, 1, 1, &pixelValue, 1, 1, GDT_Float32, 0, 0) != CE_None) {
 		throw std::invalid_argument("Cannot read pixel value.");
 	}
 	return pixelValue;
-
 };
 
 float GDALRasterImage::GetVal(int index) {
