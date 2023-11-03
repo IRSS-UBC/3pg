@@ -41,7 +41,7 @@ void CloseGrids(void);
 void PrintGrids(void);
 int openRegularOutputGrids( GDALRasterImage*refGrid, MYDate spMinMY, MYDate spMaxMY );
 void readSampleFile( GDALRasterImage*refGrid );
-int writeOutputGrids(void);
+int writeOutputGrids(bool hitNODATA, long cellIndex);
 void writeStandSummary(int year);
 void InitInputParams(void);
 bool userVpdSeries(void);

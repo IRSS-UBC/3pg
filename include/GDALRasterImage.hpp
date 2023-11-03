@@ -14,6 +14,7 @@ class GDALRasterImage {
 
 public:
 
+	std::string name;
 	double noData{ 0 };
 	int nRows { 0 };
 	int nCols { 0 };
