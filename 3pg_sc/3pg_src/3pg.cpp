@@ -218,19 +218,12 @@ int main(int argc, char *argv[])
   }
 
  
-  if (spatial) {
-      int cellsDone = 0;
-      int cellsTotal = (nrows - 2) * (ncols - 2);
-      int lastProgress = -1;
-      //fprintf(stdout, "                              \r");
-  }
 // Run the model. 
   if (spatial) {
      std::cout << "Running model..." << std::endl;
      int cellsDone = 0;
      int cellsTotal = (nrows) * (ncols); 
      int lastProgress = -1; 
-     fprintf(stdout, "                              \r");
      for (int j = 0; j < cellsTotal ; j++)
      {
        //PrintGrids();
