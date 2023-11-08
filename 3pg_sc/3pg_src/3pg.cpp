@@ -15,12 +15,14 @@ Use of this software assumes agreement to this condition of use
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <boost/program_options.hpp>
+
 #include "gdal.h"
 #include "gdal_priv.h"
 #include "GDALRasterImage.hpp"
 #include "Data_io.hpp"
 #include "The_3PG_Model.hpp"
-#include <boost/program_options.hpp>
+#include "Params.hpp"
 
 // Need to provide getopt on MSVC. 
 //#ifdef WIN32
@@ -163,9 +165,14 @@ int main(int argc, char *argv[])
   // }
 
   // Load the parameters and output variables. 
-  InitInputParams();
-  readParamFile(defParamFile);
-  readParamFile(siteParamFile);
+  auto inputParams = InitInputParams();
+  auto seriesVars = initSeriesParams();
+  auto managVars = initMTParams();
+  auto outputVars = initOutputVars();
+
+  readParamFile(defParamFile, inputParams, outputVars, seriesVars, managVars);
+  readParamFile(siteParamFile, inputParams, outputVars, seriesVars, managVars);
+
   if (!haveAllParams())
     exit(EXIT_FAILURE);
 
