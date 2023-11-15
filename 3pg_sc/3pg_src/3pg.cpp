@@ -173,11 +173,11 @@ int main(int argc, char *argv[])
   readParamFile(defParamFile, inputParams, outputVars, seriesVars, managVars);
   readParamFile(siteParamFile, inputParams, outputVars, seriesVars, managVars);
 
-  if (!haveAllParams())
+  if (!haveAllParams(inputParams, seriesVars))
     exit(EXIT_FAILURE);
 
   // Check for a spatial run, if so open input grids and define refGrid. 
-  refGrid = openInputGrids();
+  refGrid = openInputGrids(inputParams, seriesVars, managVars);
   spatial = ( refGrid != NULL );
 
   // In point mode require the point mode output filename. 
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
   // Find the over all start year and end year. 
   // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
   std::cout << "Finding run period..." << std::endl;
-  findRunPeriod( refGrid, spMinMY, spMaxMY ); 
+  findRunPeriod( refGrid, spMinMY, spMaxMY, inputParams); 
   // fprintf( logfp, "first run mon/year = %2d/%4d, last run mon/year = %2d/%4d\n", spMinMY.mon, 
 	//   spMinMY.year, spMaxMY.mon, spMaxMY.year );
   // fprintf( stdout, "Expected run period of simulation: %d - %d\n", spMinMY.year, spMaxMY.year );
@@ -211,10 +211,10 @@ int main(int argc, char *argv[])
   if (spatial) {
     // Open output grids. 
     std::cout << "Opening output grids..." << std::endl;
-    openOutputGrids( refGrid );
+    openOutputGrids( refGrid, outputVars );
     std::cout << "Output grids opened." << std::endl;
     std::cout << "Opening regular output grids..." << std::endl;
-    openRegularOutputGrids( refGrid, spMinMY, spMaxMY );
+    openRegularOutputGrids( refGrid, spMinMY, spMaxMY, outputVars );
 
     std::cout << "Regular output grids opened." << std::endl;
     std::cout << "Reading points from sample file..." << std::endl;
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
        int progress = ((100 * cellsDone) / cellsTotal);
        if (progress > lastProgress)
          fprintf(stdout, "Completed %2u%%\r", progress);
-       runTreeModel( spMinMY, spMaxMY, spatial, j);
+       runTreeModel( spMinMY, spMaxMY, spatial, j, inputParams, seriesVars, outputVars);
        cellsDone++;
        lastProgress = progress;
       

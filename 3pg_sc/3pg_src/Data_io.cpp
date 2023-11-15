@@ -70,156 +70,156 @@ extern FILE *logfp;
 //int StartMonth;                               // month of year to start run
 //int yearPlanted;                              // year trees planted
 // ANL changed these three from int to double
-extern double StartAge, EndAge;                 // age of trees at start/end of run
-extern double StartMonth;                       // month of year to start run
-extern double yearPlanted;                      // year trees planted
-// int DaysInMonth[13];                         // array for days in months
-extern double DaysInMonth[13];                  // array for days in months
-//extern bool showDetailedResults;              // TRUE ==> show monthly results
-//extern bool showStandSummary;                 // TRUE ==> show stand summary
+//extern double StartAge, EndAge;                 // age of trees at start/end of run
+//extern double StartMonth;                       // month of year to start run
+//extern double yearPlanted;                      // year trees planted
+//// int DaysInMonth[13];                         // array for days in months
+//extern double DaysInMonth[13];                  // array for days in months
+extern bool showDetailedResults;              // TRUE ==> show monthly results
+extern bool showStandSummary;                 // TRUE ==> show stand summary
 extern bool modelMode3PGS;
-
-// Site characteristics, site specific parameters
-extern std::string siteName;                      // name of site
-extern double Lat;                              // site latitude
-extern double MaxASW, MinASWp;                  // maximum & minimum available soil water
-extern double FRp, FR;                              // current site fertility rating
-extern double FRstart, FRend, FRdec;            // Start, end and decrement % for fertility decrease with time
-extern double soilIndex;                        // soil class index
-extern double SWconst, SWpower;                 // soil parameters for soil class
-
-// Time variant management factors
-extern int nFertility;                          // size of site fertility array
-//extern MANAGE_TABLE Fertility[1000];            // time-variant site fertility
-extern int nMinAvailSW;                         // size of MinAvailSW array
-//extern MANAGE_TABLE MinAvailSW[1000];           // time-variant MinAvailSW (mm)
-extern int nIrrigation;                         // size of irrigation array
-//extern MANAGE_TABLE Irrigation[1000];           // time-variant irrigation (ML/y)
-extern double Irrig;                            // current annual irrigation (ML/y)
-
-// Mean monthly weather data
-//int mYears;                                   // years of met data available
-// ANL changed this from int to double
-extern double mYears;                           // years of met data available
-extern double mDayLength[13];                   // day length
-//int mFrostDays[13];                           // frost days/month
-// ANL changed this from int to double
-extern double mFrostDays[13];                   // frost days/month
-extern double mSolarRad[13];                    // solar radiation (MJ/m2/day)
-extern double mTx[13];                          // maximum temperature
-extern double mTn[13];                          // minimum temperature
-extern double mTav[13];                         // mean daily temperature
-extern double mVPD[13];                         // mean daily VPD
-extern double mRain[13];                        // total monthly rain + irrigation
-extern double mNDVI[13];                        // ANL monthly NDVI for 3PGS mode
-extern double mNetRad[13];                      // ANL can use net instead of short wave
-
-// Stand data
-// extern char SpeciesName[100];                // name of species
-// int StandAge;                                // stand age
-// ANL changed StandAge from int to double
-extern double StandAge;                         // stand age
-extern double ASW, ASWi;                        // available soil water
-extern double MinASWTG;                         // soil water modifier corrector
-extern double StemNoi, StemNo;                  // stem numbers
-extern double SeedlingMass;
-extern double WFi, WF;                          // foliage biomass
-extern double WRi, WR;                          // root biomass
-extern double WSi, WS;                          // stem biomass
-extern double LAIi, LAI;                        // canopy leaf area index
-extern double MAIi, MAI;                        // mean annual volume increment
-extern double avDBHi, avDBH;                    // average stem DBH
-extern double TotalW;                           // total biomass
-extern double BasArea;                          // basal area
-extern double StandVol;                         // stem volume
-extern double LAIx, ageLAIx;                    // peak LAI and age at peak LAI
-extern double MAIx, ageMAIx;                    // peak MAI and age at peak MAI
-extern double cumTransp;                        // annual stand transporation
-extern double cumIrrig;                         // annual irrig. to maintain MinASW
-
-// Stand factors that are specifically age dependent
-extern double SLA;
-extern double Littfall;
-extern double fracBB;
-extern double CanCover;
-
-// Parameter values
-// int MaxAge;
-// ANL changed MaxAge from int to double
-extern double MaxAge;
-extern double gammaFx, gammaF0, tgammaF;
-extern double Rttover;
-extern double SLA0, SLA1, tSLA;
-extern double fullCanAge;
-extern double k;
-extern double pFS2, pFS20;
-extern double StemConst, StemPower;
-extern double SWconst0, SWpower0;
-extern double Interception;
-extern double BLcond;
-extern double MaxCond, CoeffCond;
-extern double y;
-extern double growthTmax, growthTmin, growthTopt;
-extern double thinPower;           //Added 29-07-02
-extern double mF, mR, mS;          //Added 29-07-02
-extern double wSx1000;
-extern double m0, fN0, fNn;
-extern double alpha, alphaC;  //alphaC added 11/07/02
-extern double pRx, pRn;
-extern double nAge, rAge;
-extern double kF;
-extern double fracBB0, fracBB1, tBB;
-extern double fracBB; //fracBB added 11/07/02
-extern double Density;
-extern double pfsConst, pfsPower;                     // derived from pFS2, pFS20
-extern double rhoMin, rhoMax, tRho;             // Standage varying density 3-06-02 
-extern double PhysMod;
-extern double WUE;                              //Added 16/07/02
-extern double CVI;                              //Added 16/07/02
-extern double TotalLitter;                      //Added 16/07/02
-
-//Conversion factors
-extern double Qa, Qb; 
-extern double gDM_mol; 
-extern double molPAR_MJ; 
-
-//Additional factors (conductance)
-extern double LAIgcx;
-extern double MaxIntcptn;
-extern double LAImaxIntcptn;
-
-// Intermediate monthly results
-extern double m, alphaC;
-extern double RAD, PAR;
-extern double lightIntcptn;
-extern double fAge, fT, fFrost;
-extern double fVPD, fSW, fNutr;
-extern double CanCond;
-extern double Transp, EvapTransp;
-extern double AvStemMass;
-extern double APAR, APARu;
-extern double GPPmolc, GPPdm, NPP;
-extern double pR, pS, pF, pFS;
-extern double delWF, delWR, delWS;
-extern double delFloss, delRloss;
-extern double monthlyIrrig;
-
-// Annual results
-extern double cLAI, cGPP, cNPP, cCVI, cRainInt, cEvapTransp, cTransp, cWUE;
-extern double cumGPP, cumWabv;
-extern double abvgrndEpsilon, totalEpsilon;
-extern double StemGrthRate;
-extern double cLitter;
-extern double CumdelWF, CumdelWR, CumdelWS;
-extern double CumAPARU, cumARAD;
-extern double CumStemLoss;
-extern double CutStemMass1, CutStemMass2, CutStemMass3;
-
-//----------------------------------------------------------------------------------
-
-// 3PGS variables
-extern double NDVI_FPAR_intercept, NDVI_FPAR_constant; 
-extern double delWAG;
+//
+//// Site characteristics, site specific parameters
+//extern std::string siteName;                      // name of site
+//extern double Lat;                              // site latitude
+//extern double MaxASW, MinASWp;                  // maximum & minimum available soil water
+//extern double FRp, FR;                              // current site fertility rating
+//extern double FRstart, FRend, FRdec;            // Start, end and decrement % for fertility decrease with time
+//extern double soilIndex;                        // soil class index
+//extern double SWconst, SWpower;                 // soil parameters for soil class
+//
+//// Time variant management factors
+//extern int nFertility;                          // size of site fertility array
+////extern MANAGE_TABLE Fertility[1000];            // time-variant site fertility
+//extern int nMinAvailSW;                         // size of MinAvailSW array
+////extern MANAGE_TABLE MinAvailSW[1000];           // time-variant MinAvailSW (mm)
+//extern int nIrrigation;                         // size of irrigation array
+////extern MANAGE_TABLE Irrigation[1000];           // time-variant irrigation (ML/y)
+//extern double Irrig;                            // current annual irrigation (ML/y)
+//
+//// Mean monthly weather data
+////int mYears;                                   // years of met data available
+//// ANL changed this from int to double
+//extern double mYears;                           // years of met data available
+//extern double mDayLength[13];                   // day length
+////int mFrostDays[13];                           // frost days/month
+//// ANL changed this from int to double
+//extern double mFrostDays[13];                   // frost days/month
+//extern double mSolarRad[13];                    // solar radiation (MJ/m2/day)
+//extern double mTx[13];                          // maximum temperature
+//extern double mTn[13];                          // minimum temperature
+//extern double mTav[13];                         // mean daily temperature
+//extern double mVPD[13];                         // mean daily VPD
+//extern double mRain[13];                        // total monthly rain + irrigation
+//extern double mNDVI[13];                        // ANL monthly NDVI for 3PGS mode
+//extern double mNetRad[13];                      // ANL can use net instead of short wave
+//
+//// Stand data
+//// extern char SpeciesName[100];                // name of species
+//// int StandAge;                                // stand age
+//// ANL changed StandAge from int to double
+//extern double StandAge;                         // stand age
+//extern double ASW, ASWi;                        // available soil water
+//extern double MinASWTG;                         // soil water modifier corrector
+//extern double StemNoi, StemNo;                  // stem numbers
+//extern double SeedlingMass;
+//extern double WFi, WF;                          // foliage biomass
+//extern double WRi, WR;                          // root biomass
+//extern double WSi, WS;                          // stem biomass
+//extern double LAIi, LAI;                        // canopy leaf area index
+//extern double MAIi, MAI;                        // mean annual volume increment
+//extern double avDBHi, avDBH;                    // average stem DBH
+//extern double TotalW;                           // total biomass
+//extern double BasArea;                          // basal area
+//extern double StandVol;                         // stem volume
+//extern double LAIx, ageLAIx;                    // peak LAI and age at peak LAI
+//extern double MAIx, ageMAIx;                    // peak MAI and age at peak MAI
+//extern double cumTransp;                        // annual stand transporation
+//extern double cumIrrig;                         // annual irrig. to maintain MinASW
+//
+//// Stand factors that are specifically age dependent
+//extern double SLA;
+//extern double Littfall;
+//extern double fracBB;
+//extern double CanCover;
+//
+//// Parameter values
+//// int MaxAge;
+//// ANL changed MaxAge from int to double
+//extern double MaxAge;
+//extern double gammaFx, gammaF0, tgammaF;
+//extern double Rttover;
+//extern double SLA0, SLA1, tSLA;
+//extern double fullCanAge;
+//extern double k;
+//extern double pFS2, pFS20;
+//extern double StemConst, StemPower;
+//extern double SWconst0, SWpower0;
+//extern double Interception;
+//extern double BLcond;
+//extern double MaxCond, CoeffCond;
+//extern double y;
+//extern double growthTmax, growthTmin, growthTopt;
+//extern double thinPower;           //Added 29-07-02
+//extern double mF, mR, mS;          //Added 29-07-02
+//extern double wSx1000;
+//extern double m0, fN0, fNn;
+//extern double alpha, alphaC;  //alphaC added 11/07/02
+//extern double pRx, pRn;
+//extern double nAge, rAge;
+//extern double kF;
+//extern double fracBB0, fracBB1, tBB;
+//extern double fracBB; //fracBB added 11/07/02
+//extern double Density;
+//extern double pfsConst, pfsPower;                     // derived from pFS2, pFS20
+//extern double rhoMin, rhoMax, tRho;             // Standage varying density 3-06-02 
+//extern double PhysMod;
+//extern double WUE;                              //Added 16/07/02
+//extern double CVI;                              //Added 16/07/02
+//extern double TotalLitter;                      //Added 16/07/02
+//
+////Conversion factors
+//extern double Qa, Qb; 
+//extern double gDM_mol; 
+//extern double molPAR_MJ; 
+//
+////Additional factors (conductance)
+//extern double LAIgcx;
+//extern double MaxIntcptn;
+//extern double LAImaxIntcptn;
+//
+//// Intermediate monthly results
+//extern double m, alphaC;
+//extern double RAD, PAR;
+//extern double lightIntcptn;
+//extern double fAge, fT, fFrost;
+//extern double fVPD, fSW, fNutr;
+//extern double CanCond;
+//extern double Transp, EvapTransp;
+//extern double AvStemMass;
+//extern double APAR, APARu;
+//extern double GPPmolc, GPPdm, NPP;
+//extern double pR, pS, pF, pFS;
+//extern double delWF, delWR, delWS;
+//extern double delFloss, delRloss;
+//extern double monthlyIrrig;
+//
+//// Annual results
+//extern double cLAI, cGPP, cNPP, cCVI, cRainInt, cEvapTransp, cTransp, cWUE;
+//extern double cumGPP, cumWabv;
+//extern double abvgrndEpsilon, totalEpsilon;
+//extern double StemGrthRate;
+//extern double cLitter;
+//extern double CumdelWF, CumdelWR, CumdelWS;
+//extern double CumAPARU, cumARAD;
+//extern double CumStemLoss;
+//extern double CutStemMass1, CutStemMass2, CutStemMass3;
+//
+////----------------------------------------------------------------------------------
+//
+//// 3PGS variables
+//extern double NDVI_FPAR_intercept, NDVI_FPAR_constant; 
+//extern double delWAG;
 
 // ANL - other globals.
 bool yearlyOutput, monthlyOutput; 
@@ -235,172 +235,172 @@ std::string outPath = "./";
 //const std::string paramError = "paramError";
 
 
-PPPG_PARAM params[] =
-{
-  {"paramError", NULL},
-  {"pFS2",         pFS2},
-  {"pFS20",        pFS20},
-  {"StemConst",    StemConst},
-  {"StemPower",    StemPower},
-  {"pRx",          pRx},
-  {"pRn",          pRn},
-
-  // Temperature modifier (fT) | cardinal temperatures
-  // ANL - these have been renamed from just Tmax etc, to avoid confusion with the 
-  // climate variables. 
-  {"growthTmin",   growthTmin},
-  {"growthTopt",   growthTopt},
-  {"growthTmax",   growthTmax},
-
-  // Frost modifier
-  {"kF",           kF},
-
-  // Litterfall & root turnover
-  {"gammaFx",      gammaFx},
-  {"gammaF0",      gammaF0},
-  {"tgammaF",      tgammaF},
-  {"Rttover",      Rttover},
-
-  // conductances
-  {"MaxCond",      MaxCond},
-  {"CoeffCond",    CoeffCond},
-  {"BLcond",       BLcond},
-
-  // fertility effects
-  {"m0",           m0},
-  {"fN0",          fN0},
-  {"fNn",          fNn},
-
-  //Thinning effects
-  {"thinPower",    thinPower},
-  {"mF",           mF},
-  {"mR",           mR},
-  {"mS",           mS},
-
-  // Soil water modifier (fSW) | soil characteristics
-  {"SWconst0",     SWconst0},
-  {"SWpower0",     SWpower0},
-
-  // stem numbers
-  {"wSx1000",      wSx1000},
-
-  // Age modifier (fAge)
-  {"MaxAge",       MaxAge},
-  {"nAge",         nAge},
-  {"rAge",         rAge},
-
-  // Canopy structure and processes | specific leaf area
-  {"SLA0",         SLA0},
-  {"SLA1",         SLA1},
-  {"tSLA",         tSLA},
-  {"k",            k},
-  {"fullCanAge",   fullCanAge},
-  {"alpha",        alpha},
-  {"fracBB0",      fracBB0},
-  {"fracBB1",      fracBB1},
-  {"tBB",          tBB},
-
-  // various
-  {"y",            y},
-  {"rhoMin",       rhoMin},
-  {"rhoMax",       rhoMax},
-  {"tRho",         tRho},             // Standage varying density 3-06-02 
-
-  //Conversions
-  {"Qa",           Qa},
-  {"Qb",           Qb},
-  {"gDM_mol",      gDM_mol},
-  {"molPAR_MJ",    molPAR_MJ},
-
-  //Additional conversion factors 
-  {"LAIgcx",           LAIgcx},
-  {"MaxIntcptn",       MaxIntcptn},
-  {"LAImaxIntcptn",    LAImaxIntcptn},
-
-  // 3PG site parameters. 
-  {"Lat",          Lat},
-  {"FRp",          FRp},
-  {"FRstart",      FRstart},  //These three variables relate to fertility decrease with age
-  {"FRend",        FRend},
-  {"FRdec",        FRdec},
-  {"soilIndex",    soilIndex},
-  {"MaxASW",       MaxASW},
-  {"MinASWp",      MinASWp},
-
-  // Initial conditions. 
-  {"StartAge",     StartAge},
-  {"EndAge",       EndAge},
-  {"StartMonth",   StartMonth},
-  {"yearPlanted",  yearPlanted},  /* CHECK! do we still use this?*/
-  {"SeedlingMass", SeedlingMass},
-  {"WFi",          WFi},
-  {"WRi",          WRi},
-  {"WSi",          WSi},
-  {"StemNoi",      StemNoi},
-  {"ASWi",         ASWi},
-  {"MinASWTG",     MinASWTG},
-  //  {"yearPlanted",  &yearPlanted},  /* This has been moved as strange errors were occuring with grids here*/
-
-    // ANL - extras for 3PGS mode
-    {"NDVI_FPAR_intercept", NDVI_FPAR_intercept},
-    {"NDVI_FPAR_constant",  NDVI_FPAR_constant},
-
-    {"", NULL}  // NULL entries used to mark array ends. 
-};
-
-//----------------------------------------------------------------------------------
-
-// Initialisation of output variable array. This lists all possible output variables 
-// and sets up the mapping of the output variable to its name, which is used in 
-// parsing the parameter file.  
-PPPG_OP_VAR opVars[] = {
-  {"opVarError", NULL},
-  {"StemNo",     StemNo},
-  {"WF",         WF},
-  {"WR",         WR},
-  {"WS",         WS},
-  {"TotalW",     TotalW},
-  {"LAI",        LAI},
-  {"cLAI",       cLAI},
-  {"MAI",        MAI},
-  {"avDBH",      avDBH},
-  {"BasArea",    BasArea},
-  {"StandVol",   StandVol},
-  {"GPP",        GPPdm},
-  {"cGPP",       cGPP},
-  {"NPP",        NPP},
-  {"cNPP",       cNPP},
-  {"delWAG",     delWAG},
-  {"cumWabv",    cumWabv},
-  {"Transp",     Transp},
-  {"cTransp",    cTransp},
-  {"ASW",        ASW},
-  {"fSW",        fSW},
-  {"fVPD",       fVPD},
-  {"fT",         fT},
-  {"fNutr",      fNutr},
-  {"fFrost",     fAge},
-  {"APAR",       APAR},
-  {"APARu",      APARu},
-  {"EvapTransp", EvapTransp},
-  {"cEvapTransp",cEvapTransp}, //Added 08/11/02
-  {"LAIx",       LAIx},
-  {"ageLAIx",    ageLAIx},
-  {"MAIx",       MAIx},    //Added 29/07/2002
-  {"ageMAIx",    ageMAIx}, //Added 29/07/2002
-  {"FR",         FR},     //Added 11/07/2002
-  {"PhysMod",    PhysMod}, //Added 11/07/2002
-  {"alphaC",     alphaC},  //Added 11/07/2002
-  {"fAge",       fAge},    //Added 11/07/2002
-  {"fracBB",     fracBB},
-  {"WUE",        WUE},     //Added 16/07/02
-  {"cWUE",       cWUE},    //Added 08/11/02
-  {"CVI",        CVI},     //Added 16/07/02
-  {"cCVI",      cCVI},    //Added 08/11/02
-  {"TotalLitter", TotalLitter}, //Added 16/07/02
-  {"cLitter",    cLitter},
-  {"",         NULL}
-};
+//PPPG_PARAM params[] =
+//{
+//  {"paramError", NULL},
+//  {"pFS2",         pFS2},
+//  {"pFS20",        pFS20},
+//  {"StemConst",    StemConst},
+//  {"StemPower",    StemPower},
+//  {"pRx",          pRx},
+//  {"pRn",          pRn},
+//
+//  // Temperature modifier (fT) | cardinal temperatures
+//  // ANL - these have been renamed from just Tmax etc, to avoid confusion with the 
+//  // climate variables. 
+//  {"growthTmin",   growthTmin},
+//  {"growthTopt",   growthTopt},
+//  {"growthTmax",   growthTmax},
+//
+//  // Frost modifier
+//  {"kF",           kF},
+//
+//  // Litterfall & root turnover
+//  {"gammaFx",      gammaFx},
+//  {"gammaF0",      gammaF0},
+//  {"tgammaF",      tgammaF},
+//  {"Rttover",      Rttover},
+//
+//  // conductances
+//  {"MaxCond",      MaxCond},
+//  {"CoeffCond",    CoeffCond},
+//  {"BLcond",       BLcond},
+//
+//  // fertility effects
+//  {"m0",           m0},
+//  {"fN0",          fN0},
+//  {"fNn",          fNn},
+//
+//  //Thinning effects
+//  {"thinPower",    thinPower},
+//  {"mF",           mF},
+//  {"mR",           mR},
+//  {"mS",           mS},
+//
+//  // Soil water modifier (fSW) | soil characteristics
+//  {"SWconst0",     SWconst0},
+//  {"SWpower0",     SWpower0},
+//
+//  // stem numbers
+//  {"wSx1000",      wSx1000},
+//
+//  // Age modifier (fAge)
+//  {"MaxAge",       MaxAge},
+//  {"nAge",         nAge},
+//  {"rAge",         rAge},
+//
+//  // Canopy structure and processes | specific leaf area
+//  {"SLA0",         SLA0},
+//  {"SLA1",         SLA1},
+//  {"tSLA",         tSLA},
+//  {"k",            k},
+//  {"fullCanAge",   fullCanAge},
+//  {"alpha",        alpha},
+//  {"fracBB0",      fracBB0},
+//  {"fracBB1",      fracBB1},
+//  {"tBB",          tBB},
+//
+//  // various
+//  {"y",            y},
+//  {"rhoMin",       rhoMin},
+//  {"rhoMax",       rhoMax},
+//  {"tRho",         tRho},             // Standage varying density 3-06-02 
+//
+//  //Conversions
+//  {"Qa",           Qa},
+//  {"Qb",           Qb},
+//  {"gDM_mol",      gDM_mol},
+//  {"molPAR_MJ",    molPAR_MJ},
+//
+//  //Additional conversion factors 
+//  {"LAIgcx",           LAIgcx},
+//  {"MaxIntcptn",       MaxIntcptn},
+//  {"LAImaxIntcptn",    LAImaxIntcptn},
+//
+//  // 3PG site parameters. 
+//  {"Lat",          Lat},
+//  {"FRp",          FRp},
+//  {"FRstart",      FRstart},  //These three variables relate to fertility decrease with age
+//  {"FRend",        FRend},
+//  {"FRdec",        FRdec},
+//  {"soilIndex",    soilIndex},
+//  {"MaxASW",       MaxASW},
+//  {"MinASWp",      MinASWp},
+//
+//  // Initial conditions. 
+//  {"StartAge",     StartAge},
+//  {"EndAge",       EndAge},
+//  {"StartMonth",   StartMonth},
+//  {"yearPlanted",  yearPlanted},  /* CHECK! do we still use this?*/
+//  {"SeedlingMass", SeedlingMass},
+//  {"WFi",          WFi},
+//  {"WRi",          WRi},
+//  {"WSi",          WSi},
+//  {"StemNoi",      StemNoi},
+//  {"ASWi",         ASWi},
+//  {"MinASWTG",     MinASWTG},
+//  //  {"yearPlanted",  &yearPlanted},  /* This has been moved as strange errors were occuring with grids here*/
+//
+//    // ANL - extras for 3PGS mode
+//    {"NDVI_FPAR_intercept", NDVI_FPAR_intercept},
+//    {"NDVI_FPAR_constant",  NDVI_FPAR_constant},
+//
+//    {"", NULL}  // NULL entries used to mark array ends. 
+//};
+//
+////----------------------------------------------------------------------------------
+//
+//// Initialisation of output variable array. This lists all possible output variables 
+//// and sets up the mapping of the output variable to its name, which is used in 
+//// parsing the parameter file.  
+//PPPG_OP_VAR opVars[] = {
+//  {"opVarError", NULL},
+//  {"StemNo",     StemNo},
+//  {"WF",         WF},
+//  {"WR",         WR},
+//  {"WS",         WS},
+//  {"TotalW",     TotalW},
+//  {"LAI",        LAI},
+//  {"cLAI",       cLAI},
+//  {"MAI",        MAI},
+//  {"avDBH",      avDBH},
+//  {"BasArea",    BasArea},
+//  {"StandVol",   StandVol},
+//  {"GPP",        GPPdm},
+//  {"cGPP",       cGPP},
+//  {"NPP",        NPP},
+//  {"cNPP",       cNPP},
+//  {"delWAG",     delWAG},
+//  {"cumWabv",    cumWabv},
+//  {"Transp",     Transp},
+//  {"cTransp",    cTransp},
+//  {"ASW",        ASW},
+//  {"fSW",        fSW},
+//  {"fVPD",       fVPD},
+//  {"fT",         fT},
+//  {"fNutr",      fNutr},
+//  {"fFrost",     fAge},
+//  {"APAR",       APAR},
+//  {"APARu",      APARu},
+//  {"EvapTransp", EvapTransp},
+//  {"cEvapTransp",cEvapTransp}, //Added 08/11/02
+//  {"LAIx",       LAIx},
+//  {"ageLAIx",    ageLAIx},
+//  {"MAIx",       MAIx},    //Added 29/07/2002
+//  {"ageMAIx",    ageMAIx}, //Added 29/07/2002
+//  {"FR",         FR},     //Added 11/07/2002
+//  {"PhysMod",    PhysMod}, //Added 11/07/2002
+//  {"alphaC",     alphaC},  //Added 11/07/2002
+//  {"fAge",       fAge},    //Added 11/07/2002
+//  {"fracBB",     fracBB},
+//  {"WUE",        WUE},     //Added 16/07/02
+//  {"cWUE",       cWUE},    //Added 08/11/02
+//  {"CVI",        CVI},     //Added 16/07/02
+//  {"cCVI",      cCVI},    //Added 08/11/02
+//  {"TotalLitter", TotalLitter}, //Added 16/07/02
+//  {"cLitter",    cLitter},
+//  {"",         NULL}
+//};
  
 //----------------------------------------------------------------------------------
 
@@ -573,12 +573,12 @@ double lookupManageTable( int year, int table, double def, int k )
 
 //----------------------------------------------------------------------------------
 
-bool getSeriesVal(double& val, int ser, int calMonth, int calYear, int k)
+bool getSeriesVal(double& val, PPPG_SERIES_PARAM& series, int calMonth, int calYear, int k)
 {
-    PPPG_SERIES_PARAM* series;
+    //PPPG_SERIES_PARAM* series;
 
     // Which series. 
-    switch (ser) {
+    /*switch (ser) {
     case SS_TMAX:      series = &Tmax_vals;      break;
     case SS_TMIN:      series = &Tmin_vals;      break;
     case SS_TAVG:      series = &Tavg_vals;      break;
@@ -589,23 +589,23 @@ bool getSeriesVal(double& val, int ser, int calMonth, int calYear, int k)
     case SS_NETRAD:    series = &NetRad_vals;    break;
     case SS_VPD:       series = &Vpd_vals;       break;
     default: break;
-    }
+    }*/
 
     // Long run or 1 year data.
     int i;
-    if (series->oneYear) {
+    if (series.oneYear) {
         // calYear is irrelevant, calMonth will range from 1 to 12, series elements will 
         // be indexed from 0 to 11. 
         i = calMonth - 1;
     }
     else {
         // Long run data. 
-        i = (calYear - series->start) * 12 + calMonth - 1;
-        if (i > series->vlen * 12 - 1) {
+        i = (calYear - series.start) * 12 + calMonth - 1;
+        if (i > series.vlen * 12 - 1) {
             // Should not happen as we will sanity check series before running. 
             // sprintf(outstr.c_str(), "Attempted lookup of series element %d in series %d, only %d entries in series.\nCheck Start/End Ages.",
             //   i, ser, (series->vlen*12-1)); 
-            std::cout << "Attempted lookup of series element " << i << " in series " << ser << ", only " << (series->vlen * 12 - 1) << " entries in series.\nCheck Start/End Ages." << std::endl;
+            std::cout << "Attempted lookup of series element " << i << " in series " << series.id << ", only " << (series.vlen * 12 - 1) << " entries in series.\nCheck Start/End Ages." << std::endl;
             exit(EXIT_FAILURE);
             // logAndExit(logfp, outstr);
         }
@@ -617,9 +617,9 @@ bool getSeriesVal(double& val, int ser, int calMonth, int calYear, int k)
             // logAndExit(logfp, outstr);
         }
     }
-    if (getVVal(val, series->data[i], k))
+    if (getVVal(val, series.data[i], k))
         //std::cout << "For month " << calMonth << " and Year " << calYear << ", getting values from file : " << series->data[i].gridName << std::endl;
-        if (series->data[i].g->IsNoData(val)) {
+        if (series.data[i].g->IsNoData(val)) {
             return false;
         }
         else {
@@ -1705,7 +1705,7 @@ void readParamFile(const std::string& paramFile, std::vector<PPPG_PARAM>& params
     else if (readOutputParam(pName, pValues, lineNo, opVars)) { continue; }
     else if (readOtherParam(pName, pValues)) { continue; }
     else if (readInputSeriesParam(pName, pValues, inFile, lineNo, series)) { continue; }
-    //else if (readInputManageParam(pName, inFile, lineNo, managment)) { continue; } // axed for now
+    //else if (readInputManageParam(pName, inFile, lineNo, managment)) { continue; } // SVZ: axed for now
     else {
         std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
         exit(EXIT_FAILURE);
@@ -1715,7 +1715,7 @@ void readParamFile(const std::string& paramFile, std::vector<PPPG_PARAM>& params
 
 //----------------------------------------------------------------------------------
 
-bool haveAllParams()
+bool haveAllParams(std::vector<PPPG_PARAM>& params, std::vector<PPPG_SERIES_PARAM>& series)
 { 
   // Check that we have read a value for all parameters. 
   int i, pInd;
@@ -1771,35 +1771,92 @@ bool haveAllParams()
     ""
   };
 
-  // Temperature series
-  if ((!Tmax_vals.got) && (!userTavgSeries())){
+ /* {"Tmax_vals"},
+  { "Tmin_vals" },
+  { "Tavg_vals" },
+  { "Rain_vals" },
+  { "SolarRad_vals" },
+  { "FrostDays_vals" },
+  { "NdviAvh_vals" },
+  { "NetRad_vals" },
+  { "Vpd_vals" },*/
+
+      // Temperature series
+  bool tmax, tavg, tmin, frost, rain, vpd, solrad, netrad;
+  tmax = tavg = tmin = frost = rain = vpd = false;
+  for (const PPPG_SERIES_PARAM ser : series) {
+      if( ser.id == "Tmax_vals") {
+          if (ser.got) {
+              tmax = true;
+          }
+	  }
+	  else if (ser.id == "Tmin_vals") {
+          if (ser.got) {
+              tmin = true;
+          }
+      }
+      else if (ser.id == "Tavg_vals") {
+          if (ser.got) {
+              tavg = true;
+          }
+	  }
+      else if (ser.id == "Rain_vals") {
+          if (ser.got) {
+              rain = true;
+          }
+      }
+      else if (ser.id == "FrostDays_vals") {
+          if (ser.got) {
+              frost = true;
+          }
+	  }
+      else if (ser.id == "Vpd_vals") {
+          if (ser.got) {
+              vpd = true;
+          }
+	  }
+      else if (ser.id == "NetRad_vals") {
+          if (ser.got) {
+              netrad = true;
+          }
+	  }
+      else if (ser.id == "SolarRad_vals") {
+          if (ser.got) {
+              solrad = true;
+          }
+	  }
+  }
+
+  if (!tmax && !tavg) {
     std::cout << "No Tmax or Tavg data" << std::endl;
     exit(EXIT_FAILURE);
     // logAndExit(logfp, "No Tmax or Tavg data");
   }
-  if ((!Tmin_vals.got) && (!userTavgSeries())) {
+  if (!tmin && !tavg) {
     std::cout << "No Tmin or Tavg data" << std::endl;
     exit(EXIT_FAILURE);
     // logAndExit(logfp, "No Tmin or Tavg data");
   }
-  if (userTavgSeries()) {
+  if (tavg) {
     std::cout << "Using Tavg series" << std::endl;
-    if (!userVpdSeries())
+    if (!vpd) {
       std::cout << "No VPD series but VPD series is required if Tavg series is used" << std::endl;
       exit(EXIT_FAILURE);
+
+    }
       // logAndExit(logfp, "A VPD series is required if an average temperature series is used\n"); 
   }
-  if (!Rain_vals.got) {
+  if (!rain) {
     std::cout << "No Rain data" << std::endl;
     exit(EXIT_FAILURE);
     // logAndExit(logfp, "No Rain data");
   }
-  if (!SolarRad_vals.got && !NetRad_vals.got) {
+  if (!solrad && !netrad) {
     std::cout << "No Solar or Net Radiation data" << std::endl;
     exit(EXIT_FAILURE);
     // logAndExit(logfp, "No Solar or Net Radiation data");
   }
-  if (!FrostDays_vals.got) {
+  if (!frost) {
     std::cout << "No Frost data" << std::endl;
     exit(EXIT_FAILURE);
     // logAndExit(logfp, "No Frost data");
@@ -1821,7 +1878,7 @@ bool haveAllParams()
   }
 
   //fill in Seedling Mass or others just in case - seems to cause errors if not there...
-  if ( !haveSeedlingMass() )
+  if ( !haveSeedlingMass(params) )
   {
     // set the values of SeedlingMass ti
     params[indSeed].val = 0.0;
@@ -1891,7 +1948,7 @@ bool haveAllParams()
 
 //----------------------------------------------------------------------------------
 
-bool loadParamVals(int k)
+bool loadParamVals(int k, std::vector<PPPG_PARAM>& params)
 {
   // Load all model parameter values into their global variables.
   // Spatial parameters are taken from the current grid cell, and
@@ -1900,7 +1957,7 @@ bool loadParamVals(int k)
   int pn;
   GDALRasterImage *fg;
   float result;
-  char ErrorString[100];
+  //char ErrorString[100];
 
   for (pn=1; params[pn].id != ""; pn++)  {
     if (params[pn].got == true) 
@@ -1995,7 +2052,7 @@ void CloseGrids(void)
     }
 }
 
-GDALRasterImage* openInputGrids( )
+GDALRasterImage* openInputGrids(std::vector<PPPG_PARAM>& params, std::vector<PPPG_SERIES_PARAM>& series, std::vector<PPPG_MT_PARAM>&  mgmnt)
 {
   // Open any grids in the params array, the climate and NDVI series arrays, and 
   // the management tables. 
@@ -2041,24 +2098,21 @@ GDALRasterImage* openInputGrids( )
 
   // Open all series grids. 
   // For each series. 
-  PPPG_SERIES_PARAM *serlist[] = { &Tmax_vals, &Tmin_vals, &Rain_vals, &SolarRad_vals, 
-    &FrostDays_vals, &NdviAvh_vals, &NetRad_vals, &Vpd_vals, &Tavg_vals, NULL }; 
-  for (j = 0; serlist[j] != NULL; j++) {
-    ser = serlist[j];
-    for (int i = 0; i < ser->vlen * 12; i++) {
-      if ( openGrid( ser->data[i] ) ) {
+  for (PPPG_SERIES_PARAM ser: series) {
+    for (int i = 0; i < ser.vlen * 12; i++) {
+      if ( openGrid( ser.data[i] ) ) {
         spatial = true; 
         if ( first ) {
-          refGrid = (GDALRasterImage *)(ser->data[i].g);
+          refGrid = (GDALRasterImage *)(ser.data[i].g);
           first = false;
         }
-        else if ( ( fabs( refGrid->xMin - ser->data[i].g->xMin ) > 0.0001 ) 
-          || ( fabs( refGrid->yMin - ser->data[i].g->yMin ) > 0.0001 )
-          || ( fabs( refGrid->xMax - ser->data[i].g->xMax ) > 0.0001 )
-          || ( fabs( refGrid->yMax - ser->data[i].g->yMax ) > 0.0001 ) 
-          || ( refGrid->nRows != ser->data[i].g->nRows ) 
-          || ( refGrid->nCols != ser->data[i].g->nCols ) ) {
-            std::cout << "Grid dimensions must match, grid " << ser->data[i].gridName << " differs from first grid." << std::endl;
+        else if ( ( fabs( refGrid->xMin - ser.data[i].g->xMin ) > 0.0001 ) 
+          || ( fabs( refGrid->yMin - ser.data[i].g->yMin ) > 0.0001 )
+          || ( fabs( refGrid->xMax - ser.data[i].g->xMax ) > 0.0001 )
+          || ( fabs( refGrid->yMax - ser.data[i].g->yMax ) > 0.0001 ) 
+          || ( refGrid->nRows != ser.data[i].g->nRows ) 
+          || ( refGrid->nCols != ser.data[i].g->nCols ) ) {
+            std::cout << "Grid dimensions must match, grid " << ser.data[i].gridName << " differs from first grid." << std::endl;
             exit(EXIT_FAILURE);
           // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
           //   ser->data[i].gridName ); 
@@ -2069,32 +2123,33 @@ GDALRasterImage* openInputGrids( )
   }
 
   // Open all management table grids. 
-  PPPG_MT_PARAM *tab;
-  PPPG_MT_PARAM *tablist[] = { FertMT, IrrigMT, MinAswMT, NULL }; 
-  for (j = 0 ; tablist[j] != NULL; j++) {
-    tab = tablist[j]; 
-    for (int i = 0; tab[i].year > 0; i++) {
-      if ( openGrid( tab[i].data ) ) {
-        spatial = true; 
-        if ( first ) {
-          refGrid = (GDALRasterImage *)tab[i].data.g;
-          first = false; 
-        }
-        else if ( ( fabs( refGrid->xMin - tab[i].data.g->xMin ) > 0.0001 ) 
-          || ( fabs( refGrid->yMin - tab[i].data.g->yMin ) > 0.0001 )
-          || ( fabs( refGrid->xMax - tab[i].data.g->xMax ) > 0.0001 )
-          || ( fabs( refGrid->yMax - tab[i].data.g->yMax ) > 0.0001 ) 
-          || ( refGrid->nRows != tab[i].data.g->nRows ) 
-          || ( refGrid->nCols != tab[i].data.g->nCols ) ) {
-            std::cout << "Grid dimensions must match, grid " << tab[i].data.gridName << " differs from first grid." << std::endl;
-            exit(EXIT_FAILURE);
-          // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
-          //   tab[i].data.gridName ); 
-          // logAndExit(logfp, outstr); 
-        }
-      }
-    }
-  }
+  //PPPG_MT_PARAM *tab;
+  //PPPG_MT_PARAM *tablist[] = { FertMT, IrrigMT, MinAswMT, NULL }; 
+  // for (PPPG_SERIES_PARAM ser: series) {
+  // SVZ: axed for not, re-introduce later
+  //for (PPPG_MT_PARAM tab: mgmnt) {
+  //  for (int i = 0; tab[i].year > 0; i++) {
+  //    if ( openGrid( tab[i].data ) ) {
+  //      spatial = true; 
+  //      if ( first ) {
+  //        refGrid = (GDALRasterImage *)tab[i].data.g;
+  //        first = false; 
+  //      }
+  //      else if ( ( fabs( refGrid->xMin - tab[i].data.g->xMin ) > 0.0001 ) 
+  //        || ( fabs( refGrid->yMin - tab[i].data.g->yMin ) > 0.0001 )
+  //        || ( fabs( refGrid->xMax - tab[i].data.g->xMax ) > 0.0001 )
+  //        || ( fabs( refGrid->yMax - tab[i].data.g->yMax ) > 0.0001 ) 
+  //        || ( refGrid->nRows != tab[i].data.g->nRows ) 
+  //        || ( refGrid->nCols != tab[i].data.g->nCols ) ) {
+  //          std::cout << "Grid dimensions must match, grid " << tab[i].data.gridName << " differs from first grid." << std::endl;
+  //          exit(EXIT_FAILURE);
+  //        // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
+  //        //   tab[i].data.gridName ); 
+  //        // logAndExit(logfp, outstr); 
+  //      }
+  //    }
+  //  }
+  //}
 
   if (!spatial) {
     std::cout << "None" << std::endl;
@@ -2108,7 +2163,7 @@ GDALRasterImage* openInputGrids( )
 
 //----------------------------------------------------------------------------------
 
-int openOutputGrids(GDALRasterImage *refGrid)
+int openOutputGrids(GDALRasterImage *refGrid, std::vector<PPPG_OP_VAR>& opVars)
 {
   // Loop through opVars array and open output grid objects for all 
   // those variables marked for output.  
@@ -2192,7 +2247,7 @@ int writeOutputGrids(bool hitNODATA, long cellIndex) {
 
 //----------------------------------------------------------------------------------
 
-int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spMaxMY )
+int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spMaxMY, std::vector<PPPG_OP_VAR>& opVars)
 {
   // Open regular output grids. Unlike other grids in the program, these 
   // are managed as simple pointers to FILE.  This is because the current 
@@ -2578,7 +2633,7 @@ void writeStandSummary(int year)
 //----------------------------------------------------------------------------------
 
 // Could possibly replace this logic with use of min/max? Would avoid having to read every pixel.
-int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
+int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY, std::vector<PPPG_PARAM>& params)
 {
     // Find the calendar months and years for which the model will actually run, over 
     // the whole spatial area.  Cells with NODATA on any input cause that cell to 
@@ -2604,7 +2659,16 @@ int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
     
     // Point mode case.  If we are running in point mode yearPlanted, StartAge and 
     // EndAge are already defined. 
-    if ( !haveSpatialRunYears() ) {
+    double ypI = pNameToInd("yearPlanted");
+    double saI = pNameToInd("StartAge");
+    double eaI = pNameToInd("EndAge");
+    double smI = pNameToInd("StartMonth");
+    double yearPlanted = params[ypI].val;
+    double StartAge = params[saI].val;
+    double EndAge = params[eaI].val;
+    double StartMonth = params[smI].val;
+
+    if ( !haveSpatialRunYears(params) ) {
       minMY.year = (int)yearPlanted + (int)StartAge; 
       minMY.mon = (int)StartMonth;
       if (EndAge > yearPlanted)
@@ -2632,7 +2696,7 @@ int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
           if (cellIndex == 159)
             test = true;
 
-          hitNoData = !loadParamVals(cellIndex);
+          hitNoData = !loadParamVals(cellIndex, params);
 
           
           // Look for NODATA, to skip it. 
@@ -2963,7 +3027,7 @@ bool havePointOpFile()
     return true;
 }
 //----------------------------------------------------------------------------------
-bool haveSeedlingMass()
+bool haveSeedlingMass(const std::vector<PPPG_PARAM>& params)
 {
   int pInd;
   pInd = pNameToInd("SeedlingMass");
@@ -2974,7 +3038,7 @@ bool haveSeedlingMass()
 }
 
 //----------------------------------------------------------------------------------
-bool haveSpatialRunYears()
+bool haveSpatialRunYears(const std::vector<PPPG_PARAM>& params)
 {
   int pInd;
 
@@ -2995,7 +3059,12 @@ bool haveSpatialRunYears()
 }
 
 //----------------------------------------------------------------------------------
-
+bool seriesNotNull(PPPG_SERIES_PARAM& series) {
+    if (series.data != NULL)
+		return true;
+	else
+		return false;
+}
 bool userVpdSeries(void)
 {
   return (Vpd_vals.data != NULL); 
@@ -3017,7 +3086,7 @@ bool userTavgSeries(void)
 
 //----------------------------------------------------------------------------------
 
-bool haveMinASWTG(void)
+bool haveMinASWTG(const std::vector<PPPG_PARAM>& params)
 {
   int pInd;
   bool bResult;
@@ -3032,7 +3101,7 @@ bool haveMinASWTG(void)
 }
 //----------------------------------------------------------------------------------
 
-bool haveRhoMin(void)
+bool haveRhoMin(const std::vector<PPPG_PARAM>& params)
 {
   int pInd;
   bool bResult;
@@ -3047,7 +3116,7 @@ bool haveRhoMin(void)
 }
 //----------------------------------------------------------------------------------
 
-bool haveRhoMax(void)
+bool haveRhoMax(const std::vector<PPPG_PARAM>& params)
 {
   int pInd;
   bool bResult;
@@ -3062,7 +3131,7 @@ bool haveRhoMax(void)
 }
 //----------------------------------------------------------------------------------
 
-bool haveTRho(void)
+bool haveTRho(const std::vector<PPPG_PARAM>& params)
 {
   int pInd;
   bool bResult;
@@ -3082,7 +3151,7 @@ bool haveTRho(void)
 // FRend - When the age dependent modifier stops effecting the FR rating
 // FRdec - The decrement per month
 
-bool haveAgeDepFert(void)
+bool haveAgeDepFert(const std::vector<PPPG_PARAM>& params)
 {
   int pInd;
   

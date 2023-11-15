@@ -1,8 +1,10 @@
 // 3PG Input routines. 
 
 
-#include "GDALRasterImage.hpp"
 #include <string>
+#include <vector>
+#include "Params.hpp"
+#include "GDALRasterImage.hpp"
 // Must include FloatGrid.hpp prior to this. 
 #include "MYDate.h" 
 
@@ -22,7 +24,7 @@
 #define SS_VPD       7
 #define SS_TAVG      8
 
-bool loadParamVals(int k);
+bool loadParamVals(int k, std::vector<PPPG_PARAM>& params);
 // table must be one of MT_FERTILITY, MT_MINASW, MT_MINASW. 
 double lookupManageTable( int year, int table, double def, int cellIndex ); 
 void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex );
@@ -30,28 +32,34 @@ void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA, MYDate m
 void writeSampleFiles(int cellIndex, int month, long calYear);
 void saveVariableVals(int k, bool hitNODATA);
 // FILE *openLogFile(const std::string& siteParamFile);
-void readParamFile(const std::string& paramFile);
-GDALRasterImage* openInputGrids();
-bool haveAllParams();
+void readParamFile(const std::string& paramFile, std::vector<PPPG_PARAM>& params, std::vector<PPPG_OP_VAR>& opVars, std::vector<PPPG_SERIES_PARAM>& series, std::vector<PPPG_MT_PARAM>& managment);
+GDALRasterImage* openInputGrids(std::vector<PPPG_PARAM>& params, std::vector<PPPG_SERIES_PARAM>& series, std::vector<PPPG_MT_PARAM>& mgmnt);
+bool haveAllParams(std::vector<PPPG_PARAM>& params, std::vector<PPPG_SERIES_PARAM>& series);
 bool havePointOpFile();
-int findRunPeriod( GDALRasterImage*refGrid, MYDate &minMY, MYDate &maxMY );
-int openOutputGrids( GDALRasterImage*refGrid);
+int findRunPeriod( GDALRasterImage*refGrid, MYDate &minMY, MYDate &maxMY, std::vector<PPPG_PARAM>& params);
+int openOutputGrids( GDALRasterImage*refGrid, std::vector<PPPG_OP_VAR>& opVars);
 void ResetGrids(void);
 void CloseGrids(void);
 void PrintGrids(void);
-int openRegularOutputGrids( GDALRasterImage*refGrid, MYDate spMinMY, MYDate spMaxMY );
+int pNameToInd(const std::string& id);
+int opNameToInd(const std::string& id);
+int openRegularOutputGrids( GDALRasterImage*refGrid, MYDate spMinMY, MYDate spMaxMY, std::vector<PPPG_OP_VAR>& opVars);
 void readSampleFile( GDALRasterImage*refGrid );
 int writeOutputGrids(bool hitNODATA, long cellIndex);
 void writeStandSummary(int year);
-void InitInputParams(void);
+std::vector<PPPG_PARAM> InitInputParams(void);
+std::vector<PPPG_OP_VAR> initOutputVars(void);
+std::vector<PPPG_SERIES_PARAM> initSeriesParams(void);
+std::vector<PPPG_MT_PARAM> initMTParams(void);
 bool userVpdSeries(void);
 bool userNetRadSeries(void);
 bool userTavgSeries(void);
-bool haveAgeDepFert(void);
-bool haveMinASWTG(void);
-bool haveSeedlingMass(void);
-bool haveSpatialRunYears(void);
-bool haveRhoMin(void);  //Standage dependant Density 15/07/2002
-bool haveRhoMax(void);  //Standage dependant Density 15/07/2002
-bool haveTRho(void);    //Standage dependant Density 15/07/2002
-bool getSeriesVal(double &val, int ser, int calMonth, int calYear, int k);
+bool haveAgeDepFert(const std::vector<PPPG_PARAM>& params);
+bool haveMinASWTG(const std::vector<PPPG_PARAM>& params);
+bool haveSeedlingMass(const std::vector<PPPG_PARAM>& params);
+bool haveSpatialRunYears(const std::vector<PPPG_PARAM>& params);
+bool haveRhoMin(const std::vector<PPPG_PARAM>& params);  //Standage dependant Density 15/07/2002
+bool haveRhoMax(const std::vector<PPPG_PARAM>& params);  //Standage dependant Density 15/07/2002
+bool haveTRho(const std::vector<PPPG_PARAM>& params);    //Standage dependant Density 15/07/2002
+bool getSeriesVal(double &val, PPPG_SERIES_PARAM& series, int calMonth, int calYear, int k);
+bool seriesNotNull(PPPG_SERIES_PARAM& series);
