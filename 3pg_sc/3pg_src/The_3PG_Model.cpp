@@ -500,7 +500,7 @@ bool AssignMonthlyMetData(std::vector<PPPG_SERIES_PARAM>& series, int calMonth, 
 
     // Update to: for each eries in series if series.got, get val for month, year, cellIndex
     // "Tmax_vals", "Tmin_vals", "Tavg_vals", "Rain_vals", "SolarRad_vals", "FrostDays_vals", "NdviAvh_vals", "NetRad_vals", "Vpd_vals"
-    bool manTav;
+    bool manTav = false;
     for (PPPG_SERIES_PARAM ser: series) {
         if (ser.got) {
             if (ser.id == "Tmax_vals") {
@@ -690,7 +690,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     // ANL - only do dayLength here, as Tav and VPD potentially need recalculation each year. 
 
     // --------------------------------- Day Length ---------------------------------------
-    double Lat = params[pNameToInd("Lat")].val;
+    double Lat = params[pNameToInd("Lat", params)].val;
     dayofyr = -15;
     double mDayLength[13];
     for (int mn = 1; mn <= 12; mn++) {
@@ -706,7 +706,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
 
     // ANL - Load the parameter values.  On NODATA write NODATA to output 
     // grids. 
-    //hitNODATA = !loadParamVals(cellIndex);
+    hitNODATA = !loadParamVals(cellIndex, params);
 
     // For this cell, what is the first run month and the last run month, with reference 
     // to the January in minMY.  Use this later to spot periods that we skip calculations. 
@@ -714,122 +714,122 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     //   ( calYear - minCY.year ) * 12 + calMonth - 1; 
     //firstRunMonth = ( ( yearPlanted ) - minMY.year ) * 12 + StartMonth - 1; // (yearPlanted + 1)
     //lastRunMonth  =  ( yearPlanted + EndAge - minMY.year ) * 12 + StartMonth - 2;
-    double pFS2 = params[pNameToInd("pFS2")].val;
-    double pFS20 = params[pNameToInd("pFS20")].val;
-    double StemConst = params[pNameToInd("StemConst")].val;
-    double StemPower = params[pNameToInd("StemPower")].val;
-    double pRx = params[pNameToInd("pRx")].val;
-    double pRn = params[pNameToInd("pRn")].val;
-    double growthTmin = params[pNameToInd("growthTmin")].val;
-    double growthTopt = params[pNameToInd("growthTopt")].val;
-    double growthTmax = params[pNameToInd("growthTmax")].val;
-    double kF = params[pNameToInd("kF")].val;
-    double gammaFx = params[pNameToInd("gammaFx")].val;
-    double gammaF0 = params[pNameToInd("gammaF0")].val;
-    double tgammaF = params[pNameToInd("tgammaF")].val;
-    double Rttover = params[pNameToInd("Rttover")].val;
-    double MaxCond = params[pNameToInd("MaxCond")].val;
-    double CoeffCond = params[pNameToInd("CoeffCond")].val;
-    double BLcond = params[pNameToInd("BLcond")].val;
-    double m0 = params[pNameToInd("m0")].val;
-    double fN0 = params[pNameToInd("fN0")].val;
-    double fNn = params[pNameToInd("fNn")].val;
-    double thinPower = params[pNameToInd("thinPower")].val;
-    double mF = params[pNameToInd("mF")].val;
-    double mR = params[pNameToInd("mR")].val;
-    double mS = params[pNameToInd("mS")].val;
-    double SWconst0 = params[pNameToInd("SWconst0")].val;
-    double SWpower0 = params[pNameToInd("SWpower0")].val;
-    double wSx1000 = params[pNameToInd("wSx1000")].val;
-    double MaxAge = params[pNameToInd("MaxAge")].val;
-    double nAge = params[pNameToInd("nAge")].val;
-    double rAge = params[pNameToInd("rAge")].val;
-    double SLA0 = params[pNameToInd("SLA0")].val;
-    double SLA1 = params[pNameToInd("SLA1")].val;
-    double tSLA = params[pNameToInd("tSLA")].val;
-    double k = params[pNameToInd("k")].val;
-    double fullCanAge = params[pNameToInd("fullCanAge")].val;
-    double alpha = params[pNameToInd("alpha")].val;
-    double fracBB0 = params[pNameToInd("fracBB0")].val;
-    double fracBB1 = params[pNameToInd("fracBB1")].val;
-    double tBB = params[pNameToInd("tBB")].val;
-    double y = params[pNameToInd("y")].val;
-    double rhoMin = params[pNameToInd("rhoMin")].val;
-    double rhoMax = params[pNameToInd("rhoMax")].val;
-    double tRho = params[pNameToInd("tRho")].val;
-    double Qa = params[pNameToInd("Qa")].val;
-    double Qb = params[pNameToInd("Qb")].val;
-    double gDM_mol = params[pNameToInd("gDM_mol")].val;
-    double molPAR_MJ = params[pNameToInd("molPAR_MJ")].val;
-    double LAIgcx = params[pNameToInd("LAIgcx")].val;
-    double MaxIntcptn = params[pNameToInd("MaxIntcptn")].val;
-    double LAImaxIntcptn = params[pNameToInd("LAImaxIntcptn")].val;
+    double pFS2 = params[pNameToInd("pFS2", params)].val;
+    double pFS20 = params[pNameToInd("pFS20", params)].val;
+    double StemConst = params[pNameToInd("StemConst", params)].val;
+    double StemPower = params[pNameToInd("StemPower", params)].val;
+    double pRx = params[pNameToInd("pRx", params)].val;
+    double pRn = params[pNameToInd("pRn", params)].val;
+    double growthTmin = params[pNameToInd("growthTmin", params)].val;
+    double growthTopt = params[pNameToInd("growthTopt", params)].val;
+    double growthTmax = params[pNameToInd("growthTmax", params)].val;
+    double kF = params[pNameToInd("kF", params)].val;
+    double gammaFx = params[pNameToInd("gammaFx", params)].val;
+    double gammaF0 = params[pNameToInd("gammaF0", params)].val;
+    double tgammaF = params[pNameToInd("tgammaF", params)].val;
+    double Rttover = params[pNameToInd("Rttover", params)].val;
+    double MaxCond = params[pNameToInd("MaxCond", params)].val;
+    double CoeffCond = params[pNameToInd("CoeffCond", params)].val;
+    double BLcond = params[pNameToInd("BLcond", params)].val;
+    double m0 = params[pNameToInd("m0", params)].val;
+    double fN0 = params[pNameToInd("fN0", params)].val;
+    double fNn = params[pNameToInd("fNn", params)].val;
+    double thinPower = params[pNameToInd("thinPower", params)].val;
+    double mF = params[pNameToInd("mF", params)].val;
+    double mR = params[pNameToInd("mR", params)].val;
+    double mS = params[pNameToInd("mS", params)].val;
+    double SWconst0 = params[pNameToInd("SWconst0", params)].val;
+    double SWpower0 = params[pNameToInd("SWpower0", params)].val;
+    double wSx1000 = params[pNameToInd("wSx1000", params)].val;
+    double MaxAge = params[pNameToInd("MaxAge", params)].val;
+    double nAge = params[pNameToInd("nAge", params)].val;
+    double rAge = params[pNameToInd("rAge", params)].val;
+    double SLA0 = params[pNameToInd("SLA0", params)].val;
+    double SLA1 = params[pNameToInd("SLA1", params)].val;
+    double tSLA = params[pNameToInd("tSLA", params)].val;
+    double k = params[pNameToInd("k", params)].val;
+    double fullCanAge = params[pNameToInd("fullCanAge", params)].val;
+    double alpha = params[pNameToInd("alpha", params)].val;
+    double fracBB0 = params[pNameToInd("fracBB0", params)].val;
+    double fracBB1 = params[pNameToInd("fracBB1", params)].val;
+    double tBB = params[pNameToInd("tBB", params)].val;
+    double y = params[pNameToInd("y", params)].val;
+    double rhoMin = params[pNameToInd("rhoMin", params)].val;
+    double rhoMax = params[pNameToInd("rhoMax", params)].val;
+    double tRho = params[pNameToInd("tRho", params)].val;
+    double Qa = params[pNameToInd("Qa", params)].val;
+    double Qb = params[pNameToInd("Qb", params)].val;
+    double gDM_mol = params[pNameToInd("gDM_mol", params)].val;
+    double molPAR_MJ = params[pNameToInd("molPAR_MJ", params)].val;
+    double LAIgcx = params[pNameToInd("LAIgcx", params)].val;
+    double MaxIntcptn = params[pNameToInd("MaxIntcptn", params)].val;
+    double LAImaxIntcptn = params[pNameToInd("LAImaxIntcptn", params)].val;
     //double Lat = params[pNameToInd("Lat")].val;
-    double FRp = params[pNameToInd("FRp")].val;
-    double FRstart = params[pNameToInd("FRstart")].val;
-    double FRend = params[pNameToInd("FRend")].val;
-    double FRdec = params[pNameToInd("FRdec")].val;
-    double soilIndex = params[pNameToInd("soilIndex")].val;
-    double MaxASW = params[pNameToInd("MaxASW")].val;
-    double MinASWp = params[pNameToInd("MinASWp")].val;
-    double StartAge = params[pNameToInd("StartAge")].val;
-    double EndAge = params[pNameToInd("EndAge")].val;
-    double StartMonth = params[pNameToInd("StartMonth")].val;
-    double yearPlanted = params[pNameToInd("yearPlanted")].val;
-    double SeedlingMass = params[pNameToInd("SeedlingMass")].val;
-    double WFi = params[pNameToInd("WFi")].val;
-    double WRi = params[pNameToInd("WRi")].val;
-    double WSi = params[pNameToInd("WSi")].val;
-    double StemNoi = params[pNameToInd("StemNoi")].val;
-    double ASWi = params[pNameToInd("ASWi")].val;
-    double MinASWTG = params[pNameToInd("MinASWTG")].val;
-    double NDVI_FPAR_intercept = params[pNameToInd("NDVI_FPAR_intercept")].val;
-    double NDVI_FPAR_constant = params[pNameToInd("NDVI_FPAR_constant")].val;
+    double FRp = params[pNameToInd("FRp", params)].val;
+    double FRstart = params[pNameToInd("FRstart", params)].val;
+    double FRend = params[pNameToInd("FRend", params)].val;
+    double FRdec = params[pNameToInd("FRdec", params)].val;
+    double soilIndex = params[pNameToInd("soilIndex", params)].val;
+    double MaxASW = params[pNameToInd("MaxASW", params)].val;
+    double MinASWp = params[pNameToInd("MinASWp", params)].val;
+    double StartAge = params[pNameToInd("StartAge", params)].val;
+    double EndAge = params[pNameToInd("EndAge", params)].val;
+    double StartMonth = params[pNameToInd("StartMonth", params)].val;
+    double yearPlanted = params[pNameToInd("yearPlanted", params)].val;
+    double SeedlingMass = params[pNameToInd("SeedlingMass", params)].val;
+    double WFi = params[pNameToInd("WFi", params)].val;
+    double WRi = params[pNameToInd("WRi", params)].val;
+    double WSi = params[pNameToInd("WSi", params)].val;
+    double StemNoi = params[pNameToInd("StemNoi", params)].val;
+    double ASWi = params[pNameToInd("ASWi", params)].val;
+    double MinASWTG = params[pNameToInd("MinASWTG", params)].val;
+    double NDVI_FPAR_intercept = params[pNameToInd("NDVI_FPAR_intercept", params)].val;
+    double NDVI_FPAR_constant = params[pNameToInd("NDVI_FPAR_constant", params)].val;
 
-    double StemNo = outputs[opNameToInd("StemNo")].val;
-    double WF = outputs[opNameToInd("WF")].val;
-    double WR = outputs[opNameToInd("WR")].val;
-    double WS = outputs[opNameToInd("WS")].val;
-    double TotalW = outputs[opNameToInd("TotalW")].val;
-    double LAI = outputs[opNameToInd("LAI")].val;
-    double cLAI = outputs[opNameToInd("cLAI")].val;
-    double MAI = outputs[opNameToInd("MAI")].val;
-    double avDBH = outputs[opNameToInd("avDBH")].val;
-    double BasArea = outputs[opNameToInd("BasArea")].val;
-    double StandVol = outputs[opNameToInd("StandVol")].val;
-    double GPP = outputs[opNameToInd("GPP")].val;
-    double cGPP = outputs[opNameToInd("cGPP")].val;
-    double NPP = outputs[opNameToInd("NPP")].val;
-    double cNPP = outputs[opNameToInd("cNPP")].val;
-    double delWAG = outputs[opNameToInd("delWAG")].val;
-    double cumWabv = outputs[opNameToInd("cumWabv")].val;
-    double Transp = outputs[opNameToInd("Transp")].val;
-    double cTransp = outputs[opNameToInd("cTransp")].val;
-    double ASW = outputs[opNameToInd("ASW")].val;
-    double fSW = outputs[opNameToInd("fSW")].val;
-    double fVPD = outputs[opNameToInd("fVPD")].val;
-    double fT = outputs[opNameToInd("fT")].val;
-    double fNutr = outputs[opNameToInd("fNutr")].val;
-    double fFrost = outputs[opNameToInd("fFrost")].val;
-    double APAR = outputs[opNameToInd("APAR")].val;
-    double APARu = outputs[opNameToInd("APARu")].val;
-    double EvapTransp = outputs[opNameToInd("EvapTransp")].val;
-    double cEvapTransp = outputs[opNameToInd("cEvapTransp")].val;
-    double LAIx = outputs[opNameToInd("LAIx")].val;
-    double ageLAIx = outputs[opNameToInd("ageLAIx")].val;
-    double MAIx = outputs[opNameToInd("MAIx")].val;
-    double ageMAIx = outputs[opNameToInd("ageMAIx")].val;
-    double FR = outputs[opNameToInd("FR")].val;
-    double PhysMod = outputs[opNameToInd("PhysMod")].val;
-    double alphaC = outputs[opNameToInd("alphaC")].val;
-    double fAge = outputs[opNameToInd("fAge")].val;
-    double fracBB = outputs[opNameToInd("fracBB")].val;
-    double WUE = outputs[opNameToInd("WUE")].val;
-    double cWUE = outputs[opNameToInd("cWUE")].val;
-    double CVI = outputs[opNameToInd("CVI")].val;
-    double cCVI = outputs[opNameToInd("cCVI")].val;
-    double TotalLitter = outputs[opNameToInd("TotalLitter")].val;
-    double cLitter = outputs[opNameToInd("cLitter")].val;
+    double StemNo = outputs[opNameToInd("StemNo", outputs)].val;
+    double WF = outputs[opNameToInd("WF", outputs)].val;
+    double WR = outputs[opNameToInd("WR", outputs)].val;
+    double WS = outputs[opNameToInd("WS", outputs)].val;
+    double TotalW = outputs[opNameToInd("TotalW", outputs)].val;
+    double LAI = outputs[opNameToInd("LAI", outputs)].val;
+    double cLAI = outputs[opNameToInd("cLAI", outputs)].val;
+    double MAI = outputs[opNameToInd("MAI", outputs)].val;
+    double avDBH = outputs[opNameToInd("avDBH", outputs)].val;
+    double BasArea = outputs[opNameToInd("BasArea", outputs)].val;
+    double StandVol = outputs[opNameToInd("StandVol", outputs)].val;
+    double GPP = outputs[opNameToInd("GPP", outputs)].val;
+    double cGPP = outputs[opNameToInd("cGPP", outputs)].val;
+    double NPP = outputs[opNameToInd("NPP", outputs)].val;
+    double cNPP = outputs[opNameToInd("cNPP", outputs)].val;
+    double delWAG = outputs[opNameToInd("delWAG", outputs)].val;
+    double cumWabv = outputs[opNameToInd("cumWabv", outputs)].val;
+    double Transp = outputs[opNameToInd("Transp", outputs)].val;
+    double cTransp = outputs[opNameToInd("cTransp", outputs)].val;
+    double ASW = outputs[opNameToInd("ASW", outputs)].val;
+    double fSW = outputs[opNameToInd("fSW", outputs)].val;
+    double fVPD = outputs[opNameToInd("fVPD", outputs)].val;
+    double fT = outputs[opNameToInd("fT", outputs)].val;
+    double fNutr = outputs[opNameToInd("fNutr", outputs)].val;
+    double fFrost = outputs[opNameToInd("fFrost", outputs)].val;
+    double APAR = outputs[opNameToInd("APAR", outputs)].val;
+    double APARu = outputs[opNameToInd("APARu", outputs)].val;
+    double EvapTransp = outputs[opNameToInd("EvapTransp", outputs)].val;
+    double cEvapTransp = outputs[opNameToInd("cEvapTransp", outputs)].val;
+    double LAIx = outputs[opNameToInd("LAIx", outputs)].val;
+    double ageLAIx = outputs[opNameToInd("ageLAIx", outputs)].val;
+    double MAIx = outputs[opNameToInd("MAIx", outputs)].val;
+    double ageMAIx = outputs[opNameToInd("ageMAIx", outputs)].val;
+    double FR = outputs[opNameToInd("FR", outputs)].val;
+    double PhysMod = outputs[opNameToInd("PhysMod", outputs)].val;
+    double alphaC = outputs[opNameToInd("alphaC", outputs)].val;
+    double fAge = outputs[opNameToInd("fAge", outputs)].val;
+    double fracBB = outputs[opNameToInd("fracBB", outputs)].val;
+    double WUE = outputs[opNameToInd("WUE", outputs)].val;
+    double cWUE = outputs[opNameToInd("cWUE", outputs)].val;
+    double CVI = outputs[opNameToInd("CVI", outputs)].val;
+    double cCVI = outputs[opNameToInd("cCVI", outputs)].val;
+    double TotalLitter = outputs[opNameToInd("TotalLitter", outputs)].val;
+    double cLitter = outputs[opNameToInd("cLitter", outputs)].val;
 
 
 
@@ -971,7 +971,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
         // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
         //previous calculated values are written instead of nodata
 
-        writeMonthlyOutputGrids(calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
+        writeMonthlyOutputGrids(outputs, calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
 
         // Monthly sample point output
         //if (samplePointsMonthly)
@@ -1071,7 +1071,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
             if (calYear == minMY.year)
 
                 for (int beforeCalcMonth = 1; beforeCalcMonth < StartMonth; beforeCalcMonth++)
-                    writeMonthlyOutputGrids(calYear, beforeCalcMonth, true, minMY, maxMY, cellIndex);
+                    writeMonthlyOutputGrids(outputs, calYear, beforeCalcMonth, true, minMY, maxMY, cellIndex);
         }
 
         //Initialise output step cumulative variables
@@ -1441,11 +1441,13 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
             if (spatial) {
                 // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
                 //previous calculated values are written instead of nodata
-                writeMonthlyOutputGrids(calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
+                writeMonthlyOutputGrids(outputs, calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
 
                 // Monthly sample point output
-                if (samplePointsMonthly)
-                    writeSampleFiles(cellIndex, calMonth, calYear);
+                if (samplePointsMonthly) {
+                    std::cout << "skipped writing sample files..." << std::endl;
+                }
+                    //writeSampleFiles(cellIndex, calMonth, calYear);
             }
             // if (showDetailedResults) writeMonthlySummary(lastMonthFile, monthCounter, year);
 
@@ -1494,12 +1496,14 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
         // ANL if (showStandSummary) writeStandSummary(year);if(calMonth == 1)
 
         if (!spatial) {
-            writeStandSummary(year);
+            //writeStandSummary(year);
+            std::cout << "writing stand summary skipped..." << std::endl;
         }
         else {
             // ANL - Annual sample point output. 
             if (samplePointsYearly)
-                writeSampleFiles(cellIndex, 12, calYear);
+                //writeSampleFiles(cellIndex, 12, calYear);
+                std::cout << "writing sample files skipped..." << std::endl;
         }
 
         // Restore LAI
@@ -1508,6 +1512,6 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     }
     // if spatial mode, write the final result of the variables to files.
     if (spatial) {
-		writeOutputGrids(hitNODATA, cellIndex);
+		writeOutputGrids(hitNODATA, cellIndex, outputs);
 	}
 }

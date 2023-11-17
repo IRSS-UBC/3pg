@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
     std::cout << "Regular output grids opened." << std::endl;
     std::cout << "Reading points from sample file..." << std::endl;
     // Open and read sample point file
-    readSampleFile( refGrid ); 
+    readSampleFile( refGrid, outputVars); 
     std::cout << "Points read from sample file." << std::endl;
     // fprintf(logfp, "Processing %u cells...\n", nrows * ncols);
   }
@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
 //     runTreeModel(spMinMY, spMaxMY, spatial, 0);
 //   }
 
-  CloseGrids(); //Close all files currently open...
+  CloseGrids(inputParams, outputVars); //Close all files currently open...
 
   return EXIT_SUCCESS;
 }
