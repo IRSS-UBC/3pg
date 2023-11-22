@@ -1477,13 +1477,62 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
   // be reused for each run year.
   // Secondly, the parameter name can be the only thing on the line (other than a comment),
   // on each following line must be a year followed by 12 values, until the sequence is terminated by a blank 
-  // line.  The year values must be in ascending order. 
-  PPPG_SERIES_PARAM *series; 
+  // line.  The year values must be in ascending order.  
   int ser; 
   int series_yr, prev_yr; 
   std::string tok, line;
 
   for (auto &series : seriesV) {
+
+      if (pName == "Tmax") {
+          if (series.id != "Tmax_vals") {
+              continue;
+          }
+      }
+      else if (pName == "Tmin") {
+          if (series.id != "Tmin_vals") {
+              continue;
+          }
+      }
+      else if (pName == "Tavg") {
+          if (series.id != "Tavg_vals") {
+              continue;
+          }
+      }
+      else if (pName == "Rain") {
+          if (series.id != "Rain_vals") {
+              continue;
+          }
+
+      }
+      else if (pName == "Solar Radtn") {
+          if (series.id != "SolarRad_vals") {
+              continue;
+          }
+      }
+      else if (pName == "Frost days") {
+          if (series.id != "FrostDays_vals") {
+              continue;
+          }
+      }
+      else if (pName == "NDVI_AVH") {
+          if (series.id != "NdviAvh_vals") {
+              continue;
+          }
+      }
+      else if (pName == "Net radtn") {
+          if (series.id != "NetRad_vals") {
+              continue;
+          }
+      }
+      else if (pName == "VPD") {
+          if (series.id != "Vpd_vals") {
+              continue;
+          }
+	  }
+      else {
+		  return false;
+	  }
 
       //// Which series. 
       //if (      namesMatch ("Tmax",        pName ) ) ser = SS_TMAX; 
@@ -2218,6 +2267,7 @@ int writeOutputGrids(bool hitNODATA, long cellIndex, const std::vector<PPPG_OP_V
               if (hitNODATA) {
                   fval = fp->noData;
               }
+              //std::cout << "Setting value " << fval << std::endl;
               fp->SetVal(cellIndex, fval);
 
           }
@@ -2510,7 +2560,7 @@ void writeMonthlyOutputGrids(const std::vector<PPPG_OP_VAR> opVars, int calYear,
             if (hitNODATA) {
                 fval = fg->noData;
             }
-            //std::cout << "Writing value of: " << fval << " to " << fp->name << std::endl;
+            //std::cout <<d "Writing value " << std::endl;
             fp->SetVal(cellIndex, fval);
         }
     }
@@ -2999,13 +3049,13 @@ std::vector<PPPG_SERIES_PARAM> initSeriesParams()
     std::vector<PPPG_SERIES_PARAM> seriesParams{
 		{"Tmax_vals"},
 		{"Tmin_vals"},
-		{"Tavg_vals"},
 		{"Rain_vals"},
         {"SolarRad_vals"},
         {"FrostDays_vals"},
         {"NdviAvh_vals"},
         {"NetRad_vals"},
         {"Vpd_vals"},
+		{"Tavg_vals"},
 	};
 	return seriesParams;
 }

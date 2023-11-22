@@ -502,59 +502,56 @@ bool AssignMonthlyMetData(std::vector<PPPG_SERIES_PARAM>& series, int calMonth, 
     // "Tmax_vals", "Tmin_vals", "Tavg_vals", "Rain_vals", "SolarRad_vals", "FrostDays_vals", "NdviAvh_vals", "NetRad_vals", "Vpd_vals"
     bool manTav = false;
     for (PPPG_SERIES_PARAM ser: series) {
-        if (ser.got) {
-            if (ser.id == "Tmax_vals") {
-				if (!getSeriesVal(Tx, ser, calMonth, calYear, cellIndex))
-					hitNODATA = true;
-			}
-            else if (ser.id == "Tmin_vals") {
-				if (!getSeriesVal(Tn, ser, calMonth, calYear, cellIndex))
-					hitNODATA = true;
-			}
-            else if (ser.id == "Tavg_vals") {
-                if (seriesNotNull(ser)) {
-                    if (!getSeriesVal(Tav, ser, calMonth, calYear, cellIndex))
-                        hitNODATA = true;
-                }
-                else {
-                    manTav = true;
-				}
-			}
-            else if (ser.id == "Rain_vals") {
-				if (!getSeriesVal(Rain, ser, calMonth, calYear, cellIndex))
-					hitNODATA = true;
-			}
-            else if (ser.id == "SolarRad_vals") {
-				if (!getSeriesVal(SolarRad, ser, calMonth, calYear, cellIndex))
-					hitNODATA = true;
-			}
-            if (ser.id == "FrostDays_vals") {
-                if (!getSeriesVal(FrostDays, ser, calMonth, calYear, cellIndex))
+        if (ser.id == "Tmax_vals") {
+			if (!getSeriesVal(Tx, ser, calMonth, calYear, cellIndex))
+				hitNODATA = true;
+		}
+        else if (ser.id == "Tmin_vals") {
+			if (!getSeriesVal(Tn, ser, calMonth, calYear, cellIndex))
+				hitNODATA = true;
+		}
+        else if (ser.id == "Tavg_vals") {
+            if (seriesNotNull(ser)) {
+                if (!getSeriesVal(Tav, ser, calMonth, calYear, cellIndex))
                     hitNODATA = true;
             }
-            if (ser.id == "NetRad_vals") {
-                if (userNetRadSeries()) {
-					if (!getSeriesVal(NetRad, ser, calMonth, calYear, cellIndex))
-						hitNODATA = true;
-				}
+            else {
+                manTav = true;
 			}
-
-            if (ser.id == "Vpd_vals") {
-                if (seriesNotNull(ser)) {
-                    if (!getSeriesVal(VPD, ser, calMonth, calYear, cellIndex))
-                        hitNODATA = true;
-                }
-                else {
-                    VPD = getVPD(Tx, Tn);
-                }
-            }
-            if (modelMode3PGS) {
-                if (ser.id == "NdviAvh_vals") {
-                    if (!getSeriesVal(NDVI_AVH, ser, calMonth, calYear, cellIndex))
-                        hitNODATA = true;
-                }
-            }
 		}
+        else if (ser.id == "Rain_vals") {
+			if (!getSeriesVal(Rain, ser, calMonth, calYear, cellIndex))
+				hitNODATA = true;
+		}
+        else if (ser.id == "SolarRad_vals") {
+			if (!getSeriesVal(SolarRad, ser, calMonth, calYear, cellIndex))
+				hitNODATA = true;
+		}
+        if (ser.id == "FrostDays_vals") {
+            if (!getSeriesVal(FrostDays, ser, calMonth, calYear, cellIndex))
+                hitNODATA = true;
+        }
+        if (ser.id == "NetRad_vals") {
+            if (userNetRadSeries()) {
+				if (!getSeriesVal(NetRad, ser, calMonth, calYear, cellIndex))
+					hitNODATA = true;
+			}
+		}
+        if (ser.id == "Vpd_vals") {
+            if (seriesNotNull(ser)) {
+                if (!getSeriesVal(VPD, ser, calMonth, calYear, cellIndex))
+                    hitNODATA = true;
+            }
+            else {
+                VPD = getVPD(Tx, Tn);
+            }
+        }
+        if (modelMode3PGS) {
+            if (ser.id == "NdviAvh_vals") {
+                if (!getSeriesVal(NDVI_AVH, ser, calMonth, calYear, cellIndex))
+                    hitNODATA = true;
+            }
+        }
 	}
     if (manTav) {
         Tav = (Tx + Tn) / 2;
@@ -593,14 +590,15 @@ bool AssignMonthlyMetData(std::vector<PPPG_SERIES_PARAM>& series, int calMonth, 
         if (!getSeriesVal(NDVI_AVH, SS_NDVI_AVH, calMonth, calYear, cellIndex))
             hitNODATA = true;
     }*/
-    //std::cout << "hit noData: " << hitNODATA << std::endl;
-    //std::cout << "SolarRad: " << SolarRad << std::endl;
-    //std::cout << "FrostDays: " << FrostDays << std::endl;
-    //std::cout << "Rain: " << Rain << std::endl;
-    //std::cout << "NetRad: " << NetRad << std::endl;
-    //std::cout << "Tx: " << Tx << std::endl;
-    //std::cout << "Tn: " << Tn << std::endl;
-    //std::cout << "Tav: " << Tav << std::endl;
+    /*std::cout << "CellIndex: " << cellIndex << std::endl;
+    std::cout << "hit noData: " << hitNODATA << std::endl;
+    std::cout << "SolarRad: " << SolarRad << std::endl;
+    std::cout << "FrostDays: " << FrostDays << std::endl;
+    std::cout << "Rain: " << Rain << std::endl;
+    std::cout << "NetRad: " << NetRad << std::endl;
+    std::cout << "Tx: " << Tx << std::endl;
+    std::cout << "Tn: " << Tn << std::endl;
+    std::cout << "Tav: " << Tav << std::endl;*/
     return hitNODATA;
 }
 
@@ -682,6 +680,8 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     // month counters
     //int firstRunMonth, lastRunMonth;
     int runMonth;
+
+    double cRADint, cStemDM, cRainInt, cSupIrrig;
 
 
 
@@ -786,50 +786,50 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     double NDVI_FPAR_intercept = params[pNameToInd("NDVI_FPAR_intercept", params)].val;
     double NDVI_FPAR_constant = params[pNameToInd("NDVI_FPAR_constant", params)].val;
 
-    double StemNo = outputs[opNameToInd("StemNo", outputs)].val;
-    double WF = outputs[opNameToInd("WF", outputs)].val;
-    double WR = outputs[opNameToInd("WR", outputs)].val;
-    double WS = outputs[opNameToInd("WS", outputs)].val;
-    double TotalW = outputs[opNameToInd("TotalW", outputs)].val;
-    double LAI = outputs[opNameToInd("LAI", outputs)].val;
-    double cLAI = outputs[opNameToInd("cLAI", outputs)].val;
-    double MAI = outputs[opNameToInd("MAI", outputs)].val;
-    double avDBH = outputs[opNameToInd("avDBH", outputs)].val;
-    double BasArea = outputs[opNameToInd("BasArea", outputs)].val;
-    double StandVol = outputs[opNameToInd("StandVol", outputs)].val;
-    double GPP = outputs[opNameToInd("GPP", outputs)].val;
-    double cGPP = outputs[opNameToInd("cGPP", outputs)].val;
-    double NPP = outputs[opNameToInd("NPP", outputs)].val;
-    double cNPP = outputs[opNameToInd("cNPP", outputs)].val;
-    double delWAG = outputs[opNameToInd("delWAG", outputs)].val;
-    double cumWabv = outputs[opNameToInd("cumWabv", outputs)].val;
-    double Transp = outputs[opNameToInd("Transp", outputs)].val;
-    double cTransp = outputs[opNameToInd("cTransp", outputs)].val;
-    double ASW = outputs[opNameToInd("ASW", outputs)].val;
-    double fSW = outputs[opNameToInd("fSW", outputs)].val;
-    double fVPD = outputs[opNameToInd("fVPD", outputs)].val;
-    double fT = outputs[opNameToInd("fT", outputs)].val;
-    double fNutr = outputs[opNameToInd("fNutr", outputs)].val;
-    double fFrost = outputs[opNameToInd("fFrost", outputs)].val;
-    double APAR = outputs[opNameToInd("APAR", outputs)].val;
-    double APARu = outputs[opNameToInd("APARu", outputs)].val;
-    double EvapTransp = outputs[opNameToInd("EvapTransp", outputs)].val;
-    double cEvapTransp = outputs[opNameToInd("cEvapTransp", outputs)].val;
-    double LAIx = outputs[opNameToInd("LAIx", outputs)].val;
-    double ageLAIx = outputs[opNameToInd("ageLAIx", outputs)].val;
-    double MAIx = outputs[opNameToInd("MAIx", outputs)].val;
-    double ageMAIx = outputs[opNameToInd("ageMAIx", outputs)].val;
-    double FR = outputs[opNameToInd("FR", outputs)].val;
-    double PhysMod = outputs[opNameToInd("PhysMod", outputs)].val;
-    double alphaC = outputs[opNameToInd("alphaC", outputs)].val;
-    double fAge = outputs[opNameToInd("fAge", outputs)].val;
-    double fracBB = outputs[opNameToInd("fracBB", outputs)].val;
-    double WUE = outputs[opNameToInd("WUE", outputs)].val;
-    double cWUE = outputs[opNameToInd("cWUE", outputs)].val;
-    double CVI = outputs[opNameToInd("CVI", outputs)].val;
-    double cCVI = outputs[opNameToInd("cCVI", outputs)].val;
-    double TotalLitter = outputs[opNameToInd("TotalLitter", outputs)].val;
-    double cLitter = outputs[opNameToInd("cLitter", outputs)].val;
+    double& StemNo = outputs[opNameToInd("StemNo", outputs)].val;
+    double& WF = outputs[opNameToInd("WF", outputs)].val;
+    double& WR = outputs[opNameToInd("WR", outputs)].val;
+    double& WS = outputs[opNameToInd("WS", outputs)].val;
+    double& TotalW = outputs[opNameToInd("TotalW", outputs)].val;
+    double& LAI = outputs[opNameToInd("LAI", outputs)].val;
+    double& cLAI = outputs[opNameToInd("cLAI", outputs)].val;
+    double& MAI = outputs[opNameToInd("MAI", outputs)].val;
+    double& avDBH = outputs[opNameToInd("avDBH", outputs)].val;
+    double& BasArea = outputs[opNameToInd("BasArea", outputs)].val;
+    double& StandVol = outputs[opNameToInd("StandVol", outputs)].val;
+    double& GPP = outputs[opNameToInd("GPP", outputs)].val;
+    double& cGPP = outputs[opNameToInd("cGPP", outputs)].val;
+    double& NPP = outputs[opNameToInd("NPP", outputs)].val;
+    double& cNPP = outputs[opNameToInd("cNPP", outputs)].val;
+    double& delWAG = outputs[opNameToInd("delWAG", outputs)].val;
+    double& cumWabv = outputs[opNameToInd("cumWabv", outputs)].val;
+    double& Transp = outputs[opNameToInd("Transp", outputs)].val;
+    double& cTransp = outputs[opNameToInd("cTransp", outputs)].val;
+    double& ASW = outputs[opNameToInd("ASW", outputs)].val;
+    double& fSW = outputs[opNameToInd("fSW", outputs)].val;
+    double& fVPD = outputs[opNameToInd("fVPD", outputs)].val;
+    double& fT = outputs[opNameToInd("fT", outputs)].val;
+    double& fNutr = outputs[opNameToInd("fNutr", outputs)].val;
+    double& fFrost = outputs[opNameToInd("fFrost", outputs)].val;
+    double& APAR = outputs[opNameToInd("APAR", outputs)].val;
+    double& APARu = outputs[opNameToInd("APARu", outputs)].val;
+    double& EvapTransp = outputs[opNameToInd("EvapTransp", outputs)].val;
+    double& cEvapTransp = outputs[opNameToInd("cEvapTransp", outputs)].val;
+    double& LAIx = outputs[opNameToInd("LAIx", outputs)].val;
+    double& ageLAIx = outputs[opNameToInd("ageLAIx", outputs)].val;
+    double& MAIx = outputs[opNameToInd("MAIx", outputs)].val;
+    double& ageMAIx = outputs[opNameToInd("ageMAIx", outputs)].val;
+    double& FR = outputs[opNameToInd("FR", outputs)].val;
+    double& PhysMod = outputs[opNameToInd("PhysMod", outputs)].val;
+    double& alphaC = outputs[opNameToInd("alphaC", outputs)].val;
+    double& fAge = outputs[opNameToInd("fAge", outputs)].val;
+    double& fracBB = outputs[opNameToInd("fracBB", outputs)].val;
+    double& WUE = outputs[opNameToInd("WUE", outputs)].val;
+    double& cWUE = outputs[opNameToInd("cWUE", outputs)].val;
+    double& CVI = outputs[opNameToInd("CVI", outputs)].val;
+    double& cCVI = outputs[opNameToInd("cCVI", outputs)].val;
+    double& TotalLitter = outputs[opNameToInd("TotalLitter", outputs)].val;
+    double& cLitter = outputs[opNameToInd("cLitter", outputs)].val;
 
 
 
@@ -904,8 +904,8 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
         //StandAge = 0; //(minMY.year - yearPlanted); // + (cm - StartMonth) / 12.0;
 
         //New StandAge function
-        double StandAge = GetStandAge(yearPlanted, StartAge, StartMonth, EndAge);
-        double StemNo = StemNoi;
+        StandAge = GetStandAge(yearPlanted, StartAge, StartMonth, EndAge);
+        StemNo = StemNoi;
         //StartMonth++; //Synchronise with vb version 20-01-02
 
         //Fix for aracruz work.  Implements SeedlingMass distribution
@@ -918,6 +918,10 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
             WSi = WRi;
         }
 
+
+        WS = WSi;
+        WF = WFi;
+        WR = WRi;
 
 
         ASW = ASWi;
@@ -1075,7 +1079,6 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
         }
 
         //Initialise output step cumulative variables
-        double cRADint, cStemDM, cEvapTransp, cRainInt, cSupIrrig;
 
         delStemNo = 0;
         cRADint = 0;
@@ -1143,6 +1146,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
 
             hitNODATA = AssignMonthlyMetData(series, calMonth, calYear, cellIndex,
                 SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH) || hitNODATA;
+            
             if (hitNODATA)
                 skipMonthCalcs = true;
             // ----------------------------- Month Calculations -----------------------------
@@ -1294,7 +1298,6 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
                 delRloss = Rttover * WR;
 
                 // Calculate end-of-month biomass
-
                 if (!modelMode3PGS) {
                     WF = WF + delWF - delLitter;
                     WR = WR + delWR - delRloss;
@@ -1401,7 +1404,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
                     cLitter = cLitter + delLitter;
                     cStemDM = cStemDM + delWS;
                     aStemDM = aStemDM + delWS;
-                    cRainInt = cRainInt + RainIntcptn;
+                    //cRainInt = cRainInt + RainIntcptn;
                     cTransp = cTransp + Transp;
                     aTransp = aTransp + Transp;
                     cEvapTransp = cEvapTransp + EvapTransp;
@@ -1440,7 +1443,9 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
 
             if (spatial) {
                 // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
-                //previous calculated values are written instead of nodata
+                ////previous calculated values are written instead of nodata
+                //std::cout << "Cal month" << calMonth << std::endl;
+                //std::cout << "WF value: " << WF << std::endl;
                 writeMonthlyOutputGrids(outputs, calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
 
                 // Monthly sample point output
