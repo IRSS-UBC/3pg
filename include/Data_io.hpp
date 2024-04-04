@@ -34,16 +34,19 @@ void saveVariableVals(int k, bool hitNODATA);
 // FILE *openLogFile(const std::string& siteParamFile);
 void readParamFile(const std::string& paramFile, std::vector<PPPG_PARAM>& params, std::vector<PPPG_OP_VAR>& opVars, std::vector<PPPG_SERIES_PARAM>& series, std::vector<PPPG_MT_PARAM>& managment);
 GDALRasterImage* openInputGrids(std::vector<PPPG_PARAM>& params, std::vector<PPPG_SERIES_PARAM>& series, std::vector<PPPG_MT_PARAM>& mgmnt);
+int threadOpenInputTIFs(std::vector<PPPG_PARAM>& params, std::vector<PPPG_SERIES_PARAM>& series);
 bool haveAllParams(std::vector<PPPG_PARAM>& params, std::vector<PPPG_SERIES_PARAM>& series);
 bool havePointOpFile();
 int findRunPeriod( GDALRasterImage*refGrid, MYDate &minMY, MYDate &maxMY, std::vector<PPPG_PARAM>& params);
-int openOutputGrids( GDALRasterImage*refGrid, std::vector<PPPG_OP_VAR>& opVars);
+int createOutputGrids( GDALRasterImage*refGrid, std::vector<PPPG_OP_VAR>& opVars);
+int threadOpenOutputTIFs(std::vector<PPPG_OP_VAR>& opVars);
 void ResetGrids(void);
 void CloseGrids(std::vector<PPPG_PARAM>& params, std::vector<PPPG_OP_VAR>& opVars);
 void PrintGrids(void);
 int pNameToInd(const std::string& id, const std::vector<PPPG_PARAM>& params);
 int opNameToInd(const std::string& id, const std::vector<PPPG_OP_VAR>& opVars);
 int openRegularOutputGrids( GDALRasterImage*refGrid, MYDate spMinMY, MYDate spMaxMY, std::vector<PPPG_OP_VAR>& opVars);
+int threadOpenRegularOutputTIFs(MYDate spMinMY, MYDate spMaxMY, std::vector<PPPG_OP_VAR>& opVars);
 void readSampleFile( GDALRasterImage*refGrid, const std::vector<PPPG_OP_VAR>& opVars);
 int writeOutputGrids(bool hitNODATA, long cellIndex, const std::vector<PPPG_OP_VAR>& opVars);
 void writeStandSummary(int year);
@@ -63,3 +66,5 @@ bool haveRhoMax(const std::vector<PPPG_PARAM>& params);  //Standage dependant De
 bool haveTRho(const std::vector<PPPG_PARAM>& params);    //Standage dependant Density 15/07/2002
 bool getSeriesVal(double &val, PPPG_SERIES_PARAM& series, int calMonth, int calYear, int k);
 bool seriesNotNull(PPPG_SERIES_PARAM& series);
+void readInputScanlines(std::vector<PPPG_PARAM>& inputs, std::vector<std::vector<float>>& inputScanlines, int row, int ncols);
+void readSeriesScanlines(std::vector<PPPG_SERIES_PARAM>& series, std::vector<std::vector<float>>& seriesScanlines, int row, int ncols);

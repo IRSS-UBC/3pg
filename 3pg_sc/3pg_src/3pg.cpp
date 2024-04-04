@@ -15,7 +15,13 @@ Use of this software assumes agreement to this condition of use
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <chrono>
+#include <thread>
+#include <iomanip>
+#include <stdexcept>
 #include <boost/program_options.hpp>
+#include <ctime>
+#include <omp.h>
 
 #include "gdal.h"
 #include "gdal_priv.h"
@@ -104,6 +110,46 @@ void parseCommandLine(int argc, char *argv[], std::string& defParamFile, std::st
     exit(EXIT_FAILURE);
   }
 }
+
+int GetNumInputTifs(std::vector<PPPG_PARAM> inputs) {
+    int total_input_tifs = 0;
+    for (const PPPG_PARAM i : inputs) {
+        if (i.got == 1) {
+            if (i.data.spType == pTif) {
+                total_input_tifs++;
+            }
+        }
+    }
+    return total_input_tifs;
+}
+
+int GetNumSeriesTifs(std::vector<PPPG_SERIES_PARAM> series) {
+    int total_series_tifs = 0;
+    for (const PPPG_SERIES_PARAM s : series) {
+        if (s.oneYear == 1) {
+            total_series_tifs += 12;
+        }
+        else {
+            total_series_tifs += (s.vlen * 12);
+        }
+    }
+    return total_series_tifs;
+}
+
+int GetNumOutputTifs(std::vector<PPPG_OP_VAR> outputs) {
+    int total_output_tifs = 0;
+    for (const PPPG_OP_VAR o : outputs) {
+        if (o.write == 1) {
+            total_output_tifs += 1;
+            for (PPPG_VVAL* v : o.RO) {
+                if (v->g != NULL) {
+                    total_output_tifs += 1;
+                }
+            }
+        }
+    }
+    return total_output_tifs;
+}
 //----------------------------------------------------------------------------------------
 
 int main(int argc, char *argv[])
@@ -112,13 +158,13 @@ int main(int argc, char *argv[])
   //extern int optind;
   //int c;
   //int result;
-
+  GDALAllRegister();
   GDALRasterImage *refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
   bool spatial=0;
   long nrows, ncols;
   MYDate spMinMY, spMaxMY; 
-  std::string defParamFile = "Y:\\Francois\\_Vaughan\\species_lpp.txt"; 
-  std::string siteParamFile = "Y:\\Francois\\_Vaughan\\site_subarea.txt";
+  std::string defParamFile = "Y:\\Francois\\Vaughan\\species_lpp.txt"; 
+  std::string siteParamFile = "Y:\\Francois\\Vaughan\\site_subarea.txt";
 
   // Copyright message for stdout
   //copyright();
@@ -170,6 +216,7 @@ int main(int argc, char *argv[])
   auto managVars = initMTParams();
   auto outputVars = initOutputVars();
 
+
   readParamFile(defParamFile, inputParams, outputVars, seriesVars, managVars);
   readParamFile(siteParamFile, inputParams, outputVars, seriesVars, managVars);
 
@@ -209,9 +256,9 @@ int main(int argc, char *argv[])
   // ResetGrids(); 
 
   if (spatial) {
-    // Open output grids. 
+    //// Open output grids. 
     std::cout << "Opening output grids..." << std::endl;
-    openOutputGrids( refGrid, outputVars );
+    createOutputGrids( refGrid, outputVars );
     std::cout << "Output grids opened." << std::endl;
     std::cout << "Opening regular output grids..." << std::endl;
     openRegularOutputGrids( refGrid, spMinMY, spMaxMY, outputVars );
@@ -227,24 +274,56 @@ int main(int argc, char *argv[])
  
 // Run the model. 
   if (spatial) {
-     std::cout << "Running model..." << std::endl;
+     std::cout << "Running model!" << std::endl;
+
      int cellsDone = 0;
      int cellsTotal = (nrows) * (ncols); 
-     int lastProgress = -1; 
-     for (int j = 0; j < cellsTotal ; j++)
-     {
-       //PrintGrids();
-       if (j == 16080)
-         bool test = true;
-       int progress = ((100 * cellsDone) / cellsTotal);
-       if (progress > lastProgress)
-         fprintf(stdout, "Completed %2u%%\r", progress);
-       runTreeModel( spMinMY, spMaxMY, spatial, j, inputParams, seriesVars, outputVars);
-       cellsDone++;
-       lastProgress = progress;
-      
-     //   fprintf(logfp, "   row %u\n", j); fflush(logfp);
+     int lastProgress = -1;
+
+     int nInputTifs = GetNumInputTifs(inputParams);
+     int nSeriesTifs = GetNumSeriesTifs(seriesVars);
+     int nOutputTifs = GetNumOutputTifs(outputVars);
+
+
+     std::vector<std::vector<float>> inScanline(nInputTifs, std::vector<float>(nrows));
+     std::vector<std::vector<float>> serScanline(nSeriesTifs, std::vector<float>(nrows));
+     std::vector<std::vector<float>> outScanline(nOutputTifs, std::vector<float>(nrows));
+
+     for (int row = 0; row < nrows; ++row) {
+
+         // read in the series and input grid scanlines before multi-threading
+         std::cout << "Processing row " << row << "/" << nrows << std::endl;
+         readInputScanlines(inputParams, inScanline, row, ncols);
+         readSeriesScanlines(seriesVars, serScanline, row, ncols);
+         readOutputScanlines(seriesVars, serScanline, row, ncols);
+
+         for (int col = 0; col < ncols; ++col) { 
+             
+             runTreeModel(spMinMY, spMaxMY, spatial, col, inputParams, seriesVars, outputVars);
+             // set output values into the thread-specific col index output arrays (avoid saving Years*Months arrays)
+         }
+
+         // write the output scanlines
      }
+     //for (int j = 0; j < cellsTotal ; j++)
+     //{
+
+     //  auto outputVarsThread = outputVars;
+     //  auto inputParamsThread = inputParams;
+     //  auto seriesParamsThread = seriesVars;
+     //  // Give each thread their own input GDALDataset instances
+     //  threadOpenInputTIFs(inputParamsThread, seriesParamsThread);
+     //  // Give each thread their own output GDALDataset instances
+     //  threadOpenOutputTIFs(outputVarsThread);
+     //  threadOpenRegularOutputTIFs(spMinMY, spMaxMY, outputVarsThread);
+
+     //  runTreeModel(spMinMY, spMaxMY, spatial, j, inputParamsThread, seriesParamsThread, outputVarsThread);
+
+     //  CloseGrids(inputParamsThread, outputVarsThread);
+
+     // 
+     ////   fprintf(logfp, "   row %u\n", j); fflush(logfp);
+     //}
 
 //     fprintf(stdout, "Completed %2u%%\r", 100);
 

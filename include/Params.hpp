@@ -10,8 +10,9 @@ typedef enum { pNull, pScalar, pTif } ParamSpatial;
 typedef struct PPPG_VVAL {
 	ParamSpatial spType = pNull;                   // Scalar, grid, or null
 	double sval;                           // Scalar value. 
-	std::string gridName;                        // ptr to grid file name
-	GDALRasterImage* g;                               // ptr to grid value
+	std::string gridName;                  // ptr to grid file name
+	GDALRasterImage* g;						// ptr to grid value
+	std::vector<float> scanline;          // Scanline float values from g
 } PPPG_VVAL;
 
 // 3PG 'parameters'. These are all stored as double.  The 'id' string field 
@@ -39,7 +40,7 @@ typedef struct PPPG_OP_VAR {
 	int recurYear = -1;                  // Interval on which to write regular output. 
 	int recurMonth;                 // Single month number we want output in. 
 	bool recurMonthly;              // Whether to write every month in an output year. 
-	std::vector<GDALRasterImage*> RO;                      // The output tifs for regular output. 
+	PPPG_VVAL* RO;                      // The output tifs for regular output. 
 } PPPG_OP_VAR;
 
 // 3PG 'series' parameters.  This is any parameter with a time series for value, 

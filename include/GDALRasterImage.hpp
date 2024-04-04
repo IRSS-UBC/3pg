@@ -23,12 +23,13 @@ public:
 	double yMin { 0 };
 	double yMax { 0 };
 
-	GDALRasterImage(std::string filename);
+	GDALRasterImage(std::string filename, int access);
 	GDALRasterImage(std::string filename, GDALRasterImage* refGrid);
 	~GDALRasterImage();
 	std::tuple<int, int> XYfrom(double lat, double lon);
 	int IndexFrom(double lat, double lon);
 	std::tuple<int, int> IndexToXY(int index);
+	float GetVal(int x, int y, int windowWidth, int windowHeight, float* values);
 	float GetVal(int x, int y);
 	float GetVal(int index);
 	CPLErr SetVal(int x, int y, float val);

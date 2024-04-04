@@ -575,22 +575,6 @@ double lookupManageTable( int year, int table, double def, int k )
 
 bool getSeriesVal(double& val, PPPG_SERIES_PARAM& series, int calMonth, int calYear, int k)
 {
-    //PPPG_SERIES_PARAM* series;
-
-    // Which series. 
-    /*switch (ser) {
-    case SS_TMAX:      series = &Tmax_vals;      break;
-    case SS_TMIN:      series = &Tmin_vals;      break;
-    case SS_TAVG:      series = &Tavg_vals;      break;
-    case SS_RAIN:      series = &Rain_vals;      break;
-    case SS_SOLARRAD:  series = &SolarRad_vals;  break;
-    case SS_FROSTDAYS: series = &FrostDays_vals; break;
-    case SS_NDVI_AVH:  series = &NdviAvh_vals;   break;
-    case SS_NETRAD:    series = &NetRad_vals;    break;
-    case SS_VPD:       series = &Vpd_vals;       break;
-    default: break;
-    }*/
-
     // Long run or 1 year data.
     int i;
     if (series.oneYear) {
@@ -617,14 +601,13 @@ bool getSeriesVal(double& val, PPPG_SERIES_PARAM& series, int calMonth, int calY
             // logAndExit(logfp, outstr);
         }
     }
-    if (getVVal(val, series.data[i], k))
-        //std::cout << "For month " << calMonth << " and Year " << calYear << ", getting values from file : " << series->data[i].gridName << std::endl;
-        if (series.data[i].g->IsNoData(val)) {
-            return false;
-        }
-        else {
-            return true;
-        }  
+    val = series.data[i].scanline[k];
+    if (series.data[i].g->IsNoData(val)) {
+        return false;
+    }
+    else {
+        return true;
+    }  
     return false; 
 
 }
@@ -1731,7 +1714,7 @@ void readParamFile(const std::string& paramFile, std::vector<PPPG_PARAM>& params
   std::cout << "Reading input parameters from file '" << paramFile << "'..." << std::endl;
   while (std::getline(inFile, line))
   {
-      lineNo++;
+    lineNo++;
     if (line.empty())
         continue;
     if (line[0] == '/' && line[1] == '/')
@@ -1748,7 +1731,6 @@ void readParamFile(const std::string& paramFile, std::vector<PPPG_PARAM>& params
     // Second and subsequent tokens are the parameter values, put them all into a vector
     std::vector<std::string> pValues;
     boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
-
 
     // Check input against each parameter type.
     if (readInputParam(pName, pValues, params)) { continue; }
@@ -2016,7 +1998,7 @@ bool loadParamVals(int k, std::vector<PPPG_PARAM>& params)
             fg = params[pn].data.g;
             if (fg == NULL)
             {
-                std::cout << "Error reading grid: " << params[pn].data.gridName << " - File not open." << std::endl;
+                std::cout << "Scanline not read: " << params[pn].data.gridName << std::endl;
                 exit(EXIT_FAILURE);
                 // sprintf(ErrorString, "Error reading grid: %s - File not open.\n", params[pn].data.gridName);
                 // logAndExit(logfp, ErrorString); 
@@ -2062,10 +2044,10 @@ bool loadParamVals(int k, std::vector<PPPG_PARAM>& params)
 bool openGrid( PPPG_VVAL &vval )
 {
   if (vval.spType == pTif) {
-    std::cout << "   opening grid from " << vval.gridName << "..." << std::endl;
+    //std::cout << "   opening grid from " << vval.gridName << "..." << std::endl;
     // fprintf(logfp, "   opening grid from %s...", vval.gridName); 
     try {
-      vval.g = new GDALRasterImage(vval.gridName);
+      vval.g = new GDALRasterImage(vval.gridName, 0);
     }
     catch (const std::exception& e) {
       std::cout << "Could not open grid " << vval.gridName << std::endl;
@@ -2092,20 +2074,20 @@ bool openGrid( PPPG_VVAL &vval )
 //----------------------------------------------------------------------------------
 void CloseGrids(std::vector<PPPG_PARAM>& params, std::vector<PPPG_OP_VAR>& opVars)
 {
-    for (int pn = 1; params[pn].id != ""; pn++) { // start at 1 to avoid error record. 
-        if ( params[pn].data.spType == pTif ) {
-          params[pn].data.g->Close();
-        }
-    }
-    for (int op = 1; opVars[op].id != ""; op++) {  
-        if (opVars[op].spType == pTif) {
-          for (GDALRasterImage* g : opVars[op].RO) {
-              if (g != NULL) {
-			    g->Close();
-              }
-		  }
-	    }
-    }
+    //for (int pn = 1; params[pn].id != ""; pn++) { // start at 1 to avoid error record. 
+    //    if ( params[pn].data.spType == pTif && params[pn].got == 1) {
+    //      params[pn].data.g->Close();
+    //    }
+    //}
+    //for (int op = 1; opVars[op].id != ""; op++) {  
+    //    if (opVars[op].spType == pTif) {
+    //      for (PPPG_VVAL* v : opVars[op].RO) {
+    //          if (v->g != NULL) {
+			 //   v->g->Close();
+    //          }
+		  //}
+	   // }
+    //}
 }
 
 GDALRasterImage* openInputGrids(std::vector<PPPG_PARAM>& params, std::vector<PPPG_SERIES_PARAM>& series, std::vector<PPPG_MT_PARAM>&  mgmnt)
@@ -2118,7 +2100,7 @@ GDALRasterImage* openInputGrids(std::vector<PPPG_PARAM>& params, std::vector<PPP
   PPPG_SERIES_PARAM *ser; 
   GDALRasterImage *refGrid;
 
-  std::cout << "Opening input grids..." << std::endl;
+  //std::cout << "Opening input grids..." << std::endl;
   // fprintf(logfp, "Opening input grids...\n");
   // fprintf(stdout, "Opening input grids...\r");
 
@@ -2219,36 +2201,88 @@ GDALRasterImage* openInputGrids(std::vector<PPPG_PARAM>& params, std::vector<PPP
 
 //----------------------------------------------------------------------------------
 
-int openOutputGrids(GDALRasterImage *refGrid, std::vector<PPPG_OP_VAR>& opVars)
+int createOutputGrids(GDALRasterImage *refGrid, std::vector<PPPG_OP_VAR>& opVars)
 {
   // Loop through opVars array and open output grid objects for all 
   // those variables marked for output.  
   int opn; 
 
   // Open ordinary output grids. 
-  std::cout << "Opening output grids..." << std::endl;
-  // fprintf(logfp, "Opening output grids...\n");
-  // fprintf(stdout, "Opening output grids...\r");
+  std::cout << "Creating output grids..." << std::endl;
   for (opn = 0; opVars[opn].id != ""; opn++) {
     if (opVars[opn].write) {
-      std::cout << "   float grid " << opVars[opn].gridName << std::endl;
-      // fprintf(logfp, "   float grid %s\n", opVars[opn].gridName);
+      std::cout << "   tif grid " << opVars[opn].gridName << std::endl;
       // Open output grid at gridName with same class attributes as refGrid.
-      opVars[opn].g = new GDALRasterImage(opVars[opn].gridName, refGrid);
-      if (opVars[opn].g->Exists(opVars[opn].gridName)) {
+      GDALRasterImage *g = new GDALRasterImage(opVars[opn].gridName, refGrid);
+
+      if (g->Exists(opVars[opn].gridName)) {
         std::cout << "Error, output grid named: " << opVars[opn].gridName << " already exists." << std::endl;
-        // sprintf(outstr, "Error, output grid named:\n"
-        //   "   '%s'\nalready exists.\n", opVars[opn].gridName);
-        // fprintf(stderr, outstr);
-        // fprintf(logfp, outstr);
         exit(EXIT_FAILURE);
       }
-      
+      g->Close();
       // *(opVars[opn].g) = *refGrid;
       // opVars[opn].g->Allocate();
     }
   }
   return EXIT_SUCCESS;
+}
+
+int threadOpenOutputTIFs(std::vector<PPPG_OP_VAR>& opVars)
+{
+    int opn, j;
+
+    std::cout << "Opening output grids..." << std::endl;
+    for (opn = 0; opVars[opn].id != ""; opn++) {
+        if (opVars[opn].write) {
+
+            try {
+                opVars[opn].g = new GDALRasterImage(opVars[opn].gridName, 1);
+            }
+            catch (const std::exception& e) {
+                std::cout << "Could not open grid " << opVars[opn].gridName << std::endl;
+                // fprintf(logfp, "Could not open grid %s\n", vval.gridName);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int threadOpenInputTIFs(std::vector<PPPG_PARAM>& params, std::vector<PPPG_SERIES_PARAM>& series)
+{
+    int pn, j;
+
+    // Open all TIFs found in Inputs
+    for (pn = 1; params[pn].id != ""; pn++) { // start at 1 to avoid error record. 
+        if (params[pn].data.spType == pNull || params[pn].data.spType == pScalar) {
+            //do nothing
+        }
+        // Else if opened, got, and a TIF type -- open it for the threads
+        else if (params[pn].data.spType == pTif && params[pn].got == 1)
+        {
+            try {
+                params[pn].data.g = new GDALRasterImage(params[pn].data.gridName, 0);
+            }
+            catch (const std::exception& e) {
+                std::cout << "Failed to input TIF " << params[pn].data.gridName << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    // Open all Series TIFs
+    for (PPPG_SERIES_PARAM ser : series) {
+        for (int i = 0; i < ser.vlen * 12; i++) {
+            try {
+                ser.data[i].g = new GDALRasterImage(ser.data[i].gridName, 0);
+            }
+            catch (const std::exception& e) {
+                std::cout << "Failed to series TIF " << params[pn].data.gridName << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    return EXIT_SUCCESS;
 }
 
 int writeOutputGrids(bool hitNODATA, long cellIndex, const std::vector<PPPG_OP_VAR>& opVars) {
@@ -2303,6 +2337,91 @@ int writeOutputGrids(bool hitNODATA, long cellIndex, const std::vector<PPPG_OP_V
 //}
 
 //----------------------------------------------------------------------------------
+int threadOpenRegularOutputTIFs(MYDate spMinMY, MYDate spMaxMY, std::vector<PPPG_OP_VAR>& opVars) {
+    int calYear, calMonth;
+    int opn, roArrayLength;
+    //FILE *fp; 
+    std::string roStemName;
+    std::string fname;
+    std::string* cp;
+    int len;
+    int maxCy, maxCm, minCy, minCm;
+    int mx;
+    //int runMx; 
+    int runMonths;
+
+    maxCy = spMaxMY.year;
+    maxCm = spMaxMY.mon;
+    minCy = spMinMY.year;
+    minCm = spMinMY.mon;
+
+    runMonths = (maxCy - minCy - 1) * 12;
+    // Then how many months in the (possibly) partial years at the beginning and end. 
+    runMonths += 12 - minCm + 1;
+    runMonths += maxCm;
+
+    roArrayLength = (maxCy - minCy + 1) * 12 + 12;
+
+    for (opn = 0; opVars[opn].id != ""; opn++) {
+        // Is it marked for recurring output. 
+        if (opVars[opn].recurYear == -1)
+            continue;
+
+        // Find stem name for regular output files, just lacking the 
+        // year/month/extension. 
+        // cp = strrchr(opVars[opn].gridName, '.');
+        // len = cp - opVars[opn].gridName;
+        // strncpy( roStemName, opVars[opn].gridName, len ); 
+        // roStemName[len] = '\0'; 
+        roStemName = opVars[opn].gridName.substr(0, opVars[opn].gridName.find_last_of("."));
+        // Monthly output. mx indexes over entire ro array. 
+        for (mx = 0; mx < roArrayLength; mx++) {
+            calYear = minCy + (mx / 12);
+            calMonth = (mx % 12) + 1;
+
+            // Skip months before the model starts. 
+            if (calYear == minCy && calMonth < minCm)
+                continue;
+
+            // Skip years after the model ends. 
+            if (calYear > maxCy)
+                continue;
+
+            // Skip months after the model ends. 
+            if (calYear == maxCy && calMonth > maxCm)
+                continue;
+
+            // Reached first output year? 
+            if (calYear < opVars[opn].recurStart)
+                continue;
+
+            // Is this an output year? 
+            if (((calYear - opVars[opn].recurStart) % opVars[opn].recurYear) != 0)
+                continue;
+
+            // Is this an annual output?  If so only want 1 month as given in recurMonth. 
+            // Construct the filename by concatenating the stem name, year, month and extension.
+            // Open a GDALRasterImage object for the grid
+            fname = roStemName + std::to_string(calYear) + std::to_string(calMonth) + ".tif";
+            GDALRasterImage* fg;
+            if (!opVars[opn].recurMonthly) {
+                if (calMonth == opVars[opn].recurMonth) {
+                    //std::cout << "   opening regular out grid from " << fname << "..." << std::endl;
+                    // fprintf(logfp, "   opening grid from %s...", fname.c_str());
+                    GDALRasterImage og = GDALRasterImage(fname, 1);
+                    opVars[opn].RO[mx].g = &og;
+                }
+            }
+            else {
+                std::cout << "   opening regular output grid from " << fname << "..." << std::endl;
+                GDALRasterImage ogm = GDALRasterImage(fname, 1);
+                opVars[opn].RO[mx].g = &ogm;
+            }
+        }
+
+    }
+    return EXIT_SUCCESS;
+}
 
 int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spMaxMY, std::vector<PPPG_OP_VAR>& opVars)
 {
@@ -2355,8 +2474,10 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
     
     // Allocate and null out array of *FILE. 
      //std::vector<GDALRasterImage*> regOut;
-     for (int i = 0; i < roArrayLength; i++)
-       opVars[opn].RO.push_back(NULL);
+    opVars[opn].RO = new PPPG_VVAL[roArrayLength];
+    for (int i = 0; i < roArrayLength; i++) {
+        opVars[opn].RO[i].g = NULL;
+    }
     
     // Find stem name for regular output files, just lacking the 
     // year/month/extension. 
@@ -2399,20 +2520,24 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
 		//fname = fname.substr(1);
   //    if (fname[0] == '\\')
   //      fname = fname.substr(1);
-      GDALRasterImage *fg;
+      GDALRasterImage* fg;
       if ( !opVars[opn].recurMonthly ) {
         if ( calMonth == opVars[opn].recurMonth ) {
-          std::cout << "   opening regular out grid from " << fname << "..." << std::endl;
+          //std::cout << "   opening regular out grid from " << fname << "..." << std::endl;
           // fprintf(logfp, "   opening grid from %s...", fname.c_str());
-          try {
-            fg = new GDALRasterImage(fname, refGrid);
-          }
-          catch (const std::exception& e) {
-            std::cout << "Could not open grid " << fname << std::endl;
-            // fprintf(logfp, "Could not open grid %s\n", fname.c_str());
-            exit(EXIT_FAILURE);
-          }
-          opVars[opn].RO[mx] = fg; // pointer to GDALRasterImage object for this year/month combo
+            try {
+
+                fg = new GDALRasterImage(fname, refGrid);
+                opVars[opn].RO[mx].g = fg;
+                fg->Close();
+
+            }
+            catch (const std::exception& e) {
+                std::cout << "Could not open grid " << fname << std::endl;
+                // fprintf(logfp, "Could not open grid %s\n", fname.c_str());
+                exit(EXIT_FAILURE);
+            }
+          // pointer to GDALRasterImage object for this year/month combo
           // Construct annual regular output grid name and open file. 
           // Open a GDALRasterImage object for the grid
           // sprintf( fname, "%s%4d%02d.flt", roStemName, calYear, calMonth ); 
@@ -2432,14 +2557,18 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
       else {
         std::cout << "   opening regular output grid from " << fname << "..." << std::endl;
         try {
-          fg = new GDALRasterImage(fname, refGrid);
+
+            fg = new GDALRasterImage(fname, refGrid);
+            opVars[opn].RO[mx].g = fg;
+            fg->Close();
+
         }
         catch (const std::exception& e) {
-          std::cout << "Could not open grid " << fname << std::endl;
-          // fprintf(logfp, "Could not open grid %s\n", fname.c_str());
-          exit(EXIT_FAILURE);
+            std::cout << "Could not open grid " << fname << std::endl;
+            // fprintf(logfp, "Could not open grid %s\n", fname.c_str());
+            exit(EXIT_FAILURE);
         }
-        opVars[opn].RO[mx] = fg; // pointer to GDALRasterImage object for this year/month combo
+        // pointer to GDALRasterImage object for this year/month combo
         // Construct monthly regular output grid names and open file. 
         // sprintf( fname, "%s%4d%02d.flt", roStemName, calYear, calMonth ); 
         // if ( ( fp = fopen( fname, "wb" ) ) == NULL ) {
@@ -2453,7 +2582,9 @@ int openRegularOutputGrids( GDALRasterImage *refGrid, MYDate spMinMY, MYDate spM
         // opVars[opn].RO[mx] = fp; 
       }
     } // closes for ( mx = 0; mx < roArrayLength; mx++ )
-  } // closes for each output variable. 
+
+  } // closes for each output variable.
+
   return EXIT_SUCCESS;
 }
   
@@ -2550,12 +2681,12 @@ void writeMonthlyOutputGrids(const std::vector<PPPG_OP_VAR> opVars, int calYear,
       //   mx, calYear, calMonth);
       // logAndExit(logfp, outstr);
     }
-    fp = opVars[opn].RO[mx];
+    fp = opVars[opn].RO[mx].g;
     if (fp != NULL) {
         if (opVars[opn].spType == pTif) {
 
             fval = (float)(opVars[opn].val);
-            fg = opVars[opn].RO[mx];
+            fg = opVars[opn].RO[mx].g;
 
             if (hitNODATA) {
                 fval = fg->noData;
@@ -2606,7 +2737,7 @@ void writeYearlyOutputGrids( const std::vector<PPPG_OP_VAR> opVars, int calYear,
     }
 
     // Get file pointer for this regular output grid. 
-    fp = opVars[opn].RO[mx];
+    fp = opVars[opn].RO[mx].g;
     if (fp != NULL) {
         if (opVars[opn].spType == pTif) {
             fval = (float)opVars[opn].val;
@@ -2754,6 +2885,10 @@ int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY, std::
             test = true;
 
           hitNoData = !loadParamVals(cellIndex, params);
+          yearPlanted = params[ypI].val;
+          StartAge = params[saI].val;
+          EndAge = params[eaI].val;
+          StartMonth = params[smI].val;
 
           
           // Look for NODATA, to skip it. 
@@ -2763,7 +2898,7 @@ int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY, std::
             continue; 
           }
           // Look for zero and do utterly bodgy things. 
-          if ( yearPlanted < 1)
+          if ( params[ypI].val < 1)
             continue;   //Treat years less than 1900 as nodata 
           if ( StartAge < 1 )
             StartAge = 1; 
@@ -3225,4 +3360,44 @@ bool haveAgeDepFert(const std::vector<PPPG_PARAM>& params)
     return false;
 
   return true;
+}
+
+
+void readInputScanlines(std::vector<PPPG_PARAM>& inputs, std::vector<std::vector<float>>& inputScanlines, int row, int ncols) {
+
+    int inputsCounter = 0;
+    for (PPPG_PARAM& i : inputs) {
+        if (i.got == 1) {
+            if (i.data.spType == pTif) {
+                i.data.g->GetVal(0, row, ncols, 1, inputScanlines.at(inputsCounter).data());
+                i.data.scanline = inputScanlines.at(inputsCounter);
+                inputsCounter++;
+            }
+        }
+    }
+}
+
+void readSeriesScanlines(std::vector<PPPG_SERIES_PARAM>& series, std::vector<std::vector<float>>& seriesScanlines, int row, int ncols) {
+    int seriesCounter = 0;
+    for (PPPG_SERIES_PARAM s : series) {
+        if (s.got == 1) {
+            if (s.oneYear) {
+                int months = 12;
+                for (int m = 0; m < months; ++m) {
+                    s.data[m].g->GetVal(0, row, ncols, 1, seriesScanlines.at(seriesCounter).data());
+                    s.data[m].scanline = seriesScanlines.at(seriesCounter);
+                    seriesCounter++;
+                }
+            }
+            else {
+                int length = (s.vlen * 12);
+                for (int l = 0; l < length; ++l) {
+                    s.data[l].g->GetVal(0, row, ncols, 1, seriesScanlines.at(seriesCounter).data());
+                    s.data[l].scanline = seriesScanlines.at(seriesCounter);
+                    seriesCounter++;
+                }
+            }
+        }
+    }
+
 }

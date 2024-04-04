@@ -7,11 +7,18 @@
 #include <string>
 #include "GDALRasterImage.hpp"
 
-GDALRasterImage::GDALRasterImage(std::string filename) {
+GDALRasterImage::GDALRasterImage(std::string filename, int access) {
 	// Open the raster source located at `filename`
-	GDALAllRegister();
-	const GDALAccess eAccess = GA_ReadOnly;
-	dataset = GDALDataset::FromHandle(GDALOpen(filename.c_str(), eAccess));
+	GDALAccess eAccess;
+	if (access == 0) {
+		eAccess = GA_ReadOnly;
+	}
+	else if (access == 1) {
+		eAccess = GA_Update;
+	}
+
+	GDALDatasetH hSrcDS = GDALOpen(filename.c_str(), eAccess);
+	dataset = GDALDataset::FromHandle(hSrcDS);
 	if (!dataset) {
 		throw std::invalid_argument("File cannot be opened.");
 	}
@@ -55,7 +62,6 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 
 GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid) {
 	// Create a new GDALRasterImage dataset with one band with the same extent, transform, and crs as refGrid
-	GDALAllRegister();
 	CPLPushErrorHandler(CPLQuietErrorHandler); // suppress error messages that Exists() throws for non-existent files
 	if (Exists(filename)) {
 		throw std::invalid_argument("File already exists.");
@@ -110,6 +116,13 @@ float GDALRasterImage::GetVal(int x, int y) {
 		throw std::invalid_argument("Cannot read pixel value.");
 	}
 	return pixelValue;
+};
+
+float GDALRasterImage::GetVal(int x, int y, int windowWidth, int windowHeight, float* values) {
+	if (band->RasterIO(GF_Read, x, y, windowWidth, windowHeight, values, windowWidth, windowHeight, GDT_Float32, 0, 0) != CE_None) {
+		throw std::invalid_argument("Cannot read pixel value.");
+		return EXIT_FAILURE;
+	}
 };
 
 float GDALRasterImage::GetVal(int index) {

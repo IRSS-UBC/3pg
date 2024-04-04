@@ -60,190 +60,12 @@ Use of this software assumes agreement to this condition of use
 
 #define eps 0.0001
 
-// Controls and counters
-//int StartAge, EndAge;                  // age of trees at start/end of run
-//int StartMonth;                        // month of year to start run
-//int yearPlanted;                       // year trees planted
-// ANL changed these three from int to double
-//double StartAge, EndAge;                 // age of trees at start/end of run
-//double StartMonth;                       // month of year to start run
-//double yearPlanted;                      // year trees planted
 int DaysInMonth[13] = {                  // array for days in months 
   0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 };
 bool showDetailedResults;                // TRUE ==> show monthly results
 bool showStandSummary;                   // TRUE ==> show stand summary
 bool modelMode3PGS = false;
-
-// Site characteristics, site specific parameters
-//char siteName[100];                      // name of site
-//double Lat = 1000;                       // site latitude
-//double MaxASW, MinASW, MinASWp;          // maximum & minimum available soil water, current, param file. 
-//double FR, FRp;                          // site fertility rating, current, param file. 
-//double FRstart, FRend, FRdec;            // Start, end and decrement % for fertility decrease with time
-////int soilIndex;                         // soil class index
-//// ANL changed this from int to double
-//double soilIndex;                        // soil class index
-//double SWconst, SWpower;                 // soil parameters for soil class
-//
-//// Time variant management factors
-//int nFertility;                          // size of site fertility array
-//int nMinAvailSW;                         // size of MinAvailSW array
-//int nIrrigation;                         // size of irrigation array
-//double Irrig;                            // current annual irrigation (ML/y)
-//
-//// Mean monthly weather data
-////int mYears;                            // years of met data available
-//// ANL changed this from int to double
-//double mYears = 1.0;                       // years of met data available
-//
-;                   // day length
-////int mFrostDays[13];                    // frost days/month
-//// ANL changed this from int to double
-//double mFrostDays[13];                   // frost days/month
-//double mSolarRad[13];                    // solar radiation (MJ/m2/day)
-//double mTx[13];                          // maximum temperature
-//double mTn[13];                          // minimum temperature
-//double mTav[13];                         // mean daily temperature
-//double mVPD[13];                         // mean daily VPD
-//double mRain[13];                        // total monthly rain + irrigation
-//double mNetRad[13];                      // ANL can use net instead of short wave
-//
-//// Stand data
-//char SpeciesName[100];                   // name of species
-//// int StandAge;                         // stand age
-//
-//double SeedlingMass;                     // Alternative way of deriving initial distribution 
-//// of mass using seedling mass constant
-//// ANL changed StandAge from int to double
-//double StandAge;                         // stand age
-//double ASW, ASWi;                        // available soil water
-//double MinASWTG;
-//double StemNoi, StemNo;                  // stem numbers
-//double WFi, WF;                          // foliage biomass
-//double WRi, WR;                          // root biomass
-//double WSi, WS;                          // stem biomass
-//double LAIi, LAI;                        // canopy leaf area index
-//double MAIi, MAI;                        // mean annual volume increment
-//double avDBHi, avDBH;                    // average stem DBH
-//double TotalW;                           // total biomass
-//double BasArea;                          // basal area
-//double StandVol;                         // stem volume
-//double TotalLitter;                      //total litter produced
-//double LAIx, ageLAIx;                    // peak LAI and age at peak LAI
-//double MAIx, ageMAIx;                    // peak MAI and age at peak MAI
-//double cumTransp;                        // annual stand transporation
-//double cumIrrig;                         // annual irrig. to maintain MinASW
-//
-//// Stand factors that are specifically age dependent
-//double SLA;
-//double gammaF;
-//double fracBB;
-//double CanCover;
-//
-//// Parameter values
-//// int MaxAge;
-//// ANL changed MaxAge from int to double
-//double MaxAge;
-//double gammaFx, gammaF0, tgammaF;
-//double Rttover;
-//double SLA0, SLA1, tSLA;
-//double fullCanAge;
-//double k;
-//double pFS2, pFS20;
-//double StemConst, StemPower;
-//double SWconst0, SWpower0;
-//double Interception;
-//double BLcond;
-//double MaxCond, CoeffCond;
-//double y;
-//double growthTmax, growthTmin, growthTopt;
-//double wSx1000;
-//double thinPower;
-//double mF, mR, mS;
-//double m0, fN0, fNn;                      //added 22-07-02
-//double alpha;
-//double pRx, pRn;
-//double nAge, rAge;
-//double kF;
-//double fracBB0, fracBB1, tBB;
-//double Density;
-//double rhoMin, rhoMax, tRho;             // Standage varying density 3-06-02 
-//double pfsConst, pfsPower;               // derived from pFS2, pFS20
-//double PhysMod;
-//
-////Conversion factors
-//double Qa, Qb;
-//double gDM_mol;
-//double molPAR_MJ;
-//
-////Additional factors (conductance)
-//double LAIgcx;
-//double MaxIntcptn;
-//double LAImaxIntcptn;
-//
-//// Intermediate monthly results
-//double m, alphaC, epsilon;
-//double RAD, PAR, RADint;
-//double lightIntcptn;
-//double fAge, fT, fFrost;
-//double fVPD, fSW, fNutr;
-//double CanCond;
-//double Transp, EvapTransp, RainIntcptn, WUE; //Added 16/07/02
-//
-//double AvStemMass;
-//double APAR, APARu;
-//double GPPmolc, GPPdm, NPP;
-//double pR, pS, pF, pFS;
-//double delWF, delWR, delWS, delStems;
-//double delLitter, delRloss;
-//double monthlyIrrig;
-//double CVI;
-//
-//// Annual results
-//double cumGPP, cumWabv;
-//double abvgrndEpsilon, totalEpsilon;
-//double StemGrthRate;
-//double cumEvapTransp;
-//double CumdelWF, CumdelWR, CumdelWS;
-//double CumAPARU, cumARAD;
-//double CumStemLoss;
-//double CutStemMass1, CutStemMass2, CutStemMass3;
-//
-////Various additional oputputs
-//double cLAI;                  //LAI averaged over output period
-//double cRADint;               //intercepted radiation in output period
-//double aRADint;               //annual intercepted radiation
-//double cGPP;                  //GPP in output period
-//double aGPP;                  //annual GPP
-//double cNPP;                  //NPP in output period
-//double aNPP;                  //annual NPP
-//double cStemDM;               //stem DM increment in output period
-//double aStemDM;               //annual stem DM increment
-//double cCVI;                  //volume increment in output period
-//double cLitter;               //litter fall in output period
-//double cWUE;                  //WUE in current output period
-//double aWUE;                  //annual WUE
-//double aSupIrrig;             //annual supplemental irrigation
-//double cSupIrrig;             //supplemental irrigation in output period
-//double cRainInt;              //rainfall interception in output period
-//double aTransp;               //annual transpiration
-//double cTransp;               //transpiration in output period
-//double aEvapTransp;           //annual evapotransporation
-//double cEvapTransp;           //evapotransporation in output period
-//double cEpsilonGross;         //gross epsilon in output period
-//double aEpsilonGross;         //annual gross epsilon
-//double cEpsilonStem;          //epsilon for stemDM in output period
-//double aEpsilonStem;          //annual epsilon for stemDM
-//
-//// ANL - other globals
-//double mNDVI[13];      // 3PGS - one years worth of NDVI 
-//double delWAG;         // 3PGS - change in weight above ground. 
-//double NDVI_FPAR_intercept, NDVI_FPAR_constant;
-
-//std::vector <std::string> paramNames = {"pFS2", "pFS20", "StemConst", "StemPower", "pRx", "pRn", "growthTmin", "growthTopt", "growthTmax", "kF", "gammaFx", "gammaF0", "tgammaF", "Rttover", "MaxCond", "CoeffCond", "BLcond", "m0", "fN0", "fNn", "thinPower", "mF", "mR", "mS", "SWconst0", "SWpower0", "wSx1000", "MaxAge", "nAge", "rAge", "SLA0", "SLA1", "tSLA", "k", "fullCanAge", "alpha", "fracBB0", "fracBB1", "tBB", "y", "rhoMin", "rhoMax", "tRho", "Qa", "Qb", "gDM_mol", "molPAR_MJ", "LAIgcx", "MaxIntcptn", "LAImaxIntcptn", "Lat", "FRp", "FRstart", "FRend", "FRdec", "soilIndex", "MaxASW", "MinASWp", "StartAge", "EndAge", "StartMonth", "yearPlanted", "SeedlingMass", "WFi", "WRi", "WSi", "StemNoi", "ASWi", "MinASWTG", "NDVI_FPAR_intercept", "NDVI_FPAR_constant" }
-//std::vector <std::string> seriesNames = {  }
-//std::vector <std::string> outputNames = { "opVarError", "StemNo", "WF", "WR", "WS", "TotalW", "LAI", "cLAI", "MAI", "avDBH", "BasArea", "StandVol", "GPP", "cGPP", "NPP", "cNPP", "delWAG", "cumWabv", "Transp", "cTransp", "ASW", "fSW", "fVPD", "fT", "fNutr", "fFrost", "APAR", "APARu", "EvapTransp", "cEvapTransp", "LAIx", "ageLAIx", "MAIx", "ageMAIx", "FR", "PhysMod", "alphaC", "fAge", "fracBB", "WUE", "cWUE", "CVI", "cCVI", "TotalLitter", "cLitter" }
 
 extern bool samplePointsMonthly;
 extern bool samplePointsYearly;
@@ -659,7 +481,8 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     // pre-year variables
     double MinASW, SWconst, SWpower, pfsPower, pfsConst, StandAge;
 
-    double AvStemMass, SLA, Density, avDBHi, LAIi, CumStemLoss;
+    double AvStemMass, Density, avDBHi, LAIi, CumStemLoss;
+    double SLA = 0;
     // Managment tb variables
     int nFertility, nMinAvailSW, nIrrigation;
     double Irrig;
@@ -705,7 +528,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
         useMinASWTG = false;
 
     // ANL - Load the parameter values.  On NODATA write NODATA to output 
-    // grids. 
+    // grids.
     hitNODATA = !loadParamVals(cellIndex, params);
 
     // For this cell, what is the first run month and the last run month, with reference 
@@ -764,6 +587,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     double LAIgcx = params[pNameToInd("LAIgcx", params)].val;
     double MaxIntcptn = params[pNameToInd("MaxIntcptn", params)].val;
     double LAImaxIntcptn = params[pNameToInd("LAImaxIntcptn", params)].val;
+    //----------------------------------------------------------------------//
     //double Lat = params[pNameToInd("Lat")].val;
     double FRp = params[pNameToInd("FRp", params)].val;
     double FRstart = params[pNameToInd("FRstart", params)].val;
@@ -775,7 +599,18 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     double StartAge = params[pNameToInd("StartAge", params)].val;
     double EndAge = params[pNameToInd("EndAge", params)].val;
     double StartMonth = params[pNameToInd("StartMonth", params)].val;
-    double yearPlanted = params[pNameToInd("yearPlanted", params)].val;
+    
+    int ypIndex = pNameToInd("yearPlanted", params);
+    double yearPlanted;
+    if (params[ypIndex].data.spType == pTif) {
+        yearPlanted = params[ypIndex].data.scanline[cellIndex];
+        if (params[ypIndex].data.g->IsNoData(yearPlanted)) {
+            hitNODATA = true;
+        }
+    }
+    else {
+        yearPlanted = params[ypIndex].val;
+    }
     double SeedlingMass = params[pNameToInd("SeedlingMass", params)].val;
     double WFi = params[pNameToInd("WFi", params)].val;
     double WRi = params[pNameToInd("WRi", params)].val;
@@ -785,6 +620,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     double MinASWTG = params[pNameToInd("MinASWTG", params)].val;
     double NDVI_FPAR_intercept = params[pNameToInd("NDVI_FPAR_intercept", params)].val;
     double NDVI_FPAR_constant = params[pNameToInd("NDVI_FPAR_constant", params)].val;
+
 
     double& StemNo = outputs[opNameToInd("StemNo", outputs)].val;
     double& WF = outputs[opNameToInd("WF", outputs)].val;
@@ -974,8 +810,8 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     if (spatial) {
         // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
         //previous calculated values are written instead of nodata
-
-        writeMonthlyOutputGrids(outputs, calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
+   
+        //writeMonthlyOutputGrids(outputs, calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
 
         // Monthly sample point output
         //if (samplePointsMonthly)
@@ -1072,10 +908,10 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
 
         if (spatial) {
 
-            if (calYear == minMY.year)
+            //if (calYear == minMY.year)
 
-                for (int beforeCalcMonth = 1; beforeCalcMonth < StartMonth; beforeCalcMonth++)
-                    writeMonthlyOutputGrids(outputs, calYear, beforeCalcMonth, true, minMY, maxMY, cellIndex);
+                //for (int beforeCalcMonth = 1; beforeCalcMonth < StartMonth; beforeCalcMonth++)
+                    //writeMonthlyOutputGrids(outputs, calYear, beforeCalcMonth, true, minMY, maxMY, cellIndex);
         }
 
         //Initialise output step cumulative variables
@@ -1146,7 +982,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
 
             hitNODATA = AssignMonthlyMetData(series, calMonth, calYear, cellIndex,
                 SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH) || hitNODATA;
-            
+
             if (hitNODATA)
                 skipMonthCalcs = true;
             // ----------------------------- Month Calculations -----------------------------
@@ -1442,11 +1278,15 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
 
 
             if (spatial) {
-                // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
+                // 3PGS. r output of some grids.  Note that yrPstEnd is not in this check, to ensure
                 ////previous calculated values are written instead of nodata
                 //std::cout << "Cal month" << calMonth << std::endl;
-                //std::cout << "WF value: " << WF << std::endl;
-                writeMonthlyOutputGrids(outputs, calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
+                if (calMonth == 7) {
+
+                    std::cout << "Cell" << cellIndex << ", Month: " << calMonth << ", WF: " << WF << std::endl;
+                }
+                //# pragma omp critical
+                //setMonthlyOutputCells(outputs, calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
 
                 // Monthly sample point output
                 if (samplePointsMonthly) {
@@ -1517,6 +1357,6 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex, std:
     }
     // if spatial mode, write the final result of the variables to files.
     if (spatial) {
-		writeOutputGrids(hitNODATA, cellIndex, outputs);
+		//writeOutputGrids(hitNODATA, cellIndex, outputs);
 	}
 }
