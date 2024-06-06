@@ -22,7 +22,7 @@
       "name": "x64-debug",
       "displayName": "x64 Debug",
       "inherits": "windows-base",
-      "toolchainFile": "C:/Users/sarahvz/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
 
       "architecture": {
         "value": "x64",
