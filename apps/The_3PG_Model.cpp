@@ -944,7 +944,7 @@ skipPreYearCalcs:
             // canopy cover and light interception.
             CanCover = 1;
             if ((fullCanAge > 0) && (StandAge < fullCanAge))  //Modified StandAge
-                CanCover = (StandAge + 0.01) / fullCanAge; //Modified StandAge
+                CanCover = (StandAge) / fullCanAge; //Modified StandAge
             lightIntcptn = (1 - (exp(-k * LAI)));
 
 
@@ -981,11 +981,6 @@ skipPreYearCalcs:
             APARu = APAR * PhysMod;
 
             double TranspScaleFactor = EvapTransp / (Transp + RainIntcptn);
-
-            // calculate CO2 modifiers
-            double fCalphax = 1.4 / (2 - 1.4);
-            double CO2 = 350;
-            double fCalpha = fCalphax * CO2 / (350 * (fCalphax - 1) + CO2);
 
             alphaC = alpha * fNutr * fT * fFrost * PhysMod;   //22-07-02 for Excel March beta consis.
             epsilon = gDM_mol * molPAR_MJ * alphaC;
