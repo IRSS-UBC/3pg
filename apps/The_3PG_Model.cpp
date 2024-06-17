@@ -980,7 +980,6 @@ skipPreYearCalcs:
                 APAR = PAR * lightIntcptn * CanCover;
             APARu = APAR * PhysMod;
 
-            double TranspScaleFactor = EvapTransp / (Transp + RainIntcptn);
 
             alphaC = alpha * fNutr * fT * fFrost * PhysMod;   //22-07-02 for Excel March beta consis.
             epsilon = gDM_mol * molPAR_MJ * alphaC;
@@ -989,7 +988,6 @@ skipPreYearCalcs:
             GPPdm = epsilon * RADint / 100;               // tDM/ha
             NPP = GPPdm * y;                            // assumes respiratory rate is constant
 
-            //NPP = TranspScaleFactor * NPP;
             // Determine biomass increments and losses
 
              // calculate partitioning coefficients
