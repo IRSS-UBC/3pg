@@ -914,7 +914,6 @@ skipPreYearCalcs:
 
             MoistRatio = ASWmod * ASW / MaxASW;
             fSW = 1 / (1 + pow(((1 - MoistRatio) / SWconst), SWpower));
-            fSW = 0.5;
 
             if (fSW == 1)
                 bool test = true;
@@ -945,7 +944,7 @@ skipPreYearCalcs:
             // canopy cover and light interception.
             CanCover = 1;
             if ((fullCanAge > 0) && (StandAge < fullCanAge))  //Modified StandAge
-                CanCover = StandAge / fullCanAge; //Modified StandAge
+                CanCover = (StandAge) / fullCanAge; //Modified StandAge
             lightIntcptn = (1 - (exp(-k * LAI)));
 
 
@@ -980,6 +979,7 @@ skipPreYearCalcs:
             else
                 APAR = PAR * lightIntcptn * CanCover;
             APARu = APAR * PhysMod;
+
 
             alphaC = alpha * fNutr * fT * fFrost * PhysMod;   //22-07-02 for Excel March beta consis.
             epsilon = gDM_mol * molPAR_MJ * alphaC;
