@@ -914,7 +914,6 @@ skipPreYearCalcs:
 
             MoistRatio = ASWmod * ASW / MaxASW;
             fSW = 1 / (1 + pow(((1 - MoistRatio) / SWconst), SWpower));
-            fSW = 0.5;
 
             if (fSW == 1)
                 bool test = true;
@@ -945,7 +944,7 @@ skipPreYearCalcs:
             // canopy cover and light interception.
             CanCover = 1;
             if ((fullCanAge > 0) && (StandAge < fullCanAge))  //Modified StandAge
-                CanCover = StandAge / fullCanAge; //Modified StandAge
+                CanCover = (StandAge + 0.01) / fullCanAge; //Modified StandAge
             lightIntcptn = (1 - (exp(-k * LAI)));
 
 
@@ -981,6 +980,13 @@ skipPreYearCalcs:
                 APAR = PAR * lightIntcptn * CanCover;
             APARu = APAR * PhysMod;
 
+            double TranspScaleFactor = EvapTransp / (Transp + RainIntcptn);
+
+            // calculate CO2 modifiers
+            double fCalphax = 1.4 / (2 - 1.4);
+            double CO2 = 350;
+            double fCalpha = fCalphax * CO2 / (350 * (fCalphax - 1) + CO2);
+
             alphaC = alpha * fNutr * fT * fFrost * PhysMod;   //22-07-02 for Excel March beta consis.
             epsilon = gDM_mol * molPAR_MJ * alphaC;
             RADint = RAD * lightIntcptn * CanCover;
@@ -988,6 +994,7 @@ skipPreYearCalcs:
             GPPdm = epsilon * RADint / 100;               // tDM/ha
             NPP = GPPdm * y;                            // assumes respiratory rate is constant
 
+            //NPP = TranspScaleFactor * NPP;
             // Determine biomass increments and losses
 
              // calculate partitioning coefficients
