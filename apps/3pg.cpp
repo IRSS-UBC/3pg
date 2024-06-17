@@ -42,112 +42,80 @@ Use of this software assumes agreement to this condition of use
 //----------------------------------------------------------------------------------------
 
 void copyright()
-{ 
+{
     std::string copymessage =
-    "This version of 3-PG(S) has been developed by:\n"
-    //"Nicholas Coops [Nicholas.Coops@csiro.au],\n"
-    //"Anders Siggins [Anders.Siggins@csiro.au],\n"
-    //"and Andrew Loughhead.\n"
-    "CSIRO Forestry and Forest Products,\n"
-    "Private Bag 10, Clayton South 3169, Victoria, Australia.\n"
-    "For Aracruz.\n"
-    "Contact (Aracruz): Auro Campi de Almeida [aca@aracruz.com.br]\n"
-    "Contact (CSIRO)  : Anders.Siggins@csiro.au\n"
-    "                 : Nicholas.Coops@csiro.au\n"
-    "\n"
-    "Please read Release Notes for additional infomation:\n"
-    "\n"
-    "Revision: 2.53 \n"
-    "Date: 13 Dec 2002 \n"
-    "Programmer:  Anders Siggins\n"
-    "\n"
-    "\"DISCLAIMER\" \n"
-    "------------------------------------------\n"
-    "CSIRO accepts no responsibility for the use of 3PG(S) or of the model 3-PG in\n"
-    "the form supplied or as subsequently modified by third parties. CSIRO disclaims\n"
-    "liability for all losses, damages and costs incurred by any person as a result\n"
-    "of relying on this software. Use of this software assumes agreement to this\n"
-    "condition of use.\n"
-    "\n"
-    "Removal of this statement violates the spirit in which 3PG(S) was released by\n"
-    "CSIRO Forestry and Forest Products.\n";
-  std::cout << copymessage << std::endl;
-  // fprintf(fp, copymessage);
-  return;
+        "This version of 3-PG has been revised by:\n"
+        //"Nicholas Coops [Nicholas.Coops@csiro.au],\n"
+        //"Anders Siggins [Anders.Siggins@csiro.au],\n"
+        //"and Andrew Loughhead.\n"
+        "Sarah (Vaughan) and Joe\n"
+        "Revisions based off of version 2.53\n\n"
+        "Better message TBD. Enjoy!\n";
+    std::cout << copymessage << std::endl;
+    // fprintf(fp, copymessage);
+    return;
 }
 
-//function to parse -d and -s options from command line using boost::program_options
-void parseCommandLine(int argc, char *argv[], std::string& defParamFile, std::string& siteParamFile)
-{
-  namespace po = boost::program_options;
-  std::vector<std::string> inputFiles[2];
-  po::options_description desc("Allowed options");
-  desc.add_options()
-    ("help", "produce help message")
-    ("d", po::value<std::string>(&defParamFile), "default parameter file")
-    ("s", po::value<std::string>(&siteParamFile), "site parameter file")
-    ;
-  po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
-  po::notify(vm);
-  if (vm.count("help")) {
-    std::cout << desc << "\n";
-    exit(EXIT_SUCCESS);
-  }
-  if (vm.count("d") && vm.count("s")) {
-    std::cout << "Default parameter file: " << defParamFile << std::endl;
-    std::cout << "Site parameter file: " << siteParamFile << std::endl;
-  } else {
-    std::cout << "Failed to parse parameter and site parameter file" << std::endl;
-    exit(EXIT_FAILURE);
-  }
-}
+class InputParser {
+public:
+    InputParser(int& argc, char** argv) {
+        for (int i = 1; i < argc; ++i)
+            this->tokens.push_back(std::string(argv[i]));
+    }
+    const std::string& getCmdOption(const std::string& option) const {
+        std::vector<std::string>::const_iterator itr;
+        itr = std::find(this->tokens.begin(), this->tokens.end(), option);
+        if (itr != this->tokens.end() && ++itr != this->tokens.end()) {
+            return *itr;
+        }
+        static const std::string empty_string("");
+        return empty_string;
+    }
+    bool cmdOptionExists(const std::string& option) const {
+        return std::find(this->tokens.begin(), this->tokens.end(), option)
+            != this->tokens.end();
+    }
+private:
+    std::vector <std::string> tokens;
+};
+
 //----------------------------------------------------------------------------------------
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-  std::string optarg;
-  //extern int optind;
-  //int c;
-  //int result;
+    std::string optarg;
+    //extern int optind;
+    //int c;
+    //int result;
 
-  GDALRasterImage *refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
-  bool spatial=0;
-  long nrows, ncols;
-  MYDate spMinMY, spMaxMY; 
-  std::string defParamFile = "Y:\\Francois\\Vaughan\\species_lpp.txt"; 
-  std::string siteParamFile = "Y:\\Francois\\Vaughan\\site_subarea.txt";
+    GDALRasterImage* refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
+    bool spatial = 0;
+    long nrows, ncols;
+    MYDate spMinMY, spMaxMY;
+    std::string defParamFile;
+    std::string siteParamFile;
 
-  // Copyright message for stdout
-  //copyright();
-  
-  /* Command line options */
-  //parseCommandLine(argc, argv, defParamFile, siteParamFile);
-  // while (((c = getopt(argc, argv, "d:s:")) != EOF))
-  // {
-  //   switch (c) {
-  //   case 'd':
-  //     defParamFile = optarg;
-  //     break;
-      
-  //   case 's':
-  //     siteParamFile = optarg;
-  //     break;
-      
-  //   default:
-  //     std::cout << "Usage: " << program << " " << usage << std::endl;
-  //     // fprintf(stderr, "Usage: %s %s", program, usage);
-  //     exit(EXIT_FAILURE);
-  //   }
-  // }
+    /* Copyright */
+    copyright();
 
-  // Check for params files using isspace.
-  if (defParamFile.empty() || siteParamFile.empty()) {
-
-      std::cout << "Usage: 3pg <default parameter file> -s <site param%eter file>" << std::endl;
-      // fprintf(stderr, "Usage: %s %s", program, usage);
-      exit(EXIT_FAILURE);
-  }
+    /* Command line options */
+    InputParser input(argc, argv);
+    if (!input.cmdOptionExists("-d")) {
+        std::cout << "Missing species definition file. Pass path with -d flag." << std::endl;
+    }
+    defParamFile = input.getCmdOption("-d");
+    if (defParamFile.empty()) {
+        std::cout << "Path to species definition file is empty. Exiting... " << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if (!input.cmdOptionExists("-s")) {
+        std::cout << "Missing site parameter file. Pass path with -s flag." << std::endl;
+    }
+    siteParamFile = input.getCmdOption("-s");
+    if (siteParamFile.empty()) {
+        std::cout << "Path to site parameter file is empty. Exiting... " << std::endl;
+        exit(EXIT_FAILURE);
+    }
   // Open the log file. 
   // logfp = openLogFile(siteParamFile); 
 
