@@ -42,38 +42,18 @@ Use of this software assumes agreement to this condition of use
 //----------------------------------------------------------------------------------------
 
 void copyright()
-{ 
+{
     std::string copymessage =
-    "This version of 3-PG(S) has been developed by:\n"
-    //"Nicholas Coops [Nicholas.Coops@csiro.au],\n"
-    //"Anders Siggins [Anders.Siggins@csiro.au],\n"
-    //"and Andrew Loughhead.\n"
-    "CSIRO Forestry and Forest Products,\n"
-    "Private Bag 10, Clayton South 3169, Victoria, Australia.\n"
-    "For Aracruz.\n"
-    "Contact (Aracruz): Auro Campi de Almeida [aca@aracruz.com.br]\n"
-    "Contact (CSIRO)  : Anders.Siggins@csiro.au\n"
-    "                 : Nicholas.Coops@csiro.au\n"
-    "\n"
-    "Please read Release Notes for additional infomation:\n"
-    "\n"
-    "Revision: 2.53 \n"
-    "Date: 13 Dec 2002 \n"
-    "Programmer:  Anders Siggins\n"
-    "\n"
-    "\"DISCLAIMER\" \n"
-    "------------------------------------------\n"
-    "CSIRO accepts no responsibility for the use of 3PG(S) or of the model 3-PG in\n"
-    "the form supplied or as subsequently modified by third parties. CSIRO disclaims\n"
-    "liability for all losses, damages and costs incurred by any person as a result\n"
-    "of relying on this software. Use of this software assumes agreement to this\n"
-    "condition of use.\n"
-    "\n"
-    "Removal of this statement violates the spirit in which 3PG(S) was released by\n"
-    "CSIRO Forestry and Forest Products.\n";
-  std::cout << copymessage << std::endl;
-  // fprintf(fp, copymessage);
-  return;
+        "This version of 3-PG has been revised by:\n"
+        //"Nicholas Coops [Nicholas.Coops@csiro.au],\n"
+        //"Anders Siggins [Anders.Siggins@csiro.au],\n"
+        //"and Andrew Loughhead.\n"
+        "Sarah (Vaughan) and Joe\n"
+        "Revisions based off of version 2.53\n\n"
+        "Better message TBD. Enjoy!\n";
+    std::cout << copymessage << std::endl;
+    // fprintf(fp, copymessage);
+    return;
 }
 
 //function to parse -d and -s options from command line using boost::program_options
