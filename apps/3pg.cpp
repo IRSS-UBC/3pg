@@ -93,11 +93,7 @@ int main(int argc, char* argv[])
     std::string defParamFile;
     std::string siteParamFile;
 
-    /* Copyright */
-    std::cout << COPYMSG << std::endl;
-    logger.Log(COPYMSG);
-
-    /* Command line options */
+    /* Parse command line args */
     InputParser input(argc, argv);
     if (!input.cmdOptionExists("-d")) {
         std::cout << "Missing species definition file. Pass path with -d flag." << std::endl;
@@ -115,19 +111,14 @@ int main(int argc, char* argv[])
         std::cout << "Path to site parameter file is empty. Exiting... " << std::endl;
         exit(EXIT_FAILURE);
     }
-  // Open the log file. 
-  // logfp = openLogFile(siteParamFile); 
 
-  // Copyright message for log file
-  //copyright(logfp);
+    std::string outPath = getOutPathTMP(siteParamFile);
+    logger.StartLog(outPath);
 
-  // Increase the number of files that can be open at once (Windows only)
-  // result = _setmaxstdio(2048);
-  // if (result == -1)
-  // {
-  //   fprintf(logfp, "Maximum files number could not be increased\n");
-  //   fprintf(stdout, "Maximum files number could not be increased\n");
-  // }
+    /* Copyright */
+    std::cout << COPYMSG << std::endl;
+    logger.Log(COPYMSG);
+
 
   // Load the parameters and output variables. 
   InitInputParams();
@@ -135,6 +126,7 @@ int main(int argc, char* argv[])
   readParamFile(siteParamFile);
   if (!haveAllParams())
     exit(EXIT_FAILURE);
+
 
   // Check for a spatial run, if so open input grids and define refGrid. 
   refGrid = openInputGrids();

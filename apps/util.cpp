@@ -73,12 +73,16 @@ Use of this software assumes agreement to this condition of use
 // }
 
 //--------------------------------------------------------------------------
-
 Logger::Logger(const string& filename)
 {
-    ofstream log;
     logName = filename;
-    log.open(logName, ios::trunc);
+}
+
+void Logger::StartLog(const string& outPath)
+{
+    ofstream log;
+    logLoc = outPath;
+    log.open(logLoc + logName, ios::trunc);
     string currDate = GetCurrentDate();
     string currTime = GetCurrentTime();
     log << "-------------------\n";
@@ -90,7 +94,7 @@ Logger::Logger(const string& filename)
 
 Logger::~Logger()
 {
-    ofstream logfile(logName);
+    ofstream logfile(logLoc + logName);
     if (logfile.is_open())
     {
         logfile.close();
@@ -100,7 +104,7 @@ Logger::~Logger()
 void Logger::Log(const string& logMsg)
 {
     ofstream log;
-    log.open(logName, ios::app);
+    log.open(logLoc + logName, ios::app);
     log << logMsg + "\n";
     log.close();
 }

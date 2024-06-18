@@ -55,3 +55,4 @@ bool haveRhoMin(void);  //Standage dependant Density 15/07/2002
 bool haveRhoMax(void);  //Standage dependant Density 15/07/2002
 bool haveTRho(void);    //Standage dependant Density 15/07/2002
 bool getSeriesVal(double &val, int ser, int calMonth, int calYear, int k);
+std::string getOutPathTMP(const std::string& siteParamFile);

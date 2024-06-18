@@ -1273,6 +1273,74 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   return true;
 }
 
+string getOutPathTMP(const std::string& siteParamFile)
+{
+    /**
+     * Get the output path for logging.
+     *
+     * This function exists ONLY because we need know where to write the log file
+     * and the path is in the parameter file, but logging needs to begin before the
+     * current parameter reading procedure begins. This function is just
+     * frankenstein-ed code from 'readParamFile' and 'readOtherParams'.
+     *
+     * Should be made redundant when we refactor the parameter reading.
+     */
+    std::string line;
+    std::string cp;
+    std::ifstream inFile(siteParamFile);
+    while (std::getline(inFile, line))
+    {
+        if (line.empty())
+            continue;
+        if (line[0] == '/' && line[1] == '/')
+            continue;
+        std::vector<std::string> tokens;
+        boost::split(tokens, line, boost::is_any_of(","), boost::token_compress_on);
+        for (int i = 0; i < tokens.size(); i++)
+        {
+            boost::trim(tokens[i]);
+        }
+        std::string pName = tokens.front();
+        boost::trim_if(pName, boost::is_any_of("\""));
+        std::vector<std::string> pValues;
+        boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+
+        if (pName == "Output directory")
+        {
+            if (pValues.empty())
+            {
+                std::cout << "No output directory specified." << std::endl;
+                logger.Log("No ouput directory specified.");
+                exit(EXIT_FAILURE);
+            }
+            else if (pValues.size() > 1) {
+                std::cout << "More than one value element detected in output directory specification." << std::endl;
+                logger.Log("More than one value element detected in output directory specification.");
+                exit(EXIT_FAILURE);
+            }
+            else {
+                cp = pValues.front();
+                if (pValues.empty()) {
+                    outPath = ".";
+                }
+                else {
+                    if (cp.back() != '\\')
+                        cp += '\\';
+                    if (std::filesystem::exists(cp)) {
+                        outPath = cp;
+                    }
+                    else {
+                        std::cout << "Output directory " << cp << " does not exist." << std::endl;
+                        logger.Log("Output directory " + cp + " does not exist.");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            }
+            break;
+        }
+    }
+    return outPath;
+}
 //----------------------------------------------------------------------------------
 
 bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)

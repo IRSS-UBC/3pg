@@ -9,9 +9,11 @@ class Logger
 {
 private:
 	string logName;
+	string logLoc;
 public:
 	Logger(const string& filename);
 	~Logger();
+	void StartLog(const string& outPath);
 	string GetCurrentDate();
 	string GetCurrentTime();
 	void Log(const string& logMsg);
