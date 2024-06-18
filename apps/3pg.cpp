@@ -20,6 +20,7 @@ Use of this software assumes agreement to this condition of use
 #include "GDALRasterImage.hpp"
 #include "Data_io.hpp"
 #include "The_3PG_Model.hpp"
+#include "util.hpp"
 #include <boost/program_options.hpp>
 
 // Need to provide getopt on MSVC. 
@@ -40,21 +41,18 @@ Use of this software assumes agreement to this condition of use
 // char program[] = "3pg";
 
 //----------------------------------------------------------------------------------------
+std::string VERSION = "0.1";
+std::string COPYMSG = "This version of 3-PG has been revised by:\n"
+                        //"Nicholas Coops [Nicholas.Coops@csiro.au],\n"
+                        //"Anders Siggins [Anders.Siggins@csiro.au],\n"
+                        //"and Andrew Loughhead.\n"
+                        "Sarah (Vaughan) and Joe\n"
+                        "Version: " + VERSION + "\n"
+                        "Revisions based on Siggins' 2.53 version\n\n"
+                        "Better message TBD. Enjoy!\n"
+                        "--------------------------------------\n";
 
-void copyright()
-{
-    std::string copymessage =
-        "This version of 3-PG has been revised by:\n"
-        //"Nicholas Coops [Nicholas.Coops@csiro.au],\n"
-        //"Anders Siggins [Anders.Siggins@csiro.au],\n"
-        //"and Andrew Loughhead.\n"
-        "Sarah (Vaughan) and Joe\n"
-        "Revisions based off of version 2.53\n\n"
-        "Better message TBD. Enjoy!\n";
-    std::cout << copymessage << std::endl;
-    // fprintf(fp, copymessage);
-    return;
-}
+Logger logger("logfile.txt");
 
 class InputParser {
 public:
@@ -96,7 +94,8 @@ int main(int argc, char* argv[])
     std::string siteParamFile;
 
     /* Copyright */
-    copyright();
+    std::cout << COPYMSG << std::endl;
+    logger.Log(COPYMSG);
 
     /* Command line options */
     InputParser input(argc, argv);
@@ -160,23 +159,15 @@ int main(int argc, char* argv[])
   // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
   std::cout << "Finding run period..." << std::endl;
   findRunPeriod( refGrid, spMinMY, spMaxMY ); 
-  // fprintf( logfp, "first run mon/year = %2d/%4d, last run mon/year = %2d/%4d\n", spMinMY.mon, 
-	//   spMinMY.year, spMaxMY.mon, spMaxMY.year );
-  // fprintf( stdout, "Expected run period of simulation: %d - %d\n", spMinMY.year, spMaxMY.year );
-  std::cout << "first run mon/year = " << spMinMY.mon << "/" << spMinMY.year << ", last run mon/year = " << spMaxMY.mon << "/" << spMaxMY.year << std::endl;
-  std::cout << "Expected run period of simulation: " << spMinMY.year << " - " << spMaxMY.year << std::endl;
 
   // NOTE: don't think ResetGrids is necessary for GDAL stuff... but I guess we'll see
   // ResetGrids(); 
 
   if (spatial) {
     // Open output grids. 
-    std::cout << "Opening output grids..." << std::endl;
     openOutputGrids( refGrid );
-    std::cout << "Output grids opened." << std::endl;
     std::cout << "Opening regular output grids..." << std::endl;
     openRegularOutputGrids( refGrid, spMinMY, spMaxMY );
-
     std::cout << "Regular output grids opened." << std::endl;
     std::cout << "Reading points from sample file..." << std::endl;
     // Open and read sample point file
@@ -188,10 +179,11 @@ int main(int argc, char* argv[])
  
 // Run the model. 
   if (spatial) {
-     std::cout << "Running model..." << std::endl;
      int cellsDone = 0;
      int cellsTotal = (nrows) * (ncols); 
      int lastProgress = -1; 
+     std::cout << "Processing..." << cellsTotal << " cells... " << std::endl;
+     logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
      for (int j = 0; j < cellsTotal ; j++)
      {
        //PrintGrids();
