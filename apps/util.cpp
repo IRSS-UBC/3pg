@@ -15,7 +15,14 @@ Use of this software assumes agreement to this condition of use
 #include <string.h>
 #include <cctype>      // std::tolower
 #include <algorithm>   // std::equal
+#include <iostream>
+#include <fstream>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream> 
 #include <boost/algorithm/string/trim.hpp>
+#include "util.hpp"
 
 #ifdef WIN32
 #define strncasecmp strnicmp
@@ -66,28 +73,56 @@ Use of this software assumes agreement to this condition of use
 // }
 
 //--------------------------------------------------------------------------
+Logger::Logger(const string& filename)
+{
+    logName = filename;
+}
 
-// void logAndExit(FILE *logfp, char *outstr)
-// {
-//   fprintf(logfp, outstr);
-//   fprintf(stderr, outstr);
-//   exit(1);
-// }
+void Logger::StartLog(const string& outPath)
+{
+    logLoc = outPath;
+    log.open(logLoc + logName, ios::trunc);
+    string currDate = GetCurrentDate();
+    string currTime = GetCurrentTime();
+    log << "-------------------\n";
+    log << "OS date: " << setw(20) << currDate << "\n";
+    log << "OS time: " << setw(20) << currTime << "\n";
+    log << "-------------------\n";
+    log.close();
+}
 
-//--------------------------------------------------------------------------
+Logger::~Logger()
+{
+    if (log.is_open())
+    {
+        log.close();
+    }
+}
 
-// void logAndPrint(FILE *logfp, char *outstr)
-// {
-//   fprintf(logfp, outstr);
-//   fprintf(stderr, outstr);
-// }
+void Logger::Log(const string& logMsg)
+{
+    log.open(logLoc + logName, ios::app);
+    log << logMsg + "\n";
+    log.close();
+}
 
-//--------------------------------------------------------------------------
-// void logOnly(FILE *logfp, char *outstr)
-// {
-//   fprintf(logfp, outstr);
-// }
+string Logger::GetCurrentDate()
+{   
+    stringstream ss;
+    time_t const now_c = time(NULL);
+    ss << put_time(localtime(&now_c), "%d-%m-%Y");
+    string currDate = ss.str();
+    return currDate;
+}
 
+string Logger::GetCurrentTime()
+{
+    stringstream ss;
+    time_t const now_c = time(NULL);
+    ss << put_time(localtime(&now_c), "%H:%M:%S");
+    string currTime = ss.str();
+    return currTime;
+}
 //--------------------------------------------------------------------------
 
 bool ichar_equals(char a, char b)
