@@ -26,7 +26,6 @@ bool loadParamVals(int k);
 // table must be one of MT_FERTILITY, MT_MINASW, MT_MINASW. 
 double lookupManageTable( int year, int table, double def, int cellIndex ); 
 void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex );
-void writeYearlyOutputGrids( int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex );
 void writeSampleFiles(int cellIndex, int month, long calYear);
 void saveVariableVals(int k, bool hitNODATA);
 // FILE *openLogFile(const std::string& siteParamFile);
