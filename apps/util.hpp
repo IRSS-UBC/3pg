@@ -1,5 +1,6 @@
 // Utility string and log functions.
 #include <string>
+#include <fstream>
 using namespace std;
 
 char *strcpyTrim(char *s, char *ct);
@@ -10,6 +11,7 @@ class Logger
 private:
 	string logName;
 	string logLoc;
+	ofstream log;
 public:
 	Logger(const string& filename);
 	~Logger();

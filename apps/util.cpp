@@ -80,7 +80,6 @@ Logger::Logger(const string& filename)
 
 void Logger::StartLog(const string& outPath)
 {
-    ofstream log;
     logLoc = outPath;
     log.open(logLoc + logName, ios::trunc);
     string currDate = GetCurrentDate();
@@ -94,16 +93,14 @@ void Logger::StartLog(const string& outPath)
 
 Logger::~Logger()
 {
-    ofstream logfile(logLoc + logName);
-    if (logfile.is_open())
+    if (log.is_open())
     {
-        logfile.close();
+        log.close();
     }
 }
 
 void Logger::Log(const string& logMsg)
 {
-    ofstream log;
     log.open(logLoc + logName, ios::app);
     log << logMsg + "\n";
     log.close();
