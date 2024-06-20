@@ -2834,6 +2834,8 @@ int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
     minCy2 = MINSEED; 
     maxCy2 = MAXSEED; 
     spatial = ( refGrid != NULL ); 
+
+    StartAge = 1;
     
     // Point mode case.  If we are running in point mode yearPlanted, StartAge and 
     // EndAge are already defined. 
