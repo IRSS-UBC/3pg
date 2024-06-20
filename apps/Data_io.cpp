@@ -375,7 +375,6 @@ PPPG_PARAM params[] =
   {"MinASWp",      &MinASWp},
 
   // Initial conditions. 
-  {"StartAge",     &StartAge},
   {"EndAge",       &EndAge},
   {"StartMonth",   &StartMonth},
   {"yearPlanted",  &yearPlanted},  /* CHECK! do we still use this?*/
@@ -909,8 +908,6 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
            namesMatch("Minimum ASW", pName)) pInd = pNameToInd("MinASWp");
 
   // Initial conditions. 
-  else if (namesMatch("StartAge", pName) || namesMatch("Initial age", pName) || 
-           namesMatch("Start age", pName)) pInd = pNameToInd("StartAge");
   else if (namesMatch("EndAge", pName) ||
            namesMatch("End age", pName)) pInd = pNameToInd("EndAge");
   else if (namesMatch("StartMonth", pName) || namesMatch("Start Month", pName) || 
@@ -1892,7 +1889,7 @@ bool haveAllParams()
     "alpha", "fracBB0", "fracBB1", "tBB", // Canopy structure and processes
     "y",                                  // various
     "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",    // 3PG site parameters. 
-    "StartAge", "EndAge",              //Initial conditions
+     "EndAge",              //Initial conditions
     //"WFi", "WRi", "WSi",             //Now checked along with SeedlingMass
     "StemNoi", "ASWi", "yearPlanted",  // Initial conditions. 
     "Qa", "Qb",
@@ -1914,7 +1911,7 @@ bool haveAllParams()
     "SLA1", "alpha",                    // Canopy structure 
     "y",                                     // various
     "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",       // 3PG site parameters.
-    "StartAge", "EndAge",                               // Initial conditions
+     "EndAge",                               // Initial conditions
     "NDVI_FPAR_intercept", "NDVI_FPAR_constant",        // FPAR from NDVI equation.
     "Qa", "Qb",
     "gDM_mol", "molPAR_MJ",
@@ -2814,6 +2811,7 @@ void writeStandSummary(int year)
 int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
     int yPlantedMax;
     int yPlantedI = pNameToInd("yearPlanted");
+    StartAge = 1;
     if ((params[yPlantedI].data.spType == pScalar)) {
         minMY.year = yearPlanted + StartAge;
         yPlantedMax = yearPlanted;
@@ -2911,9 +2909,6 @@ bool haveSeedlingMass()
 bool haveSpatialRunYears()
 {
   int pInd;
-
-  pInd = pNameToInd("StartAge");
-  if (!(params[pInd].data.spType == pScalar)) return true;
 
   pInd = pNameToInd("EndAge");
   if (!(params[pInd].data.spType == pScalar)) return true;
