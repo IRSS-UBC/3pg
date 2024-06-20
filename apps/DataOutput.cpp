@@ -30,7 +30,6 @@ void DataOutput::ImageWrapper::close() {
 	this->mutex.lock();
 
 	//close and delete image
-	this->image->Close();
 	delete this->image;
 	this->image = nullptr;
 
@@ -44,7 +43,7 @@ DataOutput::DataOutput(GDALRasterImage* refGrid, std::string outpath) {
 }
 
 DataOutput::~DataOutput() {
-	//delete all the allocations we made with new
+	//delete all of the image allocations we made
 	for (auto image = this->images.begin(); image != this->images.end(); image++) {
 		image->second->close();
 		delete image->second;
@@ -53,6 +52,7 @@ DataOutput::~DataOutput() {
 }
 
 DataOutput::ImageWrapper* DataOutput::getImageWrapper(std::string filename) {
+	//acquire lock
 	this->imagesMutex.lock();
 	ImageWrapper* retval = nullptr;
 

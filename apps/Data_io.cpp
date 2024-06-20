@@ -488,14 +488,17 @@ struct {
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 
-//Define and provide initialization function for dataoutput:
+//Define and provide initialization/deletion functions for data output:
 // 
-//there's probably a better way of going about this
-//but I want to make sure this works first before
-//refactoring anything else.
+//I imagine this is not the best way of going about this. This will likely need to be
+//changes as we refactor the way Data_io works.
 DataOutput* dataOutput;
 void initDataOutput(GDALRasterImage* refGrid) {
     dataOutput = new DataOutput(refGrid, outPath);
+}
+void deleteDataOutput() {
+    delete dataOutput;
+    dataOutput = nullptr;
 }
 
 int pNameToInd(const std::string& id)

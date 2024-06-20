@@ -199,9 +199,9 @@ int main(int argc, char* argv[])
              lastProgress = progress;
          }
      }
-  }
 
-  //CloseGrids(); //Close all files currently open...
+     deleteDataOutput();
+  }
 
   return EXIT_SUCCESS;
 }
