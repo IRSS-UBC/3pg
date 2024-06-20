@@ -22,6 +22,7 @@ Use of this software assumes agreement to this condition of use
 #include "The_3PG_Model.hpp"
 #include "util.hpp"
 #include <boost/program_options.hpp>
+#include "DataOutput.hpp"
 
 // Need to provide getopt on MSVC. 
 //#ifdef WIN32
@@ -87,6 +88,7 @@ int main(int argc, char* argv[])
     //int result;
 
     GDALRasterImage* refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
+    DataOutput* dataOutput; //thread safe data output class
     bool spatial = 0;
     long nrows, ncols;
     MYDate spMinMY, spMaxMY;
@@ -141,6 +143,9 @@ int main(int argc, char* argv[])
     // Grid dimensions
     nrows = refGrid->nRows;
     ncols = refGrid->nCols;
+
+    //initialize dataOutput class
+    initDataOutput(refGrid);
   }
   else {
     nrows = 0;

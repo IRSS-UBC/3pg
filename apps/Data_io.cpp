@@ -488,6 +488,16 @@ struct {
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 
+//Define and provide initialization function for dataoutput:
+// 
+//there's probably a better way of going about this
+//but I want to make sure this works first before
+//refactoring anything else.
+DataOutput* dataOutput;
+void initDataOutput(GDALRasterImage* refGrid) {
+    dataOutput = new DataOutput(refGrid, outPath);
+}
+
 int pNameToInd(const std::string& id)
 {
   // TODO: this can be deprecated if the param arrays is just replaced with a map.
@@ -2263,8 +2273,8 @@ int writeOutputGrids(bool hitNODATA, long cellIndex) {
             //determine value, name, and tell dataOutput class to write
             float val = (float)*(opVars[opn].adr);
             std::string name = opVars[opn].id;
-            //dataOutput->write(year=NULL, month=NULL, name, cellIndex, val, hitNODATA);
-            std::cout << "calling dataOutput->write(year=NULL, month=NULL," <<  name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
+            dataOutput->write(-1, -1, name, cellIndex, val, hitNODATA);
+            //std::cout << "calling dataOutput->write(year=NULL, month=NULL," <<  name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
         }
     }
     return EXIT_SUCCESS;
@@ -2311,8 +2321,8 @@ void writeMonthlyOutputGrids(int calYear, int calMonth, bool hitNODATA, MYDate m
             //determine value, name, and tell dataOutput class to write
             float val = (float)*(opVars[opn].adr);
             std::string name = opVars[opn].id;
-            //dataOutput->write(year=calYear, month=calMonth, name, cellIndex, val, hitNODATA);
-            std::cout << "calling dataOutput->write(" << calYear << ", " << calMonth << ", " << name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
+            dataOutput->write(calYear, calMonth, name, cellIndex, val, hitNODATA);
+            //std::cout << "calling dataOutput->write(" << calYear << ", " << calMonth << ", " << name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
         }
     }
 }
