@@ -540,7 +540,7 @@ bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
 // This is the main routine for the 3PG model
 
 //void runTreeModel(int minCy, int maxCy, bool spatial, long cellIndex)
-void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex)
+void runTreeModel(MYDate minMY, MYDate maxMY, long cellIndex)
 {
     //  int minCy, maxCy; 
 
@@ -689,16 +689,16 @@ skipPreYearCalcs:
 
     FR = FRp;
 
-    if (spatial) {
-        // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
-        //previous calculated values are written instead of nodata
 
-        writeMonthlyOutputGrids(calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
+    // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
+    //previous calculated values are written instead of nodata
 
-        // Monthly sample point output
-        if (samplePointsMonthly)
-            writeSampleFiles(cellIndex, calMonth, calYear);
-    }
+    writeMonthlyOutputGrids(calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
+
+    // Monthly sample point output
+    if (samplePointsMonthly)
+        writeSampleFiles(cellIndex, calMonth, calYear);
+
 
     //Start processing loop
     for (cy = minMY.year; cy <= maxMY.year; cy++) {
@@ -760,13 +760,11 @@ skipPreYearCalcs:
 
     skipYearStartCalcs:
         //Fill in noData values for first year. AS 20/01/02
-        if (spatial) {
 
-            if (calYear == minMY.year)
+        if (calYear == minMY.year)
 
-                for (int beforeCalcMonth = 1; beforeCalcMonth < StartMonth; beforeCalcMonth++)
-                    writeMonthlyOutputGrids(calYear, beforeCalcMonth, true, minMY, maxMY, cellIndex);
-        }
+            for (int beforeCalcMonth = 1; beforeCalcMonth < StartMonth; beforeCalcMonth++)
+                writeMonthlyOutputGrids(calYear, beforeCalcMonth, true, minMY, maxMY, cellIndex);
 
         //Initialise output step cumulative variables
         delStemNo = 0;
@@ -1122,27 +1120,25 @@ skipPreYearCalcs:
 
         skipMonthCalcs:
 
-            if (spatial) {
-                //Joe is not sure what the following comment means, but figures it might be important so he's leaving it.
-                // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
-                //previous calculated values are written instead of nodata
+            //Joe is not sure what the following comment means, but figures it might be important so he's leaving it.
+            // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
+            //previous calculated values are written instead of nodata
 
-                //Joe: the startMonth, cy, cm, yrPreStart, yrPstEnd code has to be some of the most unecessarily complicated
-                //code I've ever seen... Add on to that that even if we are PAST THE END, we continue iterating through a for
-                //loop, just not changing any values (???). AND the month counter (cm) starts iterating at 2 and finishes at 14...
-                //I'm working right now on changing how data output works to make future parallelization possible while refactoring 
-                //as little as possible (to keep changes as more manageable chunks), but in the future, we MUST change how this works, 
-                //it *should* be pretty simple to just use minMY and maxMY.
-                if (!yrPreStart && !yrPstEnd && !(calYear == maxMY.year && calMonth == maxMY.mon)) {
-                    //the !(calYear == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
-                    //output, but rather skip it and the values are eventually written via writeOutputGrids().
-                    writeMonthlyOutputGrids(calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
-                }
-
-                // Monthly sample point output
-                if (samplePointsMonthly)
-                    writeSampleFiles(cellIndex, calMonth, calYear);
+            //Joe: the startMonth, cy, cm, yrPreStart, yrPstEnd code has to be some of the most unecessarily complicated
+            //code I've ever seen... Add on to that that even if we are PAST THE END, we continue iterating through a for
+            //loop, just not changing any values (???). AND the month counter (cm) starts iterating at 2 and finishes at 14...
+            //I'm working right now on changing how data output works to make future parallelization possible while refactoring 
+            //as little as possible (to keep changes as more manageable chunks), but in the future, we MUST change how this works, 
+            //it *should* be pretty simple to just use minMY and maxMY.
+            if (!yrPreStart && !yrPstEnd && !(calYear == maxMY.year && calMonth == maxMY.mon)) {
+                //the !(calYear == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
+                //output, but rather skip it and the values are eventually written via writeOutputGrids().
+                writeMonthlyOutputGrids(calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
             }
+
+            // Monthly sample point output
+            if (samplePointsMonthly)
+                writeSampleFiles(cellIndex, calMonth, calYear);
             // if (showDetailedResults) writeMonthlySummary(lastMonthFile, monthCounter, year);
 
         }
@@ -1189,21 +1185,15 @@ skipPreYearCalcs:
         // ANL if (showDetailedResults) writeAnnualResults(year);
         // ANL if (showStandSummary) writeStandSummary(year);if(calMonth == 1)
 
-        if (!spatial) {
-            writeStandSummary(year);
-        }
-        else {
-            // ANL - Annual sample point output. 
-            if (samplePointsYearly)
-                writeSampleFiles(cellIndex, 12, calYear);
+      
+        // ANL - Annual sample point output. 
+        if (samplePointsYearly) {
+            writeSampleFiles(cellIndex, 12, calYear);
         }
 
         // Restore LAI
         LAI = WF * SLA * 0.1;
 
     }
-    // if spatial mode, write the final result of the variables to files.
-    if (spatial) {
-		writeOutputGrids(hitNODATA, cellIndex);
-	}
+    writeOutputGrids(hitNODATA, cellIndex);
 }
