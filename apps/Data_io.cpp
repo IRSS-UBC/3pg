@@ -375,6 +375,7 @@ PPPG_PARAM params[] =
   {"MinASWp",      &MinASWp},
 
   // Initial conditions. 
+   {"StartAge",     &StartAge},
   {"EndAge",       &EndAge},
   {"StartMonth",   &StartMonth},
   {"yearPlanted",  &yearPlanted},  /* CHECK! do we still use this?*/
@@ -921,6 +922,8 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
            namesMatch("Minimum ASW", pName)) pInd = pNameToInd("MinASWp");
 
   // Initial conditions. 
+  else if (namesMatch("StartAge", pName) || namesMatch("Initial age", pName) ||
+      namesMatch("Start age", pName)) pInd = pNameToInd("StartAge");
   else if (namesMatch("EndAge", pName) ||
            namesMatch("End age", pName)) pInd = pNameToInd("EndAge");
   else if (namesMatch("StartMonth", pName) || namesMatch("Start Month", pName) || 
@@ -1902,7 +1905,7 @@ bool haveAllParams()
     "alpha", "fracBB0", "fracBB1", "tBB", // Canopy structure and processes
     "y",                                  // various
     "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",    // 3PG site parameters. 
-     "EndAge",              //Initial conditions
+     "StartAge", "EndAge",              //Initial conditions
     //"WFi", "WRi", "WSi",             //Now checked along with SeedlingMass
     "StemNoi", "ASWi", "yearPlanted",  // Initial conditions. 
     "Qa", "Qb",
@@ -1924,7 +1927,7 @@ bool haveAllParams()
     "SLA1", "alpha",                    // Canopy structure 
     "y",                                     // various
     "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",       // 3PG site parameters.
-     "EndAge",                               // Initial conditions
+     "StartAge","EndAge",                               // Initial conditions
     "NDVI_FPAR_intercept", "NDVI_FPAR_constant",        // FPAR from NDVI equation.
     "Qa", "Qb",
     "gDM_mol", "molPAR_MJ",
