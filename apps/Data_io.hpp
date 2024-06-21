@@ -34,7 +34,16 @@ void readParamFile(const std::string& paramFile);
 GDALRasterImage* openInputGrids();
 bool haveAllParams();
 bool havePointOpFile();
-int findRunPeriod( GDALRasterImage*refGrid, MYDate &minMY, MYDate &maxMY );
+
+/**
+ * Find the month/year period over which the model will run.
+ *
+ * @param[out] minMY the minimum (start) month and year 
+ * @param[out] maxMY the maximum (end) month and year
+ */
+int findRunPeriod( MYDate &minMY, MYDate &maxMY );
+// Check that min and max month/years are valid.
+bool validRunPeriod(const MYDate& minMY, const MYDate& maxMY);
 int openOutputGrids( GDALRasterImage*refGrid);
 void ResetGrids(void);
 void CloseGrids(void);

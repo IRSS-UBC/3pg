@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
   // Find the over all start year and end year. 
   // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
   std::cout << "Finding run period..." << std::endl;
-  findRunPeriod( refGrid, spMinMY, spMaxMY ); 
+  findRunPeriod(spMinMY, spMaxMY); 
 
   // NOTE: don't think ResetGrids is necessary for GDAL stuff... but I guess we'll see
   // ResetGrids(); 
