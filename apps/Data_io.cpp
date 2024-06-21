@@ -2473,28 +2473,60 @@ void writeStandSummary(int year)
 //----------------------------------------------------------------------------------
 
 int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
-    int yPlantedMax;
+    int yPlantedMin, sAgeMin, eYearMax, sMonthMax;
+    std::vector<std::pair<int, int>> yPlantedMinI, eYearMaxI;
+    // yearPlanted, StartAge, StartMonth, and EndAge each inform the run period
+    // and all can be either scalar or raster values. 
+    // Work through each combination to determine years and max month.
     int yPlantedI = pNameToInd("yearPlanted");
-    StartAge = 1;
+    int sAgeI = pNameToInd("StartAge");
+    int sMonthI = pNameToInd("StartMonth");
+    int eYearI = pNameToInd("EndAge");
+    // Min year from scalar yearPlanted w/ scalar or raster StartAge
     if ((params[yPlantedI].data.spType == pScalar)) {
-        minMY.year = yearPlanted + StartAge;
-        yPlantedMax = yearPlanted;
+        if ((params[sAgeI].data.spType == pScalar)) {
+            sAgeMin = StartAge;
+        }
+        else {
+            sAgeMin = params[sAgeI].data.g->GetMin();
+        }
+        minMY.year = yearPlanted + sAgeMin;
     }
+    // Min year from raster yearPlanted w/ scalar or raster StartAge
+    // Only consider StartAge values at indices where yearPlanted is min 
     else {
-        minMY.year = params[yPlantedI].data.g->GetMin() + StartAge;
-        yPlantedMax = params[yPlantedI].data.g->GetMax() + StartAge;
+        yPlantedMin = params[yPlantedI].data.g->GetMin();
+        yPlantedMinI = params[yPlantedI].data.g->getIndicesWhere(yPlantedMin);
+        if ((params[sAgeI].data.spType == pScalar)) {
+            sAgeMin = StartAge;
+        }
+        else {
+            sAgeMin = params[sAgeI].data.g->minFromIndices(yPlantedMinI);
+        }
+        minMY.year =yPlantedMin + sAgeMin;
+
     }
-    if (EndAge < minMY.year) {
-        maxMY.year = yPlantedMax + EndAge;
-    }
-    else {
+    // Max year from scalar or raster EndYear
+    if ((params[eYearI].data.spType == pScalar)) {
         maxMY.year = EndAge;
     }
-    minMY.mon = StartMonth;
-    maxMY.mon = StartMonth;
+    else {
+        maxMY.year = params[eYearI].data.g->GetMax();
+    }
+    // Max month from scalar or raster StartMonth
+    // Only consider StartMonth values at indices where EndYear is max
+    if ((params[sMonthI].data.spType == pScalar)) {
+        maxMY.mon = StartMonth;
+    }
+    else {
+        eYearMaxI = params[eYearI].data.g->getIndicesWhere(maxMY.year);
+        sMonthMax = params[sMonthI].data.g->minFromIndices(eYearMaxI);
+        maxMY.mon = sMonthMax;
+    }
+    // For now, set min month to NULL. It isn't used.
+    minMY.mon = NULL;
     if (validRunPeriod(minMY, maxMY)) {
-        string runPeriodStr = "first run mon/year = " + to_string(minMY.mon) +
-            "/" + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
+        string runPeriodStr = "running  from: " + to_string(minMY.year) + "to" + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
         std::cout << runPeriodStr << std::endl;
         logger.Log(runPeriodStr);
         return EXIT_SUCCESS;
@@ -2507,7 +2539,7 @@ int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
 bool validRunPeriod(const MYDate& minMY, const MYDate& maxMY)
 {
     std::string errMsg;
-    if (minMY.mon < 0 || minMY.mon > 12) {
+    if (maxMY.mon < 0 || maxMY.mon > 12) {
         errMsg = "Invalid start month detected: " + to_string(minMY.mon);
         std::cout << errMsg << std::endl;
         logger.Log(errMsg);

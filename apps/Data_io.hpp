@@ -38,7 +38,7 @@ bool havePointOpFile();
 /**
  * Find the month/year period over which the model will run.
  *
- * @param[out] minMY the minimum (start) month and year 
+ * @param[out] minMY the minimum (start) year
  * @param[out] maxMY the maximum (end) month and year
  */
 int findRunPeriod( MYDate &minMY, MYDate &maxMY );

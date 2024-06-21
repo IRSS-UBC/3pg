@@ -202,3 +202,51 @@ bool GDALRasterImage::IsNoData(float val) {
  	return max;
  };
 
+ std::vector<std::pair<int, int>>  GDALRasterImage::getIndicesWhere(const double& value) {
+	 double* pafScanline;
+	 std::vector<std::pair<int, int>> valueIndices;
+	 for (int row = 0; row < nRows; ++row) {
+		 band->RasterIO(GF_Read, 0, row, nCols, 1, pafScanline, nCols, 1, GDT_Float64, 0, 0);
+		 for (int col = 0; col < nCols; ++col) {
+			 if (pafScanline[col] == value) {
+				 valueIndices.clear();
+				 valueIndices.emplace_back(row, col);
+			 }
+		 }
+	 }
+	 return valueIndices;
+ };
+
+ double GDALRasterImage::minFromIndices(const std::vector<std::pair<int, int>>& indices) {
+	 double min, value;
+	 double runningMin = std::numeric_limits<double>::max();
+
+	 for (const auto& index : indices) {
+		 int row = index.first;
+		 int col = index.second;
+		 band->RasterIO(GF_Read, col, row, 1, 1, &value, 1, 1, GDT_Float64, 0, 0);
+		 if (value < runningMin) {
+			 runningMin = value;
+		 }
+	 }
+	 min = runningMin;
+	 return min;
+ }
+
+ double GDALRasterImage::maxFromIndices(const std::vector<std::pair<int, int>>& indices) {
+	 double max, value;
+	 double runningMax = std::numeric_limits<double>::max();
+
+	 for (const auto& index : indices) {
+		 int row = index.first;
+		 int col = index.second;
+		 band->RasterIO(GF_Read, col, row, 1, 1, &value, 1, 1, GDT_Float64, 0, 0);
+		 if (value > runningMax) {
+			 runningMax = value;
+		 }
+	 }
+	 max = runningMax;
+	 return max;
+ }
+
+
