@@ -272,7 +272,6 @@ extern double delWAG;
 // ANL - other globals.
 bool yearlyOutput, monthlyOutput; 
 bool samplePointsYearly = false, samplePointsMonthly = false;
-FILE *pointModeFp;   // Output file for point mode only.  
 std::string outPath = "./";
 
 //----------------------------------------------------------------------------------
@@ -1462,27 +1461,6 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
     }
     return true;
   }
-
-  // Look for Point mode output file. 
-  else if (namesMatch("point mode output file", pName)) {
-    if (pValue.empty()) {
-      std::cout << "No point mode output file specified." << std::endl;
-      logger.Log("No point mode output file specified.");
-      return false;
-    }
-    if (pValue.size() > 1) {
-      std::cout << "More than one value element detected in point mode output file specification." << std::endl;
-      logger.Log("More than one value element detected in point mode output file specification.");
-      exit(EXIT_FAILURE);
-    }
-    cp = pValue.front();
-    if ((pointModeFp = fopen(cp.c_str(), "w")) == NULL) {
-      std::cout << "Could not open point mode output file " << cp << std::endl;
-      logger.Log("Could not open point mode output file " + cp);
-      exit(EXIT_FAILURE);
-    }
-    return true;
-  }
   else
     return false;
 }
@@ -2419,53 +2397,6 @@ void writeSampleFiles(int cellIndex, int month, long calYear)
 //   exit(1);
 // }
 
-//----------------------------------------------------------------------------------
-
-void writeStandSummaryData(FILE *outFP, int year)
-{
-    fprintf(outFP, "%4.0f, %4.0f, %4.0f, %5.2f, %5.2f, %5.2f, %5.1f, %4.2f, "
-    "%4.2f, %3.1f, %4.2f, %4.0f, %4.0f\n", 
-    StandAge + yearPlanted, StandAge, StemNo, WF, WR, WS, StandVol, LAI, MAI, avDBH, 
-    cLitter, cumTransp, ASW);
-}
-
-//----------------------------------------------------------------------------------
-
-void writeStandSummary(int year)
-{
-  // For point mode, write summary values to the output file pointModeFp. 
-
-  // 3PGS
-  if (modelMode3PGS) {
-      // headings
-      if (year == 1)
-        fprintf(pointModeFp, "Year, LAI, , NPP, delWAG, cumWabv\n");
-
-      // write initial conditions
-      fprintf(pointModeFp, "%4.0f, %3.1f, %5.2f, %5.2f, %5.2f\n", 
-        yearPlanted + StandAge - 1, LAI, NPP, delWAG, cumWabv);
-  }
-
-  // 3PG
-  else {
-    // Headings and initial conditions. 
-    if (year == 0) {
-        fprintf(pointModeFp, "Year, Stand age, Stem number, Wf, Wr, Ws, Stand volume, Stand LAI, "
-          "Stand MAI, Average DBH, Litterfall, Total transpiration, Soil water\n");
-
-        fprintf(pointModeFp, "%4.0f, %4.0f, %4.0f, %5.2f, %5.2f, %5.2f, %5.1f, %4.2f, %4.2f, %3.1f\n", 
-          yearPlanted + StandAge, StandAge, StemNoi, WFi, WRi, WSi, 1.7 * WSi, 
-          LAIi, MAIi, avDBHi);
-    }
-
-    // write annual data
-    writeStandSummaryData (pointModeFp, year);
-
-    // write peak LAI and MAI
-    if (StandAge == EndAge)
-      fprintf(pointModeFp, " , , , , , , ,%5.2f, %5.2f\n", LAIx, MAIx); 
-  }
-}
 
 //----------------------------------------------------------------------------------
 
@@ -2736,19 +2667,6 @@ void InitInputParams(void)
 
 }
 
-//----------------------------------------------------------------------------------
-
-bool havePointOpFile()
-{
-  if (pointModeFp == NULL) {
-    // sprintf(outstr, "Using point mode but parameter \"point mode output file\" not set\n");
-    std::cout << "Using point mode but parameter point mode output file not set" << std::endl;
-    // logAndPrint(logfp, outstr);
-    return false;
-  }
-  else
-    return true;
-}
 //----------------------------------------------------------------------------------
 bool haveSeedlingMass()
 {
