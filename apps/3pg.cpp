@@ -22,6 +22,7 @@ Use of this software assumes agreement to this condition of use
 #include "The_3PG_Model.hpp"
 #include "util.hpp"
 #include <boost/program_options.hpp>
+#include "DataOutput.hpp"
 
 // Need to provide getopt on MSVC. 
 //#ifdef WIN32
@@ -87,6 +88,7 @@ int main(int argc, char* argv[])
     //int result;
 
     GDALRasterImage* refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
+    DataOutput* dataOutput; //thread safe data output class
     bool spatial = 0;
     long nrows, ncols;
     MYDate spMinMY, spMaxMY;
@@ -141,6 +143,9 @@ int main(int argc, char* argv[])
     // Grid dimensions
     nrows = refGrid->nRows;
     ncols = refGrid->nCols;
+
+    //initialize dataOutput class
+    initDataOutput(refGrid);
   }
   else {
     nrows = 0;
@@ -157,11 +162,11 @@ int main(int argc, char* argv[])
 
   if (spatial) {
     // Open output grids. 
-    openOutputGrids( refGrid );
-    std::cout << "Opening regular output grids..." << std::endl;
-    openRegularOutputGrids( refGrid, spMinMY, spMaxMY );
-    std::cout << "Regular output grids opened." << std::endl;
-    std::cout << "Reading points from sample file..." << std::endl;
+    //openOutputGrids( refGrid );
+    //std::cout << "Opening regular output grids..." << std::endl;
+    //openRegularOutputGrids( refGrid, spMinMY, spMaxMY );
+    //std::cout << "Regular output grids opened." << std::endl;
+    //std::cout << "Reading points from sample file..." << std::endl;
     // Open and read sample point file
     readSampleFile( refGrid ); 
     std::cout << "Points read from sample file." << std::endl;
@@ -176,35 +181,27 @@ int main(int argc, char* argv[])
      int lastProgress = -1; 
      std::cout << "Processing..." << cellsTotal << " cells... " << std::endl;
      logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
-     for (int j = 0; j < cellsTotal ; j++)
-     {
-       //PrintGrids();
-       if (j == 16080)
-         bool test = true;
-       int progress = ((100 * cellsDone) / cellsTotal);
-       if (progress > lastProgress)
-         fprintf(stdout, "Completed %2u%%\r", progress);
-       runTreeModel( spMinMY, spMaxMY, spatial, j);
-       cellsDone++;
-       lastProgress = progress;
-      
-     //   fprintf(logfp, "   row %u\n", j); fflush(logfp);
+
+     for (int i = 0; i < nrows; i++) {
+         for (int j = 0; j < ncols; j++) {
+
+             //calculate/print progress
+             int progress = (100 * cellsDone / cellsTotal);
+             if (progress > lastProgress) {
+                 fprintf(stdout, "Completed %2u%%\r", progress);
+             }
+            
+             int cellIndex = i * ncols + j;
+             runTreeModel(spMinMY, spMaxMY, spatial, cellIndex);
+
+             //increment progress
+             cellsDone++;
+             lastProgress = progress;
+         }
      }
 
-//     fprintf(stdout, "Completed %2u%%\r", 100);
-
-//     // Write output grids. 
-    //writeOutputGrids();
+     deleteDataOutput();
   }
-
-//     // Write output grids. 
-//     writeOutputGrids();
-//   }
-//   else {
-//     runTreeModel(spMinMY, spMaxMY, spatial, 0);
-//   }
-
-  CloseGrids(); //Close all files currently open...
 
   return EXIT_SUCCESS;
 }

@@ -589,10 +589,6 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex)
     bool haveVpdSeries = false;
     bool haveNetRadSeries = false;
 
-    // month counters
-    //int firstRunMonth, lastRunMonth;
-    int runMonth;
-
     //std::cout << "\n\nCELL INDEX " << cellIndex << "!!!!!!!!!!!!!!!!!!!!!\n\n" << std::endl;
     // Compute daylengths
     // ANL - only do dayLength here, as Tav and VPD potentially need recalculation each year. 
@@ -610,13 +606,6 @@ void runTreeModel(MYDate minMY, MYDate maxMY, bool spatial, long cellIndex)
     // ANL - Load the parameter values.  On NODATA write NODATA to output 
     // grids. 
     hitNODATA = !loadParamVals(cellIndex);
-
-    // For this cell, what is the first run month and the last run month, with reference 
-    // to the January in minMY.  Use this later to spot periods that we skip calculations. 
-    // calMonth and calYear relate to these values like this:
-    //   ( calYear - minCY.year ) * 12 + calMonth - 1; 
-    //firstRunMonth = ( ( yearPlanted ) - minMY.year ) * 12 + StartMonth - 1; // (yearPlanted + 1)
-    //lastRunMonth  =  ( yearPlanted + EndAge - minMY.year ) * 12 + StartMonth - 2; 
 
     // May have hit nodata in StartMonth, yearPlanted and EndAge, in which case 
     // firstRunMonth and LastRunMonth will be meaningless.  In any case, if we aren't at 
@@ -688,12 +677,10 @@ skipPreYearCalcs:
 
 
     //Print first month results
-
     calYear = minMY.year;
     calMonth = (int)StartMonth;
 
     //Find out if there is supposed to be any data here in the first place...
-
     hitNODATA = AssignMonthlyMetData(calMonth, calYear, cellIndex,
         SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH) || hitNODATA;
 
@@ -713,32 +700,17 @@ skipPreYearCalcs:
             writeSampleFiles(cellIndex, calMonth, calYear);
     }
 
-
     //Start processing loop
-
     for (cy = minMY.year; cy <= maxMY.year; cy++) {
         runYear = cy;
         calYear = cy;
         calMonth = (int)StartMonth;
-        runMonth = (calYear - minMY.year) * 12 + calMonth - 1;
-
-        //if ( calYear == 2008 )
-        //  runYear = runYear; 
 
         // If we've already encountered NODATA we don't care about any annual variable 
         // except runYear. 
         if (hitNODATA)
             goto skipYearStartCalcs;
-        /*
-        if ( runMonth < firstRunMonth )
-          yrPreStart = true;
-        else
-          yrPreStart = false;
-        if ( runMonth > lastRunMonth )
-          yrPstEnd = true;
-        else
-          yrPstEnd = false;
-        */
+
         year = cy - (int)yearPlanted;   // seem to still need year for point mode output. 
 
         // Once we've encountered nodata just cycle through as quickly as possible.  
@@ -768,7 +740,6 @@ skipPreYearCalcs:
         aTransp = 0;
         aSupIrrig = 0;
 
-
         // Get management-related options for current year and cell. 
         // First load param file values, then possibly override them with management table values. 
         if (!haveAgeDepFert())
@@ -788,10 +759,7 @@ skipPreYearCalcs:
 
 
     skipYearStartCalcs:
-
-
         //Fill in noData values for first year. AS 20/01/02
-
         if (spatial) {
 
             if (calYear == minMY.year)
@@ -801,7 +769,6 @@ skipPreYearCalcs:
         }
 
         //Initialise output step cumulative variables
-
         delStemNo = 0;
         cRADint = 0;
         cLAI = 0;
@@ -816,7 +783,6 @@ skipPreYearCalcs:
         cLitter = 0;
 
         // Do monthly calculations
-
         for (cm = (int)StartMonth + 1; cm < (int)StartMonth + 13; cm++) {
             //Note that the added one is to sync in with the VB code, which always
             //incrememt to the next month before starting...
@@ -1156,11 +1122,22 @@ skipPreYearCalcs:
 
         skipMonthCalcs:
 
-
             if (spatial) {
+                //Joe is not sure what the following comment means, but figures it might be important so he's leaving it.
                 // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
                 //previous calculated values are written instead of nodata
-                writeMonthlyOutputGrids(calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
+
+                //Joe: the startMonth, cy, cm, yrPreStart, yrPstEnd code has to be some of the most unecessarily complicated
+                //code I've ever seen... Add on to that that even if we are PAST THE END, we continue iterating through a for
+                //loop, just not changing any values (???). AND the month counter (cm) starts iterating at 2 and finishes at 14...
+                //I'm working right now on changing how data output works to make future parallelization possible while refactoring 
+                //as little as possible (to keep changes as more manageable chunks), but in the future, we MUST change how this works, 
+                //it *should* be pretty simple to just use minMY and maxMY.
+                if (!yrPreStart && !yrPstEnd && !(calYear == maxMY.year && calMonth == maxMY.mon)) {
+                    //the !(calYear == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
+                    //output, but rather skip it and the values are eventually written via writeOutputGrids().
+                    writeMonthlyOutputGrids(calYear, calMonth, hitNODATA || yrPreStart, minMY, maxMY, cellIndex);
+                }
 
                 // Monthly sample point output
                 if (samplePointsMonthly)

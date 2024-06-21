@@ -1,17 +1,19 @@
 find_package(GDAL CONFIG REQUIRED)
 
 set(SOURCE_FILES
-    3pg.cpp
+    	3pg.cpp
 	util.cpp
-    util.hpp
+    	util.hpp
 	The_3PG_model.cpp
-    The_3PG_model.hpp
+    	The_3PG_model.hpp
 	Data_io.cpp
-    Data_io.hpp
+    	Data_io.hpp
 	MYDate.cpp
-    MYDate.h
-    GDALRasterImage.cpp
-    GDALRasterImage.hpp
+    	MYDate.h
+    	GDALRasterImage.cpp
+    	GDALRasterImage.hpp
+	DataOutput.cpp
+	DataOutput.hpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
