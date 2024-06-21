@@ -190,17 +190,15 @@ bool GDALRasterImage::IsNoData(float val) {
 	}
 };
 
-// float GDALRasterImage::GetMin() {
-// 	float min;
-// 	float max;
-// 	band->ComputeRasterMinMax(&min, &max);
-// 	return min;
-// };
+ float GDALRasterImage::GetMin() {
+ 	float min;
+ 	min = band->GetMinimum();
+ 	return min;
+ };
 
-// float GDALRasterImage::GetMax() {
-// 	float min;
-// 	float max;
-// 	band->ComputeRasterMinMax(&min, &max);
-// 	return max;
-// };
+ float GDALRasterImage::GetMax() {
+ 	float max;
+ 	max = band->GetMaximum();
+ 	return max;
+ };
 

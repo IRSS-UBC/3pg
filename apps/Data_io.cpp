@@ -2400,250 +2400,56 @@ void writeSampleFiles(int cellIndex, int month, long calYear)
 
 //----------------------------------------------------------------------------------
 
-int findRunPeriod( GDALRasterImage *refGrid, MYDate &minMY, MYDate &maxMY )
-{
-    // Find the calendar months and years for which the model will actually run, over 
-    // the whole spatial area.  Cells with NODATA on any input cause that cell to 
-    // have no effect.  Cells with zero on yearPlanted get, in this version, 
-    // mapped to 1993.  THIS IS A BAD IDEA AND WILL COME BACK TO BITE US.  Likewise 
-    // zero in StartAge gets remapped to 1, and zero on monthPlanted gets remapped to 
-    // to 1 also.  This messing with values is duplicated in loadParamVals, which 
-    // is one more reason this is a bad idea.  
-    int cy, cm, minCy, maxCy, minCm, maxCm; 
-    float cy2, minCy2, maxCy2; 
-    bool spatial, hitNoData;
-    bool test;
-    int nrows, ncols; 
-    const int MINSEED = 999999; 
-    const int MAXSEED = -1; 
-    int adjAge; //Plant age and end age, taking into account endage being an actual year
-
-    minCy = MINSEED;
-    maxCy = MAXSEED;
-    minCy2 = MINSEED; 
-    maxCy2 = MAXSEED; 
-    spatial = ( refGrid != NULL ); 
-
+int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
+    int yPlantedMax;
+    int yPlantedI = pNameToInd("yearPlanted");
     StartAge = 1;
-    
-    // Point mode case.  If we are running in point mode yearPlanted, StartAge and 
-    // EndAge are already defined. 
-    if ( !haveSpatialRunYears() ) {
-      minMY.year = (int)yearPlanted + (int)StartAge; 
-      minMY.mon = (int)StartMonth;
-      if (EndAge > yearPlanted)
-        maxMY.year = (int)EndAge; //Take into account actual years rather than number of years
-      else
-        maxMY.year = (int)yearPlanted + (int)EndAge; 
-      maxMY.mon = (int)StartMonth;
+    if ((params[yPlantedI].data.spType == pScalar)) {
+        minMY.year = yearPlanted + StartAge;
+        yPlantedMax = yearPlanted;
     }
-    // Spatial mode case.  For each cell get yearPlanted, monthPlanted, StartAge, 
-    // EndAge, endMonth, and find the earliest start and latest finish.  
     else {
-      nrows = refGrid->nRows; 
-      ncols = refGrid->nCols; 
-      
-      // For every cell
-      //for (int j = 0; j < nrows-2; j++) {
-      // long cellIndex = j * ncols + 1;
-      
-      //  for (int i = 1; i < ncols-1; i++, cellIndex++) {
-      for (int cellIndex = 0; cellIndex < ncols*nrows; cellIndex++)
-      {
-      // Load parameter values - only really want yearPlanted, EndAge, and 
-          // StartAge. 
-          
-          if (cellIndex == 159)
-            test = true;
-
-          hitNoData = !loadParamVals(cellIndex);
-
-          
-          // Look for NODATA, to skip it. 
-          if ( hitNoData )
-          {
-      //     logAndPrint(logfp, "Nodata\n");
-            continue; 
-          }
-          // Look for zero and do utterly bodgy things. 
-          if ( yearPlanted < 1)
-            continue;   //Treat years less than 1900 as nodata 
-          if ( StartAge < 1 )
-            StartAge = 1; 
-          if ( EndAge < 1 )
-            EndAge = 2; // Mimum end growth for a stand - just a reasonable value. AS.
-          if ( StartMonth < 1 ) {
-            StartMonth = 1; 
-          }
-
-          // Check reasonableness of StartMonth, must be in the range 1 - 12 inclusive. 
-          if ( StartMonth < 0.999 || StartMonth > 12.0001 ) {
-            std::cout << "Found bad StartMonth value at XXXX" << std::endl;
-            exit(EXIT_FAILURE);
-            // logAndExit(logfp, "Found bad StartMonth value at XXXX\n" ); 
-          }
-          // Minimum year
-          cy2 = yearPlanted + (float)StartAge + ( StartMonth / 100 ); 
-          if ( cy2 < minCy2 )
-            minCy2 = cy2; 
-
-          cy = (int)(yearPlanted + StartAge);
-          cm = (int)StartMonth; 
-          
-          if ( cy < minCy ) {
-            minCy = cy; 
-            minCm = 13;  // ensure that the current cm is found as a minimum. 
-          }
-
-          // Minimum month, only update when cy is at a minimum.  
-          if ( cy == minCy ) {
-            if ( cm < minCm )
-              minCm = cm; 
-          }
-
-          // Maximum year, month.  Currently we only allow EndAge to be a whole number 
-          // of years, so the last month is always one month earlier than StartMonth. 
-          // In the future might allow fractional EndAge and work out end month from that. 
-          
-          if (EndAge > yearPlanted)
-            adjAge = (int)EndAge;
-          else
-            adjAge = yearPlanted + (int)EndAge; 
-          cy2 = adjAge + ( ( StartMonth - 1 ) / 100 ); 
-          
-          if ( cy2 > maxCy2 )
-            maxCy2 = cy2; 
-          
-          cy = (int)(adjAge); 
-          cm = (int)StartMonth - 1; 
-          
-          if ( cm == 0 ) 
-            cm = 12; 
-          if ( cy > maxCy ) {
-            maxCy = cy; 
-            maxCm = 0;  // ensure that the current cm is found as a maximum.
-          }
-
-          // Maximum month. 
-          if ( cy == maxCy )
-            if ( cm > maxCm )
-              maxCm = cm; 
-        }
-      //}
-
-      // Check if we found useful values
-      if ( minCy == MINSEED ) {
-        std::cout << "Failed to find valid starting year. Exiting..." << std::endl;
-        logger.Log("Failed to find valid starting year.\n" );
-        exit(EXIT_FAILURE);
-      }
-      if ( maxCy == MAXSEED ) {
-        std::cout << "Failed to find valid ending year. Exiting..." << std::endl;
-        logger.Log("Failed to find valid ending year.\n" );
-        exit(EXIT_FAILURE);
-      }
-      if ( minCm == 13 ) {
-        std::cout << "Failed to find valid starting month. Exiting..." << std::endl;
-        logger.Log("Failed to find valid starting month.\n" );
-        exit(EXIT_FAILURE); 
-      }
-      if ( maxCm == 13 ) {
-        std::cout << "Failed to find valid ending month. Exiting..." << std::endl;
-        logger.Log("Failed to find valid ending month.\n" ); 
-        exit(EXIT_FAILURE);
-      }
-
-      minMY.year = minCy; 
-      minMY.mon = minCm; 
-
-      maxMY.year = adjAge;        //minCy + EndAge - StartAge; 
-      maxMY.mon = maxCm; 
+        minMY.year = params[yPlantedI].data.g->GetMin() + StartAge;
+        yPlantedMax = params[yPlantedI].data.g->GetMax() + StartAge;
     }
-    string runPeriodStr = "first run mon/year = " + to_string(minMY.mon) + "/" + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
-    std::cout << runPeriodStr << std::endl;
-    logger.Log(runPeriodStr);
-    return EXIT_SUCCESS;
+    if (EndAge < minMY.year) {
+        maxMY.year = yPlantedMax + EndAge;
+    }
+    else {
+        maxMY.year = EndAge;
+    }
+    minMY.mon = StartMonth;
+    maxMY.mon = StartMonth;
+    if (validRunPeriod(minMY, maxMY)) {
+        string runPeriodStr = "first run mon/year = " + to_string(minMY.mon) +
+            "/" + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
+        std::cout << runPeriodStr << std::endl;
+        logger.Log(runPeriodStr);
+        return EXIT_SUCCESS;
+    }
+    else {
+        exit(EXIT_FAILURE);
+    }
 }
-  // Below is a possible replacment for the above method. It is not tested but can take advantage of GDAL's min/max functions and avoids reading all params twice.
-  // 
-  //   std::string paramNames[] = { "yearPlanted", "StartAge", "EndAge", "StartMonth", "" };
-  //   for (int i = 0; paramNames[i] != ""; i++) {
-  //     int pn = pNameToInd(paramNames[i]);
-  //     if (pn == -1) {
-  //       sprintf(outstr, "Couldn't find parameter %s in input file.\n", paramNames[i]);
-  //       logAndExit(logfp, outstr);
-  //     }
-  //     float minYearPlanted, maxYearPlanted, minStartAge, maxStartAge, startAgem, minEndAge, maxEndAge, endAge, minStartMonth, maxStartMonth;
-  //     if (params[pn].data.spType == pScalar) {
-  //         if (paramNames[i] == "yearPlanted") {
-  //           minYearPlanted = params[pn].data.sval;
-  //           maxYearPlanted = params[pn].data.sval;
-  //         }
-  //         else if (paramNames[i] == "StartAge") {
-  //           startAge = params[pn].data.sval;
-  //         }
-  //         else if (paramNames[i] == "EndAge") {
-  //           endAge = params[pn].data.sval;
-  //         }
-  //         else if (paramNames[i] == "StartMonth") {
-  //           minStartMonth = params[pn].data.sval;
-  //           maxStartMonth = params[pn].data.sval;
-  //         }
-  //     }
-  //     else { // the parameter is spatial, so get the value from the grid
-  //       if (params[pn].data.g != NULL) {
-  //         // Get min and max's from the grids using GDALRasterImage::getMin and getMax
-  //         if (paramNames[i] == "yearPlanted") {
-  //           minYearPlanted = params[pn].data.g->getMin();
-  //           maxYearPlanted = params[pn].data.g->getMax();
-  //           if (minYearPlanted < 1900 || maxYearPlanted < 1900)
-  //             logAndExit(logfp, "yearPlanted must be greater than 1900.\n");
-  //         }
-  //         else if (paramNames[i] == "StartAge") {
-  //           minStartAge = params[pn].data.g->getMin();
-  //           maxStartAge = params[pn].data.g->getMax();
-  //           // if min and max are not equal, bail out
-  //           if (minStartAge != maxStartAge) {
-  //             logAndExit(logfp, "2023 UPDATE, WIP: StartAge must be the same for all cells.\n");
-  //           }
-  //           startAge = minStartAge;
-  //           if (startAge < 1) {
-  //             logAndExit(logfp, "StartAge must be greater than 0.\n");
-  //           }
-  //           else if (paramNames[i] == "EndAge") {
-  //             minEndAge = params[pn].data.g->getMin();
-  //             maxEndAge = params[pn].data.g->getMax();
-  //             // if min and max are not equal, bail out
-  //             if (minEndAge != maxEndAge) {
-  //               logAndExit(logfp, "2023 UPDATE, WIP: EndAge must be the same for all cells.\n");
-  //             }
-  //             endAge = minEndAge;
-  //             if (endAge < 1) {
-  //               logAndExit(logfp, "2023 UPDATE, WIP: EndAge must be greater than 0... previous default was endAge=2. \n");
-  //             }
-  //           }
-  //           else if (paramNames[i] == "StartMonth") {
-  //             minStartMonth = params[pn].data.g->getMin();
-  //             maxStartMonth = params[pn].data.g->getMax();
-  //             if (minStartMonth < 1 || minStartMonth > 12 || maxStartMonth < 1 || maxStartMonth > 12)
-  //               logAndExit(logfp, "StartMonth must be in the range 1 - 12 inclusive.\n");
-  //           }
-  //         }
-  //       }
-  //     }
-  //     minMY.year = minYearPlanted + startAge;
-  //     int adj;
-  //     if (endAge > maxYearPlanted)
-  //       maxMY.year = endAge;
-  //     else {
-  //       adj = maxYearPlanted + endAge;
-  //     }
-  //     minMY.mon = minStartMonth;
-  //     maxMY.mon = minStartMonth - 1;
-  //   }     
-//   }
-//   return;
-// }
+
+bool validRunPeriod(const MYDate& minMY, const MYDate& maxMY)
+{
+    std::string errMsg;
+    if (minMY.mon < 0 || minMY.mon > 12) {
+        errMsg = "Invalid start month detected: " + to_string(minMY.mon);
+        std::cout << errMsg << std::endl;
+        logger.Log(errMsg);
+        return false;
+    }
+    if (minMY.year > maxMY.year) {
+        errMsg = "Start of run period (i.e min(yearPlanted) + 1) > endYear: " 
+            + to_string(minMY.year + 1) + " > " + to_string(maxMY.year);
+        std::cout << errMsg << std::endl;
+        logger.Log(errMsg);
+        return false;
+    }
+    return true;
+}
 
 //----------------------------------------------------------------------------------
 //To ensure that if we don't have a variable, it doesn't get an accidental GOT value
