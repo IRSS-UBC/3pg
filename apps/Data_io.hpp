@@ -23,6 +23,10 @@
 #define SS_VPD       7
 #define SS_TAVG      8
 
+struct PPPG_VVAL;
+struct PPPG_OP_VAR;
+struct PPPG_PARAM;
+
 bool loadParamVals(int k);
 // table must be one of MT_FERTILITY, MT_MINASW, MT_MINASW. 
 double lookupManageTable( int year, int table, double def, int cellIndex ); 
@@ -67,3 +71,4 @@ bool getSeriesVal(double &val, int ser, int calMonth, int calYear, int k);
 std::string getOutPathTMP(const std::string& siteParamFile);
 void initDataOutput(GDALRasterImage* refGrid);
 void deleteDataOutput();
+std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo);

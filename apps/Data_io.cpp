@@ -398,54 +398,54 @@ PPPG_PARAM params[] =
 // Initialisation of output variable array. This lists all possible output variables 
 // and sets up the mapping of the output variable to its name, which is used in 
 // parsing the parameter file.  
-PPPG_OP_VAR opVars[] = {
-  {"opVarError", NULL},
-  {"StemNo",     &StemNo},
-  {"WF",         &WF},
-  {"WR",         &WR},
-  {"WS",         &WS},
-  {"TotalW",     &TotalW},
-  {"LAI",        &LAI},
-  {"cLAI",       &cLAI},
-  {"MAI",        &MAI},
-  {"avDBH",      &avDBH},
-  {"BasArea",    &BasArea},
-  {"StandVol",   &StandVol},
-  {"GPP",        &GPPdm},
-  {"cGPP",       &cGPP},
-  {"NPP",        &NPP},
-  {"cNPP",       &cNPP},
-  {"delWAG",     &delWAG},
-  {"cumWabv",    &cumWabv},
-  {"Transp",     &Transp},
-  {"cTransp",    &cTransp},
-  {"ASW",        &ASW},
-  {"fSW",        &fSW},
-  {"fVPD",       &fVPD},
-  {"fT",         &fT},
-  {"fNutr",      &fNutr},
-  {"fFrost",     &fAge},
-  {"APAR",       &APAR},
-  {"APARu",      &APARu},
-  {"EvapTransp", &EvapTransp},
-  {"cEvapTransp",&cEvapTransp}, //Added 08/11/02
-  {"LAIx",       &LAIx},
-  {"ageLAIx",    &ageLAIx},
-  {"MAIx",       &MAIx},    //Added 29/07/2002
-  {"ageMAIx",    &ageMAIx}, //Added 29/07/2002
-  {"FR",         &FR},     //Added 11/07/2002
-  {"PhysMod",    &PhysMod}, //Added 11/07/2002
-  {"alphaC",     &alphaC},  //Added 11/07/2002
-  {"fAge",       &fAge},    //Added 11/07/2002
-  {"fracBB",     &fracBB},
-  {"WUE",        &WUE},     //Added 16/07/02
-  {"cWUE",       &cWUE},    //Added 08/11/02
-  {"CVI",        &CVI},     //Added 16/07/02
-  {"cCVI",       &cCVI},    //Added 08/11/02
-  {"TotalLitter", &TotalLitter}, //Added 16/07/02
-  {"cLitter",    &cLitter},
-  {"",         NULL}
-};
+
+std::vector<std::string> output_var_names = { 
+    "StemNo"
+  "WF",
+  "WR",
+  "WS",
+  "TotalW",
+  "LAI",
+  "cLAI",
+  "MAI",
+  "avDBH",
+  "BasArea",
+  "StandVol",
+  "GPP",
+  "cGPP",
+  "NPP",
+  "cNPP",
+  "delWAG",
+  "cumWabv",
+  "Transp",
+  "cTransp",
+  "ASW",
+  "fSW",
+  "fVPD",
+  "fT",
+  "fNutr",
+  "fFrost",
+  "APAR",
+  "APARu",
+ "EvapTransp",
+    "cEvapTransp"
+    "LAIx",
+    "ageLAIx",
+    "MAIx",
+    "ageMAIx",
+    "FR",
+    "PhysMod",
+    "alphaC",
+    "fAge",
+    "fracBB",
+    "WUE",
+    "cWUE",
+    "CVI",
+    "cCVI",
+    "TotalLitter",
+    "cLitter" 
+}
+
  
 //----------------------------------------------------------------------------------
 
@@ -1023,7 +1023,7 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
 
 //----------------------------------------------------------------------------------
 
-bool readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo)
+std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo)
 {
   // For a parameter name pName and a parameter value, pValue, both as strings, read 
   // the value into an appropriate variable. The parameter name can be either the 
@@ -1032,101 +1032,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   std::string cp;
   std::string outstr;
 
-  pInd = pInd1 = pInd2 = 0;
-
-  // Find the index for the p1aram in the opVars array. 
-  // 3PG only output variables. 
-  if (namesMatch("StemNo", pName) ||
-    namesMatch("Stocking density", pName)) pInd1 = opNameToInd("StemNo");
-  else if (namesMatch("WF", pName) ||
-    namesMatch("Weight of foliage", pName)) pInd1 = opNameToInd("WF");
-  else if (namesMatch("WR", pName) ||
-    namesMatch("Weight of roots", pName)) pInd1 = opNameToInd("WR");
-  else if (namesMatch("WS", pName) ||
-    namesMatch("Weight of stems", pName)) pInd1 = opNameToInd("WS");
-  else if (namesMatch("TotalW", pName) ||
-      namesMatch("Total weight", pName)) pInd1 = opNameToInd("TotalW");
-  else if (namesMatch("MAI", pName) ||
-    namesMatch("Mean Annual Increment", pName)) pInd1 = opNameToInd("MAI");
-  else if (namesMatch("avDBH", pName) ||
-    namesMatch("Average DBH", pName)) pInd1 = opNameToInd("avDBH");
-  else if (namesMatch("BasArea", pName) ||
-    namesMatch("Basal Area", pName)) pInd1 = opNameToInd("BasArea");
-  else if (namesMatch("StandVol", pName) ||
-    namesMatch("Stand volume", pName)) pInd1 = opNameToInd("StandVol");
-  else if (namesMatch("Transp", pName) ||
-           namesMatch("Transpiration", pName)) pInd1 = opNameToInd("Transp");
-  else if (namesMatch("cTransp", pName))  pInd1 = opNameToInd("cTransp");
-  else if (namesMatch("ASW", pName) ||
-           namesMatch("Available Soil Water", pName)) pInd1 = opNameToInd("ASW");
-  else if (namesMatch("EvapTransp", pName)) pInd1 = opNameToInd("EvapTransp");
-  else if (namesMatch("cEvapTransp", pName)) pInd1 = opNameToInd("cEvapTransp");
-  else if (namesMatch("LAIx", pName)) pInd1 = opNameToInd("LAIx");
-  else if (namesMatch("ageLAIx", pName)) pInd1 = opNameToInd("ageLAIx"); 
-  else if (namesMatch("GPP", pName) ||
-    namesMatch("Gross Primary Production (tDM/ha)", pName)) pInd1 = opNameToInd("GPP");
-  else if (namesMatch("cGPP", pName))  pInd1 = opNameToInd("cGPP");
-  else if (namesMatch("TotalLitter", pName)) pInd1 = opNameToInd("TotalLitter");
-  else if (namesMatch("cLitter", pName)) pInd1 = opNameToInd("cLitter");
-  
-  // 3PGS only output variables
-  if (namesMatch("delWAG", pName) ||
-    namesMatch("change in aboveground biomass (tDM/ha)", pName)) pInd2 = opNameToInd("delWAG");
-  else if (namesMatch("cumWabv", pName) ||
-    namesMatch("accumulated aboveground biomass (tDM/ha)", pName)) pInd2 = opNameToInd("cumWabv");
-
-  // Check we only matched from the appropriate set. 
-  if (modelMode3PGS) {
-    if (pInd1 != 0) {
-      outstr = "The output variable " + pName + " is not supported in 3PGS mode";
-      std::cout << outstr << std::endl;
-      logger.Log(outstr);
-      exit(EXIT_FAILURE);
-    }
-  }
-  else {
-    if (pInd2 != 0) {
-      outstr = "The output variable " + pName + " is not supported in 3PG mode";
-      std::cout << outstr << std::endl;
-      logger.Log(outstr);
-      exit(EXIT_FAILURE);
-    }
-  }
-  if (modelMode3PGS)
-    pInd = pInd2; 
-  else
-    pInd = pInd1; 
-
-  // Output variables common to both modes. 
-  if (namesMatch("NPP", pName) ||
-    namesMatch("Net Primary Production (tDM/ha)", pName)) pInd = opNameToInd("NPP"); //Modified 26/07/02
-  else if (namesMatch("cNPP", pName))  pInd = opNameToInd("cNPP");
-  else if (namesMatch("LAI", pName) ||
-    namesMatch("Leaf Area Index", pName)) pInd = opNameToInd("LAI");
-  else if (namesMatch("cLAI", pName)) pInd = opNameToInd("cLAI"); //Added 7 November 2002
-  else if (namesMatch("FRout", pName))    pInd = opNameToInd("FR"); //Added 11/07/2002
-  else if (namesMatch("PhysMod", pName))  pInd = opNameToInd("PhysMod");//Added 11/07/2002
-  else if (namesMatch("alphaC", pName))  pInd = opNameToInd("alphaC");//Added 11/07/2002
-  else if (namesMatch("fAge", pName))  pInd = opNameToInd("fAge"); //Added 11/07/2002
-  else if (namesMatch("fracBB", pName))  pInd = opNameToInd("fracBB"); //Added 11/07/2002
-  else if (namesMatch("WUE", pName))  pInd = opNameToInd("WUE"); //Added 16/07/2002
-  else if (namesMatch("cWUE", pName))  pInd = opNameToInd("cWUE");
-  else if (namesMatch("CVI", pName))  pInd = opNameToInd("CVI"); //Added 16/07/2002
-  else if (namesMatch("cCVI", pName))  pInd = opNameToInd("cCVI");
-  else if (namesMatch("fSW", pName))      pInd = opNameToInd("fSW");
-  else if (namesMatch("fVPD", pName))     pInd = opNameToInd("fVPD");
-  else if (namesMatch("fT", pName))       pInd = opNameToInd("fT"); 
-  else if (namesMatch("fNutr", pName))    pInd = opNameToInd("fNutr"); 
-  else if (namesMatch("fFrost", pName))   pInd = opNameToInd("fFrost"); 
-  else if (namesMatch("APAR", pName))     pInd = opNameToInd("APAR"); 
-  else if (namesMatch("APARu", pName))    pInd = opNameToInd("APARu");
-  else if (namesMatch("MAIx", pName))    pInd = opNameToInd("MAIx");
-  else if (namesMatch("ageMAIx", pName))    pInd = opNameToInd("ageMAIx");
-  
-  // Did we match a name?  
-  if (pInd == 0)
-    return false;
-
+  std::unordered_map<std::string, PPPG_OP_VAR> opVars;
   if (pValue.empty()) {
     outstr = "No grid name for param " + pName +  " on line: " + to_string(lineNo);
     std::cout << outstr << std::endl;
@@ -1140,11 +1046,11 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
       exit(EXIT_FAILURE);
   }
   // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
-  opVars[pInd].gridName = outPath + pValue.front(); 
+  opVars[pName].gridName = outPath + pValue.front(); 
   const std::filesystem::path filePath = opVars[pInd].gridName;
   if (filePath.extension() == ".tif") // Heed the dot.
   {
-      opVars[pInd].spType = pTif;
+      opVars[pName].spType = pTif;
   }
   else
   {
@@ -1173,7 +1079,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   if (yearlyOutput == true) {
     // Look for start year
     try {
-      opVars[pInd].recurStart = std::stoi(cp);
+      opVars[pName].recurStart = std::stoi(cp);
     }
     catch (std::invalid_argument const& e) {
       outstr = "Expected an integer start year in recuring output specification on line " +  to_string(lineNo);
@@ -1193,7 +1099,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
             logger.Log(outstr);
             exit(EXIT_FAILURE);
         }
-        opVars[pInd].recurYear = interval;
+        opVars[pName].recurYear = interval;
       }
       catch (std::invalid_argument const& e) {
           outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
@@ -1212,15 +1118,15 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
     try {
       cp = pValue.at(3);
       if (cp == "monthly")
-        opVars[pInd].recurMonthly = true;
+        opVars[pName].recurMonthly = true;
       else if (cp == "month") {
-        opVars[pInd].recurMonthly = false;
+        opVars[pName].recurMonthly = false;
         // If 'month', look for the month interger
         try {
           cp = pValue.at(4);
           try {
-            opVars[pInd].recurMonth = std::stoi(cp);
-            if (opVars[pInd].recurMonth == 0)
+            opVars[pName].recurMonth = std::stoi(cp);
+            if (opVars[pName].recurMonth == 0)
             {
                 outstr = "Found month of zero in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
                 std::cout << outstr << std::endl;
@@ -1258,28 +1164,28 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
     }
   }
   // Mark the variable for later writing
-    opVars[pInd].write = true;
-    std::cout << "   variable: " << opVars[pInd].id << "   grid: " << opVars[pInd].gridName << std::endl;
-    logger.Log("   variable: " + opVars[pInd].id + "   grid: " + opVars[pInd].gridName);
-    if (opVars[pInd].recurStart)
+    opVars[pName].write = true;
+    std::cout << "   variable: " << opVars[pName].id << "   grid: " << opVars[pName].gridName << std::endl;
+    logger.Log("   variable: " + opVars[pName].id + "   grid: " + opVars[pName].gridName);
+    if (opVars[pName].recurStart)
     {
-        string outputGridString = "      starting in " + to_string(opVars[pInd].recurStart) + ", writing every " + to_string(opVars[pInd].recurYear) + " years";
+        string outputGridString = "      starting in " + to_string(opVars[pName].recurStart) + ", writing every " + to_string(opVars[pName].recurYear) + " years";
         std::cout << outputGridString << " years";
-        if (opVars[pInd].recurMonthly)
+        if (opVars[pName].recurMonthly)
         {
             std::cout << ", with monthly values";
             outputGridString = outputGridString + ", with monthly values";
         }
-        else if (opVars[pInd].recurMonth != 0)
+        else if (opVars[pName].recurMonth != 0)
         {
-            std::cout << ", on the " << opVars[pInd].recurMonth << " month";
-            outputGridString = outputGridString + ", on the " + to_string(opVars[pInd].recurMonth) + " month";
+            std::cout << ", on the " << opVars[pName].recurMonth << " month";
+            outputGridString = outputGridString + ", on the " + to_string(opVars[pName].recurMonth) + " month";
 
         }
         std::cout << std::endl;
         logger.Log(outputGridString);
     }
-  return true;
+  return opVars;
 }
 
 string getOutPathTMP(const std::string& siteParamFile)
@@ -1841,7 +1747,11 @@ void readParamFile(const std::string& paramFile)
     std::vector<std::string> pValues;
     boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
     if (readInputParam(pName, pValues)) { continue; }
-    else if (readOutputParam(pName, pValues, lineNo)) { continue; }
+    if (std::find(output_var_names.begin(), output_var_names.end(), pName)
+                                                            != output_var_names.end()) {
+        std::unordered_map<std::string, PPPG_OP_VVAL> opVars;
+        opVars = readOutputParam(pName, pValues, lineNo);
+    }
     else if (readOtherParam(pName, pValues)) { continue; }
     else if (readInputSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
     else if (readInputManageParam(pName, inFile, lineNo)) { continue; }
@@ -2243,7 +2153,7 @@ GDALRasterImage* openInputGrids( )
 
 //----------------------------------------------------------------------------------
 
-int writeOutputGrids(bool hitNODATA, long cellIndex) {
+int writeOutputGrids(std::unordered_map<std::string, PPPG_OP_VVAL> opVars, bool hitNODATA, long cellIndex) {
     //for each possible output variable
     for (int opn = 0; opVars[opn].id != ""; opn++) {
         //if it has been marked to be written
