@@ -501,6 +501,32 @@ void deleteDataOutput() {
     dataOutput = nullptr;
 }
 
+bool openGrid(PPPG_VVAL& vval)
+{
+    if (vval.spType == pTif) {
+        string openString = "   opening raster from " + vval.gridName + "...";
+        string succesReadString = "read raster";
+        string failReadString = "failed";
+        std::cout << openString;
+
+        try {
+            vval.g = new GDALRasterImage(vval.gridName);
+            std::cout << succesReadString << std::endl;
+            logger.Log(openString + succesReadString);
+        }
+        catch (const std::exception& e) {
+            std::cout << failReadString << std::endl;
+            logger.Log(openString + failReadString);
+            exit(EXIT_FAILURE);
+        }
+
+    }
+    else {
+        return false;
+    }
+    return true;
+}
+
 int pNameToInd(const std::string& id)
 {
   // TODO: this can be deprecated if the param arrays is just replaced with a map.
@@ -2105,31 +2131,6 @@ bool loadParamVals(int k)
 
 //----------------------------------------------------------------------------------
 
-bool openGrid( PPPG_VVAL &vval )
-{
-  if (vval.spType == pTif) {
-      string openString = "   opening raster from " + vval.gridName + "...";
-      string succesReadString = "read raster";
-      string failReadString = "failed";
-      std::cout << openString;
-
-    try {
-      vval.g = new GDALRasterImage(vval.gridName);
-      std::cout << succesReadString << std::endl;
-      logger.Log(openString + succesReadString);
-    }
-    catch (const std::exception& e) {
-      std::cout << failReadString << std::endl;
-      logger.Log(openString + failReadString);
-      exit(EXIT_FAILURE);
-    }
-
-  }
-  else {
-    return false;
-  }
-  return true; 
-}
 
 GDALRasterImage* openInputGrids( )
 {
@@ -2154,7 +2155,7 @@ GDALRasterImage* openInputGrids( )
     }
 
     else if ( openGrid( params[pn].data ) ) {
-      spatial = true; 
+      spatial = true;
       if ( first ) {
         refGrid = (GDALRasterImage *)params[pn].data.g;
         first = false; 
@@ -2503,7 +2504,7 @@ int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
         else {
             sAgeMin = params[sAgeI].data.g->minFromIndices(yPlantedMinI);
         }
-        minMY.year =yPlantedMin + sAgeMin;
+        minMY.year = yPlantedMin + sAgeMin;
 
     }
     // Max year from scalar or raster EndYear
@@ -2513,20 +2514,26 @@ int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
     else {
         maxMY.year = params[eYearI].data.g->GetMax();
     }
-    // Max month from scalar or raster StartMonth
-    // Only consider StartMonth values at indices where EndYear is max
+    // Max month from scalar StartMonth
     if ((params[sMonthI].data.spType == pScalar)) {
         maxMY.mon = StartMonth;
     }
+    // Max month from raster StartMonth w/ scalar or raster EndYear
+    // Only consider StartMonth values at indices with EndAge is max
     else {
-        eYearMaxI = params[eYearI].data.g->getIndicesWhere(maxMY.year);
-        sMonthMax = params[sMonthI].data.g->minFromIndices(eYearMaxI);
+        if ((params[eYearI].data.spType == pScalar)) {
+            sMonthMax = params[sMonthI].data.g->GetMax();
+        }
+        else {
+            eYearMaxI = params[eYearI].data.g->getIndicesWhere(maxMY.year);
+            sMonthMax = params[sMonthI].data.g->minFromIndices(eYearMaxI);
+        }
         maxMY.mon = sMonthMax;
     }
     // For now, set min month to NULL. It isn't used.
     minMY.mon = NULL;
     if (validRunPeriod(minMY, maxMY)) {
-        string runPeriodStr = "running  from: " + to_string(minMY.year) + "to" + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
+        string runPeriodStr = "first run year = " + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
         std::cout << runPeriodStr << std::endl;
         logger.Log(runPeriodStr);
         return EXIT_SUCCESS;
