@@ -2476,8 +2476,9 @@ void writeStandSummary(int year)
 int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
     int yPlantedMin, sAgeMin, eYearMax, sMonthMax;
     std::vector<std::pair<int, int>> yPlantedMinI, eYearMaxI;
-    // yearPlanted, StartAge, StartMonth, and EndAge each inform the run period
-    // and all can be either scalar or raster values. 
+    // yearPlanted and StartAge inform the first possible run year
+    // while StartMonth and EndAge inform the final mon/year
+    // and all can be either scalar or raster inputs. 
     // Work through each combination to determine years and max month.
     int yPlantedI = pNameToInd("yearPlanted");
     int sAgeI = pNameToInd("StartAge");
