@@ -39,6 +39,9 @@ public:
 	float GetMin();
 	float GetMax();
 	void Close();
+	std::vector<std::pair<int, int>> getIndicesWhere(const double& value);
+	double minFromIndices(const std::vector<std::pair<int, int>>& indices);
+	double maxFromIndices(const std::vector<std::pair<int, int>>& indices);
 
 };
 
