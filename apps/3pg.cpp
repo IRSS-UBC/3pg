@@ -122,86 +122,60 @@ int main(int argc, char* argv[])
     logger.Log(COPYMSG);
 
 
-  // Load the parameters and output variables. 
-  InitInputParams();
-  readParamFile(defParamFile);
-  readParamFile(siteParamFile);
-  if (!haveAllParams())
+    // Load the parameters and output variables. 
+    InitInputParams();
+    readParamFile(defParamFile);
+    readParamFile(siteParamFile);
+    if (!haveAllParams())
     exit(EXIT_FAILURE);
 
 
-  // Check for a spatial run, if so open input grids and define refGrid. 
-  refGrid = openInputGrids();
-  spatial = ( refGrid != NULL );
+    // Check for a spatial run, if so open input grids and define refGrid. 
+    refGrid = openInputGrids();
 
-  // In point mode require the point mode output filename. 
-  if (!spatial)
-    if (!havePointOpFile())
-      exit(EXIT_FAILURE);
-
-  if (spatial) {
-    // Grid dimensions
     nrows = refGrid->nRows;
     ncols = refGrid->nCols;
 
     //initialize dataOutput class
     initDataOutput(refGrid);
-  }
-  else {
-    nrows = 0;
-    ncols = 0;
-  }
 
-  // Find the over all start year and end year. 
-  // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
-  std::cout << "Finding run period..." << std::endl;
-  findRunPeriod(spMinMY, spMaxMY); 
+    // Find the over all start year and end year. 
+    // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
+    std::cout << "Finding run period..." << std::endl;
+    findRunPeriod(spMinMY, spMaxMY); 
 
-  // NOTE: don't think ResetGrids is necessary for GDAL stuff... but I guess we'll see
-  // ResetGrids(); 
+    // NOTE: don't think ResetGrids is necessary for GDAL stuff... but I guess we'll see
+    // ResetGrids(); 
 
-  if (spatial) {
-    // Open output grids. 
-    //openOutputGrids( refGrid );
-    //std::cout << "Opening regular output grids..." << std::endl;
-    //openRegularOutputGrids( refGrid, spMinMY, spMaxMY );
-    //std::cout << "Regular output grids opened." << std::endl;
-    //std::cout << "Reading points from sample file..." << std::endl;
-    // Open and read sample point file
     readSampleFile( refGrid ); 
     std::cout << "Points read from sample file." << std::endl;
-    // fprintf(logfp, "Processing %u cells...\n", nrows * ncols);
-  }
 
  
-// Run the model. 
-  if (spatial) {
-     int cellsDone = 0;
-     int cellsTotal = (nrows) * (ncols); 
-     int lastProgress = -1; 
-     std::cout << "Processing..." << cellsTotal << " cells... " << std::endl;
-     logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
+    // Run the model. 
+    int cellsDone = 0;
+    int cellsTotal = (nrows) * (ncols); 
+    int lastProgress = -1; 
+    std::cout << "Processing..." << cellsTotal << " cells... " << std::endl;
+    logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
 
-     for (int i = 0; i < nrows; i++) {
-         for (int j = 0; j < ncols; j++) {
+    for (int i = 0; i < nrows; i++) {
+        for (int j = 0; j < ncols; j++) {
 
-             //calculate/print progress
-             int progress = (100 * cellsDone / cellsTotal);
-             if (progress > lastProgress) {
-                 fprintf(stdout, "Completed %2u%%\r", progress);
-             }
+            //calculate/print progress
+            int progress = (100 * cellsDone / cellsTotal);
+            if (progress > lastProgress) {
+                fprintf(stdout, "Completed %2u%%\r", progress);
+            }
             
-             int cellIndex = i * ncols + j;
-             runTreeModel(spMinMY, spMaxMY, spatial, cellIndex);
+            int cellIndex = i * ncols + j;
+            runTreeModel(spMinMY, spMaxMY, cellIndex);
 
-             //increment progress
-             cellsDone++;
-             lastProgress = progress;
-         }
-     }
+            //increment progress
+            cellsDone++;
+            lastProgress = progress;
+        }
+    }
+    deleteDataOutput();
 
-     deleteDataOutput();
-  }
-
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
