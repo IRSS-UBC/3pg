@@ -14,6 +14,7 @@ set(SOURCE_FILES
     	GDALRasterImage.hpp
 	DataOutput.cpp
 	DataOutput.hpp
+    ParamStructs.hpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
