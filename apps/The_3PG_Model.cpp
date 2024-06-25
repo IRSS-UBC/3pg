@@ -79,7 +79,7 @@ bool modelMode3PGS = false;
 char siteName[100];                      // name of site
 double Lat = 1000;                       // site latitude
 double MaxASW, MinASW, MinASWp;          // maximum & minimum available soil water, current, param file. 
-double FR, FRp;                          // site fertility rating, current, param file. 
+double FRp;                          // site fertility rating, current, param file. 
 double FRstart, FRend, FRdec;            // Start, end and decrement % for fertility decrease with time
 //int soilIndex;                         // soil class index
 // ANL changed this from int to double
@@ -116,28 +116,21 @@ double SeedlingMass;                     // Alternative way of deriving initial 
 // of mass using seedling mass constant
 // ANL changed StandAge from int to double
 double StandAge;                         // stand age
-double ASW, ASWi;                        // available soil water
+double ASWi;                        // available soil water
 double MinASWTG;
-double StemNoi, StemNo;                  // stem numbers
-double WFi, WF;                          // foliage biomass
-double WRi, WR;                          // root biomass
-double WSi, WS;                          // stem biomass
-double LAIi, LAI;                        // canopy leaf area index
-double MAIi, MAI;                        // mean annual volume increment
-double avDBHi, avDBH;                    // average stem DBH
-double TotalW;                           // total biomass
-double BasArea;                          // basal area
-double StandVol;                         // stem volume
-double TotalLitter;                      //total litter produced
-double LAIx, ageLAIx;                    // peak LAI and age at peak LAI
-double MAIx, ageMAIx;                    // peak MAI and age at peak MAI
+double StemNoi;                  // stem numbers
+double WFi;                          // foliage biomass
+double WRi;                          // root biomass
+double WSi;                          // stem biomass
+double LAIi;                        // canopy leaf area index
+double MAIi;                        // mean annual volume increment
+double avDBHi;                    // average stem DBH                                                                         
 double cumTransp;                        // annual stand transporation
 double cumIrrig;                         // annual irrig. to maintain MinASW
 
 // Stand factors that are specifically age dependent
 double SLA;
 double gammaF;
-double fracBB;
 double CanCover;
 
 // Parameter values
@@ -169,7 +162,6 @@ double fracBB0, fracBB1, tBB;
 double Density;
 double rhoMin, rhoMax, tRho;             // Standage varying density 3-06-02 
 double pfsConst, pfsPower;               // derived from pFS2, pFS20
-double PhysMod;
 
 //Conversion factors
 double Qa, Qb;
@@ -182,25 +174,21 @@ double MaxIntcptn;
 double LAImaxIntcptn;
 
 // Intermediate monthly results
-double m, alphaC, epsilon;
+double m, epsilon;
 double RAD, PAR, RADint;
 double lightIntcptn;
-double fAge, fT, fFrost;
-double fVPD, fSW, fNutr;
 double CanCond;
-double Transp, EvapTransp, RainIntcptn, WUE; //Added 16/07/02
+double RainIntcptn; //Added 16/07/02
 
 double AvStemMass;
-double APAR, APARu;
-double GPPmolc, GPPdm, NPP;
+double GPPmolc, GPPdm;
 double pR, pS, pF, pFS;
 double delWF, delWR, delWS, delStems;
 double delLitter, delRloss;
 double monthlyIrrig;
-double CVI;
 
 // Annual results
-double cumGPP, cumWabv;
+double cumGPP;
 double abvgrndEpsilon, totalEpsilon;
 double StemGrthRate;
 double cumEvapTransp;
@@ -210,26 +198,18 @@ double CumStemLoss;
 double CutStemMass1, CutStemMass2, CutStemMass3;
 
 //Various additional oputputs
-double cLAI;                  //LAI averaged over output period
 double cRADint;               //intercepted radiation in output period
 double aRADint;               //annual intercepted radiation
-double cGPP;                  //GPP in output period
 double aGPP;                  //annual GPP
-double cNPP;                  //NPP in output period
 double aNPP;                  //annual NPP
 double cStemDM;               //stem DM increment in output period
 double aStemDM;               //annual stem DM increment
-double cCVI;                  //volume increment in output period
-double cLitter;               //litter fall in output period
-double cWUE;                  //WUE in current output period
 double aWUE;                  //annual WUE
 double aSupIrrig;             //annual supplemental irrigation
 double cSupIrrig;             //supplemental irrigation in output period
 double cRainInt;              //rainfall interception in output period
 double aTransp;               //annual transpiration
-double cTransp;               //transpiration in output period
 double aEvapTransp;           //annual evapotransporation
-double cEvapTransp;           //evapotransporation in output period
 double cEpsilonGross;         //gross epsilon in output period
 double aEpsilonGross;         //annual gross epsilon
 double cEpsilonStem;          //epsilon for stemDM in output period
@@ -237,7 +217,6 @@ double aEpsilonStem;          //annual epsilon for stemDM
 
 // ANL - other globals
 double mNDVI[13];      // 3PGS - one years worth of NDVI 
-double delWAG;         // 3PGS - change in weight above ground. 
 double NDVI_FPAR_intercept, NDVI_FPAR_constant;
 
 extern bool samplePointsMonthly;
