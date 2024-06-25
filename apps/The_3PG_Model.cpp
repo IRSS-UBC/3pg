@@ -61,11 +61,11 @@ Use of this software assumes agreement to this condition of use
 #define eps 0.0001
 
 // Controls and counters
-//int StartAge, EndAge;                  // age of trees at start/end of run
+//int StartAge, EndYear;                  // age of trees at start/end of run
 //int StartMonth;                        // month of year to start run
 //int yearPlanted;                       // year trees planted
 // ANL changed these three from int to double
-double StartAge, EndAge;                 // age of trees at start/end of run
+double StartAge, EndYear;                 // age of trees at start/end of run
 double StartMonth;                       // month of year to start run
 double yearPlanted;                      // year trees planted
 int DaysInMonth[13] = {                  // array for days in months 
@@ -475,9 +475,9 @@ void GetStandAge(void)
     if (StartAge < 0)
         std::cout << "Invalid StartAge: StartAge must be greater than 0" << std::endl;
     //fprintf(logfp, "Invalid Age Limits: StartAge must be greater than 0");
-    else if (StartAge > EndAge)
-        std::cout << "Invalid Age Limits: StartAge is greater than EndAge" << std::endl;
-        //fprintf(logfp, "Invalid Age Limits: StartAge is greater than EndAge");
+    else if (StartAge > EndYear)
+        std::cout << "Invalid Age Limits: StartAge is greater than EndYear" << std::endl;
+        //fprintf(logfp, "Invalid Age Limits: StartAge is greater than EndYear");
 
 }
 //-----------------------------------------------------------------------------
@@ -607,7 +607,7 @@ void runTreeModel(MYDate minMY, MYDate maxMY, long cellIndex)
     // grids. 
     hitNODATA = !loadParamVals(cellIndex);
 
-    // May have hit nodata in StartMonth, yearPlanted and EndAge, in which case 
+    // May have hit nodata in StartMonth, yearPlanted and EndYear, in which case 
     // firstRunMonth and LastRunMonth will be meaningless.  In any case, if we aren't at 
     // NODATA, we have to do all the pre-year stuff below.  
     if (hitNODATA)
@@ -819,9 +819,9 @@ skipPreYearCalcs:
                 yrPreStart = true;
             if ((calYear == yearPlanted) && (calMonth < StartMonth))
                 yrPreStart = true;
-            if (calYear > (yearPlanted + EndAge))
+            if (calYear > (yearPlanted + EndYear))
                 yrPstEnd = true;
-            if ((calYear == (yearPlanted + EndAge)) && (calMonth > StartMonth))
+            if ((calYear == (yearPlanted + EndYear)) && (calMonth > StartMonth))
                 yrPstEnd = true;
 
 

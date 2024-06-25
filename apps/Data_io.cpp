@@ -114,11 +114,11 @@ typedef struct PPPG_MT_PARAM {
 // unused array member at index 0.  
 
 // Controls and counters
-//int StartAge, EndAge;                         // age of trees at start/end of run
+//int StartAge, EndYear;                         // age of trees at start/end of run
 //int StartMonth;                               // month of year to start run
 //int yearPlanted;                              // year trees planted
 // ANL changed these three from int to double
-extern double StartAge, EndAge;                 // age of trees at start/end of run
+extern double StartAge, EndYear;                 // age of trees at start/end of run
 extern double StartMonth;                       // month of year to start run
 extern double yearPlanted;                      // year trees planted
 // int DaysInMonth[13];                         // array for days in months
@@ -375,7 +375,7 @@ PPPG_PARAM params[] =
 
   // Initial conditions. 
    {"StartAge",     &StartAge},
-  {"EndAge",       &EndAge},
+  {"EndYear",       &EndYear},
   {"StartMonth",   &StartMonth},
   {"yearPlanted",  &yearPlanted},  /* CHECK! do we still use this?*/
   {"SeedlingMass", &SeedlingMass},
@@ -687,7 +687,7 @@ bool getSeriesVal(double& val, int ser, int calMonth, int calYear, int k)
         // Long run data. 
         i = (calYear - series->start) * 12 + calMonth - 1;
         if (i > series->vlen * 12 - 1) {
-            errstr = "Attempted lookup of series element " + to_string(i) + " in series " + to_string(ser) + ", only " + to_string((series->vlen * 12 - 1)) + " entries in series.\nCheck Start/End Ages.";
+            errstr = "Attempted lookup of series element " + to_string(i) + " in series " + to_string(ser) + ", only " + to_string((series->vlen * 12 - 1)) + " entries in series.\nCheck Start age and End years.";
             std::cout << errstr << std::endl;
             logger.Log(errstr);
             exit(EXIT_FAILURE);
@@ -949,8 +949,8 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
   // Initial conditions. 
   else if (namesMatch("StartAge", pName) || namesMatch("Initial age", pName) ||
       namesMatch("Start age", pName)) pInd = pNameToInd("StartAge");
-  else if (namesMatch("EndAge", pName) ||
-           namesMatch("End age", pName)) pInd = pNameToInd("EndAge");
+  else if (namesMatch("EndYear", pName) ||
+           namesMatch("End year", pName)) pInd = pNameToInd("EndYear");
   else if (namesMatch("StartMonth", pName) || namesMatch("Start Month", pName) || 
            namesMatch("Start month", pName)) pInd = pNameToInd("StartMonth");
   else if (namesMatch("SeedlingMass", pName) || namesMatch("Seedling Mass", pName) || 
@@ -1909,7 +1909,7 @@ bool haveAllParams()
     "alpha", "fracBB0", "fracBB1", "tBB", // Canopy structure and processes
     "y",                                  // various
     "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",    // 3PG site parameters. 
-     "StartAge", "EndAge",              //Initial conditions
+     "StartAge", "EndYear",              //Initial conditions
     //"WFi", "WRi", "WSi",             //Now checked along with SeedlingMass
     "StemNoi", "ASWi", "yearPlanted",  // Initial conditions. 
     "Qa", "Qb",
@@ -1931,7 +1931,7 @@ bool haveAllParams()
     "SLA1", "alpha",                    // Canopy structure 
     "y",                                     // various
     "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",       // 3PG site parameters.
-     "StartAge","EndAge",                               // Initial conditions
+     "StartAge","EndYear",                               // Initial conditions
     "NDVI_FPAR_intercept", "NDVI_FPAR_constant",        // FPAR from NDVI equation.
     "Qa", "Qb",
     "gDM_mol", "molPAR_MJ",
@@ -2097,8 +2097,8 @@ bool loadParamVals(int k)
           return false;  //Return nodata for years less than 1.
     if ( StartAge < 1 )
       StartAge = 1; 
-    if ( EndAge < 1 )
-      EndAge = 2; 
+    if ( EndYear < 1 )
+      EndYear = 2; 
     if ( StartMonth < 1 ) 
       StartMonth = 1; 
    if ( StemNoi < 1 )
@@ -2408,13 +2408,13 @@ int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
     int yPlantedMin, sAgeMin, eYearMax, sMonthMax;
     std::vector<std::pair<int, int>> yPlantedMinI, eYearMaxI;
     // yearPlanted and StartAge inform the first possible run year
-    // while StartMonth and EndAge inform the final mon/year
+    // while StartMonth and EndYear inform the final mon/year
     // and all can be either scalar or raster inputs. 
     // Work through each combination to determine years and max month.
     int yPlantedI = pNameToInd("yearPlanted");
     int sAgeI = pNameToInd("StartAge");
     int sMonthI = pNameToInd("StartMonth");
-    int eYearI = pNameToInd("EndAge");
+    int eYearI = pNameToInd("EndYear");
     // Min year from scalar yearPlanted w/ scalar or raster StartAge
     if ((params[yPlantedI].data.spType == pScalar)) {
         if ((params[sAgeI].data.spType == pScalar)) {
@@ -2441,7 +2441,7 @@ int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
     }
     // Max year from scalar or raster EndYear
     if ((params[eYearI].data.spType == pScalar)) {
-        maxMY.year = EndAge;
+        maxMY.year = EndYear;
     }
     else {
         maxMY.year = params[eYearI].data.g->GetMax();
@@ -2451,7 +2451,7 @@ int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
         maxMY.mon = StartMonth;
     }
     // Max month from raster StartMonth w/ scalar or raster EndYear
-    // Only consider StartMonth values at indices with EndAge is max
+    // Only consider StartMonth values at indices with EndYear is max
     else {
         if ((params[eYearI].data.spType == pScalar)) {
             sMonthMax = params[sMonthI].data.g->GetMax();
@@ -2532,7 +2532,7 @@ bool haveSpatialRunYears()
 {
   int pInd;
 
-  pInd = pNameToInd("EndAge");
+  pInd = pNameToInd("EndYear");
   if (!(params[pInd].data.spType == pScalar)) return true;
 
   pInd = pNameToInd("StartMonth");
