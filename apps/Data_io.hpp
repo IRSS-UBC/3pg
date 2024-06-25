@@ -1,9 +1,10 @@
 // 3PG Input routines. 
 
 
+#include <string>
 #include "GDALRasterImage.hpp"
 #include "DataOutput.hpp"
-#include <string>
+#include "ParamStructs.hpp"
 // Must include FloatGrid.hpp prior to this. 
 #include "MYDate.h" 
 
@@ -23,22 +24,13 @@
 #define SS_VPD       7
 #define SS_TAVG      8
 
-struct PPPG_VVAL;
-struct PPPG_OP_VAR;
-struct PPPG_PARAM;
+GDALRasterImage* openInputGrids();
+void InitInputParams(void);
+void initDataOutput(GDALRasterImage* refGrid);
 
 bool loadParamVals(int k);
 // table must be one of MT_FERTILITY, MT_MINASW, MT_MINASW. 
 double lookupManageTable( int year, int table, double def, int cellIndex ); 
-void writeMonthlyOutputGrids( int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex );
-void writeSampleFiles(int cellIndex, int month, long calYear);
-void saveVariableVals(int k, bool hitNODATA);
-// FILE *openLogFile(const std::string& siteParamFile);
-void readParamFile(const std::string& paramFile);
-GDALRasterImage* openInputGrids();
-bool haveAllParams();
-bool havePointOpFile();
-
 /**
  * Find the month/year period over which the model will run.
  *
@@ -48,18 +40,21 @@ bool havePointOpFile();
 int findRunPeriod( MYDate &minMY, MYDate &maxMY );
 // Check that min and max month/years are valid.
 bool validRunPeriod(const MYDate& minMY, const MYDate& maxMY);
-int openOutputGrids( GDALRasterImage*refGrid);
-void ResetGrids(void);
-void CloseGrids(void);
-void PrintGrids(void);
-int openRegularOutputGrids( GDALRasterImage*refGrid, MYDate spMinMY, MYDate spMaxMY );
-void readSampleFile( GDALRasterImage*refGrid );
-int writeOutputGrids(bool hitNODATA, long cellIndex);
-void writeStandSummary(int year);
-void InitInputParams(void);
+
+void readSpeciesParamFile(const std::string& speciesFile);
+std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile);
+void readSampleFile(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, GDALRasterImage* refGrid);
+std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo);
+
+void writeSampleFiles(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int cellIndex, int month, long calYear);
+void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex );
+int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, bool hitNODATA, long cellIndex);
+
 bool userVpdSeries(void);
 bool userNetRadSeries(void);
 bool userTavgSeries(void);
+
+bool haveAllParams();
 bool haveAgeDepFert(void);
 bool haveMinASWTG(void);
 bool haveSeedlingMass(void);
@@ -67,8 +62,7 @@ bool haveSpatialRunYears(void);
 bool haveRhoMin(void);  //Standage dependant Density 15/07/2002
 bool haveRhoMax(void);  //Standage dependant Density 15/07/2002
 bool haveTRho(void);    //Standage dependant Density 15/07/2002
+
 bool getSeriesVal(double &val, int ser, int calMonth, int calYear, int k);
 std::string getOutPathTMP(const std::string& siteParamFile);
-void initDataOutput(GDALRasterImage* refGrid);
 void deleteDataOutput();
-std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo);
