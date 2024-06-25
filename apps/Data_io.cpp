@@ -374,6 +374,7 @@ PPPG_PARAM params[] =
   {"MinASWp",      &MinASWp},
 
   // Initial conditions. 
+   {"StartAge",     &StartAge},
   {"EndAge",       &EndAge},
   {"StartMonth",   &StartMonth},
   {"yearPlanted",  &yearPlanted},  /* CHECK! do we still use this?*/
@@ -497,6 +498,32 @@ void initDataOutput(GDALRasterImage* refGrid) {
 void deleteDataOutput() {
     delete dataOutput;
     dataOutput = nullptr;
+}
+
+bool openGrid(PPPG_VVAL& vval)
+{
+    if (vval.spType == pTif) {
+        string openString = "   opening raster from " + vval.gridName + "...";
+        string succesReadString = "read raster";
+        string failReadString = "failed";
+        std::cout << openString;
+
+        try {
+            vval.g = new GDALRasterImage(vval.gridName);
+            std::cout << succesReadString << std::endl;
+            logger.Log(openString + succesReadString);
+        }
+        catch (const std::exception& e) {
+            std::cout << failReadString << std::endl;
+            logger.Log(openString + failReadString);
+            exit(EXIT_FAILURE);
+        }
+
+    }
+    else {
+        return false;
+    }
+    return true;
 }
 
 int pNameToInd(const std::string& id)
@@ -920,6 +947,8 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
            namesMatch("Minimum ASW", pName)) pInd = pNameToInd("MinASWp");
 
   // Initial conditions. 
+  else if (namesMatch("StartAge", pName) || namesMatch("Initial age", pName) ||
+      namesMatch("Start age", pName)) pInd = pNameToInd("StartAge");
   else if (namesMatch("EndAge", pName) ||
            namesMatch("End age", pName)) pInd = pNameToInd("EndAge");
   else if (namesMatch("StartMonth", pName) || namesMatch("Start Month", pName) || 
@@ -1790,7 +1819,7 @@ bool haveAllParams()
     "alpha", "fracBB0", "fracBB1", "tBB", // Canopy structure and processes
     "y",                                  // various
     "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",    // 3PG site parameters. 
-     "EndAge",              //Initial conditions
+     "StartAge", "EndAge",              //Initial conditions
     //"WFi", "WRi", "WSi",             //Now checked along with SeedlingMass
     "StemNoi", "ASWi", "yearPlanted",  // Initial conditions. 
     "Qa", "Qb",
@@ -1812,7 +1841,7 @@ bool haveAllParams()
     "SLA1", "alpha",                    // Canopy structure 
     "y",                                     // various
     "Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",       // 3PG site parameters.
-     "EndAge",                               // Initial conditions
+     "StartAge","EndAge",                               // Initial conditions
     "NDVI_FPAR_intercept", "NDVI_FPAR_constant",        // FPAR from NDVI equation.
     "Qa", "Qb",
     "gDM_mol", "molPAR_MJ",
@@ -1990,31 +2019,6 @@ bool loadParamVals(int k)
 
 //----------------------------------------------------------------------------------
 
-bool openGrid( PPPG_VVAL &vval )
-{
-  if (vval.spType == pTif) {
-      string openString = "   opening raster from " + vval.gridName + "...";
-      string succesReadString = "read raster";
-      string failReadString = "failed";
-      std::cout << openString;
-
-    try {
-      vval.g = new GDALRasterImage(vval.gridName);
-      std::cout << succesReadString << std::endl;
-      logger.Log(openString + succesReadString);
-    }
-    catch (const std::exception& e) {
-      std::cout << failReadString << std::endl;
-      logger.Log(openString + failReadString);
-      exit(EXIT_FAILURE);
-    }
-
-  }
-  else {
-    return false;
-  }
-  return true; 
-}
 
 GDALRasterImage* openInputGrids( )
 {
@@ -2039,7 +2043,7 @@ GDALRasterImage* openInputGrids( )
     }
 
     else if ( openGrid( params[pn].data ) ) {
-      spatial = true; 
+      spatial = true;
       if ( first ) {
         refGrid = (GDALRasterImage *)params[pn].data.g;
         first = false; 
@@ -2311,28 +2315,67 @@ void writeSampleFiles(int cellIndex, int month, long calYear)
 //----------------------------------------------------------------------------------
 
 int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
-    int yPlantedMax;
+    int yPlantedMin, sAgeMin, eYearMax, sMonthMax;
+    std::vector<std::pair<int, int>> yPlantedMinI, eYearMaxI;
+    // yearPlanted and StartAge inform the first possible run year
+    // while StartMonth and EndAge inform the final mon/year
+    // and all can be either scalar or raster inputs. 
+    // Work through each combination to determine years and max month.
     int yPlantedI = pNameToInd("yearPlanted");
-    StartAge = 1;
+    int sAgeI = pNameToInd("StartAge");
+    int sMonthI = pNameToInd("StartMonth");
+    int eYearI = pNameToInd("EndAge");
+    // Min year from scalar yearPlanted w/ scalar or raster StartAge
     if ((params[yPlantedI].data.spType == pScalar)) {
-        minMY.year = yearPlanted + StartAge;
-        yPlantedMax = yearPlanted;
+        if ((params[sAgeI].data.spType == pScalar)) {
+            sAgeMin = StartAge;
+        }
+        else {
+            sAgeMin = params[sAgeI].data.g->GetMin();
+        }
+        minMY.year = yearPlanted + sAgeMin;
     }
+    // Min year from raster yearPlanted w/ scalar or raster StartAge
+    // Only consider StartAge values at indices where yearPlanted is min 
     else {
-        minMY.year = params[yPlantedI].data.g->GetMin() + StartAge;
-        yPlantedMax = params[yPlantedI].data.g->GetMax() + StartAge;
+        yPlantedMin = params[yPlantedI].data.g->GetMin();
+        yPlantedMinI = params[yPlantedI].data.g->getIndicesWhere(yPlantedMin);
+        if ((params[sAgeI].data.spType == pScalar)) {
+            sAgeMin = StartAge;
+        }
+        else {
+            sAgeMin = params[sAgeI].data.g->minFromIndices(yPlantedMinI);
+        }
+        minMY.year = yPlantedMin + sAgeMin;
+
     }
-    if (EndAge < minMY.year) {
-        maxMY.year = yPlantedMax + EndAge;
-    }
-    else {
+    // Max year from scalar or raster EndYear
+    if ((params[eYearI].data.spType == pScalar)) {
         maxMY.year = EndAge;
     }
-    minMY.mon = StartMonth;
-    maxMY.mon = StartMonth;
+    else {
+        maxMY.year = params[eYearI].data.g->GetMax();
+    }
+    // Max month from scalar StartMonth
+    if ((params[sMonthI].data.spType == pScalar)) {
+        maxMY.mon = StartMonth;
+    }
+    // Max month from raster StartMonth w/ scalar or raster EndYear
+    // Only consider StartMonth values at indices with EndAge is max
+    else {
+        if ((params[eYearI].data.spType == pScalar)) {
+            sMonthMax = params[sMonthI].data.g->GetMax();
+        }
+        else {
+            eYearMaxI = params[eYearI].data.g->getIndicesWhere(maxMY.year);
+            sMonthMax = params[sMonthI].data.g->minFromIndices(eYearMaxI);
+        }
+        maxMY.mon = sMonthMax;
+    }
+    // For now, set min month to NULL. It isn't used.
+    minMY.mon = NULL;
     if (validRunPeriod(minMY, maxMY)) {
-        string runPeriodStr = "first run mon/year = " + to_string(minMY.mon) +
-            "/" + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
+        string runPeriodStr = "first run year = " + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
         std::cout << runPeriodStr << std::endl;
         logger.Log(runPeriodStr);
         return EXIT_SUCCESS;
@@ -2345,7 +2388,7 @@ int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
 bool validRunPeriod(const MYDate& minMY, const MYDate& maxMY)
 {
     std::string errMsg;
-    if (minMY.mon < 0 || minMY.mon > 12) {
+    if (maxMY.mon < 0 || maxMY.mon > 12) {
         errMsg = "Invalid start month detected: " + to_string(minMY.mon);
         std::cout << errMsg << std::endl;
         logger.Log(errMsg);
