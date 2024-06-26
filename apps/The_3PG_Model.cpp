@@ -566,6 +566,11 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     bool haveVpdSeries = false;
     bool haveNetRadSeries = false;
 
+    double fCalphax, fCg0, fCalpha, fCg;
+
+    fCalphax = fCalpha700 / (2 - fCalpha700);
+    fCg0 = fCg700 / (2 * fCg700 - 1);
+
     //std::cout << "\n\nCELL INDEX " << cellIndex << "!!!!!!!!!!!!!!!!!!!!!\n\n" << std::endl;
     // Compute daylengths
     // ANL - only do dayLength here, as Tav and VPD potentially need recalculation each year. 
@@ -921,8 +926,8 @@ skipPreYearCalcs:
                 opVars["APAR"].v = PAR * lightIntcptn * CanCover;
             opVars["APARu"].v = opVars["APAR"].v * opVars["PhysMod"].v;
 
-
-            opVars["alphaC"].v = alpha * opVars["fNutr"].v * opVars["fT"].v * opVars["fFrost"].v * opVars["PhysMod"].v;   //22-07-02 for Excel March beta consis.
+            fCalpha = fCalphax * CO2 / (350 * (fCalphax - 1) + CO2);
+            opVars["alphaC"].v = alpha * opVars["fNutr"].v * opVars["fT"].v * opVars["fFrost"].v * fCalpha * opVars["PhysMod"].v;   //22-07-02 for Excel March beta consis.
             epsilon = gDM_mol * molPAR_MJ * opVars["alphaC"].v;
             RADint = RAD * lightIntcptn * CanCover;
             GPPmolc = opVars["APARu"].v * opVars["alphaC"].v;                   // mol/m^2
@@ -968,8 +973,8 @@ skipPreYearCalcs:
             // Now do the water balance ...
 
             // calculate canopy conductance from stomatal conductance
-
-            CanCond = MaxCond * opVars["PhysMod"].v * Minimum(1.0, opVars["LAI"].v / LAIgcx);
+            fCg = fCg0 / (1 + (fCg0 - 1) * CO2 / 350);
+            CanCond = MaxCond * opVars["PhysMod"].v * Minimum(1.0, opVars["LAI"].v / LAIgcx) * fCg;
             //if (fabs(0 - CanCond) < eps)
             if (CanCond == 0)
                 CanCond = 0.0001;
