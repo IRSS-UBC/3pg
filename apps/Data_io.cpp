@@ -22,6 +22,7 @@ Use of this software assumes agreement to this condition of use
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <unordered_set>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include "GDALRasterImage.hpp"
@@ -345,36 +346,36 @@ PPPG_PARAM params[] =
 // and sets up the mapping of the output variable to its name, which is used in 
 // parsing the parameter file.  
 
-std::vector<std::string> output_var_names = {
-    "StemNo"
-  "WF",
-  "WR",
-  "WS",
-  "TotalW",
-  "LAI",
-  "cLAI",
-  "MAI",
-  "avDBH",
-  "BasArea",
-  "StandVol",
-  "GPP",
-  "cGPP",
-  "NPP",
-  "cNPP",
-  "delWAG",
-  "cumWabv",
-  "Transp",
-  "cTransp",
-  "ASW",
-  "fSW",
-  "fVPD",
-  "fT",
-  "fNutr",
-  "fFrost",
-  "APAR",
-  "APARu",
- "EvapTransp",
-    "cEvapTransp"
+std::unordered_set<std::string> output_var_names {
+    "StemNo",
+    "WF",
+    "WR",
+    "WS",
+    "TotalW",
+    "LAI",
+    "cLAI",
+    "MAI",
+    "avDBH",
+    "BasArea",
+    "StandVol",
+    "GPP",
+    "cGPP",
+    "NPP",
+    "cNPP",
+    "delWAG",
+    "cumWabv",
+    "Transp",
+    "cTransp",
+    "ASW",
+    "fSW",
+    "fVPD",
+    "fT",
+    "fNutr",
+    "fFrost",
+    "APAR",
+    "APARu",
+    "EvapTransp",
+    "cEvapTransp",
     "LAIx",
     "ageLAIx",
     "MAIx",
@@ -974,7 +975,7 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
 
 //----------------------------------------------------------------------------------
 
-std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo)
+PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo)
 {
   // For a parameter name pName and a parameter value, pValue, both as strings, read 
   // the value into an appropriate variable. The parameter name can be either the 
@@ -983,7 +984,7 @@ std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& 
   std::string cp;
   std::string outstr;
 
-  std::unordered_map<std::string, PPPG_OP_VAR> opVars;
+  PPPG_OP_VAR opVar;
   if (pValue.empty()) {
     outstr = "No grid name for param " + pName +  " on line: " + to_string(lineNo);
     std::cout << outstr << std::endl;
@@ -997,11 +998,11 @@ std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& 
       exit(EXIT_FAILURE);
   }
   // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
-  opVars[pName].gridName = outPath + pValue.front(); 
-  const std::filesystem::path filePath = opVars[pName].gridName;
+  opVar.gridName = outPath + pValue.front(); 
+  const std::filesystem::path filePath = opVar.gridName;
   if (filePath.extension() == ".tif") // Heed the dot.
   {
-      opVars[pName].spType = pTif;
+      opVar.spType = pTif;
   }
   else
   {
@@ -1030,7 +1031,7 @@ std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& 
   if (yearlyOutput == true) {
     // Look for start year
     try {
-      opVars[pName].recurStart = std::stoi(cp);
+      opVar.recurStart = std::stoi(cp);
     }
     catch (std::invalid_argument const& e) {
       outstr = "Expected an integer start year in recuring output specification on line " +  to_string(lineNo);
@@ -1050,7 +1051,7 @@ std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& 
             logger.Log(outstr);
             exit(EXIT_FAILURE);
         }
-        opVars[pName].recurYear = interval;
+        opVar.recurYear = interval;
       }
       catch (std::invalid_argument const& e) {
           outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
@@ -1069,15 +1070,15 @@ std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& 
     try {
       cp = pValue.at(3);
       if (cp == "monthly")
-        opVars[pName].recurMonthly = true;
+        opVar.recurMonthly = true;
       else if (cp == "month") {
-        opVars[pName].recurMonthly = false;
+        opVar.recurMonthly = false;
         // If 'month', look for the month interger
         try {
           cp = pValue.at(4);
           try {
-            opVars[pName].recurMonth = std::stoi(cp);
-            if (opVars[pName].recurMonth == 0)
+            opVar.recurMonth = std::stoi(cp);
+            if (opVar.recurMonth == 0)
             {
                 outstr = "Found month of zero in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
                 std::cout << outstr << std::endl;
@@ -1115,28 +1116,28 @@ std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& 
     }
   }
   // Mark the variable for later writing
-    opVars[pName].write = true;
-    std::cout << "   variable: " << opVars[pName].id << "   grid: " << opVars[pName].gridName << std::endl;
-    logger.Log("   variable: " + opVars[pName].id + "   grid: " + opVars[pName].gridName);
-    if (opVars[pName].recurStart)
+    opVar.write = true;
+    std::cout << "   variable: " << opVar.id << "   grid: " << opVar.gridName << std::endl;
+    logger.Log("   variable: " + opVar.id + "   grid: " + opVar.gridName);
+    if (opVar.recurStart)
     {
-        string outputGridString = "      starting in " + to_string(opVars[pName].recurStart) + ", writing every " + to_string(opVars[pName].recurYear) + " years";
+        string outputGridString = "      starting in " + to_string(opVar.recurStart) + ", writing every " + to_string(opVar.recurYear) + " years";
         std::cout << outputGridString << " years";
-        if (opVars[pName].recurMonthly)
+        if (opVar.recurMonthly)
         {
             std::cout << ", with monthly values";
             outputGridString = outputGridString + ", with monthly values";
         }
-        else if (opVars[pName].recurMonth != 0)
+        else if (opVar.recurMonth != 0)
         {
-            std::cout << ", on the " << opVars[pName].recurMonth << " month";
-            outputGridString = outputGridString + ", on the " + to_string(opVars[pName].recurMonth) + " month";
+            std::cout << ", on the " << opVar.recurMonth << " month";
+            outputGridString = outputGridString + ", on the " + to_string(opVar.recurMonth) + " month";
 
         }
         std::cout << std::endl;
         logger.Log(outputGridString);
     }
-  return opVars;
+  return opVar;
 }
 
 string getOutPathTMP(const std::string& siteParamFile)
@@ -1728,8 +1729,8 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
     std::vector<std::string> pValues;
     boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
     if (readInputParam(pName, pValues)) { continue; }
-    if (std::find(output_var_names.begin(), output_var_names.end(), pName) != output_var_names.end()) {
-        opVars = readOutputParam(pName, pValues, lineNo);
+    if (output_var_names.find(pName) != output_var_names.end()) {
+        opVars.emplace(pName, readOutputParam(pName, pValues, lineNo));
     }
     else if (readOtherParam(pName, pValues)) { continue; }
     else if (readInputSeriesParam(pName, pValues, inFile, lineNo)) { continue; }

@@ -44,7 +44,7 @@ bool validRunPeriod(const MYDate& minMY, const MYDate& maxMY);
 void readSpeciesParamFile(const std::string& speciesFile);
 std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile);
 void readSampleFile(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, GDALRasterImage* refGrid);
-std::unordered_map<std::string, PPPG_OP_VAR> readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo);
+PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo);
 
 void writeSampleFiles(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int cellIndex, int month, long calYear);
 void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex );
