@@ -796,9 +796,9 @@ skipPreYearCalcs:
                 yrPreStart = true;
             if ((calYear == yearPlanted) && (calMonth < StartMonth))
                 yrPreStart = true;
-            if (calYear > (yearPlanted + EndYear))
+            if (calYear > (EndYear))
                 yrPstEnd = true;
-            if ((calYear == (yearPlanted + EndYear)) && (calMonth > StartMonth))
+            if ((calYear == (EndYear)) && (calMonth > StartMonth))
                 yrPstEnd = true;
 
 
