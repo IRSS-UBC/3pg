@@ -998,7 +998,7 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
       exit(EXIT_FAILURE);
   }
   // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
-  opVar.gridName = outPath + pValue.front(); 
+  opVar.gridName = outPath + pValue.front();
   const std::filesystem::path filePath = opVar.gridName;
   if (filePath.extension() == ".tif") // Heed the dot.
   {
@@ -2116,8 +2116,7 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
         if (opV.write) {
             //determine value, name, and tell dataOutput class to write
             float val = (float)(opV.v);
-            std::string name = opV.id;
-            dataOutput->write(-1, -1, name, cellIndex, val, hitNODATA);
+            dataOutput->write(-1, -1, pN, cellIndex, val, hitNODATA);
             //std::cout << "calling dataOutput->write(year=NULL, month=NULL," <<  name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
         }
     }
@@ -2164,8 +2163,7 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
         if (opV.spType == pTif) {
             //determine value, name, and tell dataOutput class to write
             float val = (float)(opV.v);
-            std::string name = opV.id;
-            dataOutput->write(calYear, calMonth, name, cellIndex, val, hitNODATA);
+            dataOutput->write(calYear, calMonth, pN, cellIndex, val, hitNODATA);
             //std::cout << "calling dataOutput->write(" << calYear << ", " << calMonth << ", " << name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
         }
     }
