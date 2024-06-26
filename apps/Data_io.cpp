@@ -2130,7 +2130,7 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
     for (auto& [pN, opV] : opVars) {
         //NOTE: I have no idea why both .recurYear and recurStart exist...
         // for now I'm just going to use both the same way that the old function did
-        
+
         //skip output variable if it is not marked for recurring output
         if (opV.recurYear == -1) {
             continue;
@@ -2161,10 +2161,15 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
 
         //determine value, name, and tell dataOutput class to write
         if (opV.spType == pTif) {
-            //determine value, name, and tell dataOutput class to write
-            float val = (float)(opV.v);
-            dataOutput->write(calYear, calMonth, pN, cellIndex, val, hitNODATA);
-            //std::cout << "calling dataOutput->write(" << calYear << ", " << calMonth << ", " << name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
+            if (!opV.recurMonthly) {
+                if (calMonth == opV.recurMonth) {
+                    //determine value, name, and tell dataOutput class to write
+                    float val = (float)(opV.v);
+                    dataOutput->write(calYear, calMonth, pN, cellIndex, val, hitNODATA);
+                    //std::cout << "calling dataOutput->write(" << calYear << ", " << calMonth << ", " << name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
+
+                }
+            }
         }
     }
 }
