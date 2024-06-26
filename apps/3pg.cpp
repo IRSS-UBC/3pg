@@ -23,6 +23,7 @@ Use of this software assumes agreement to this condition of use
 #include "util.hpp"
 #include <boost/program_options.hpp>
 #include "DataOutput.hpp"
+#include "ParamStructs.hpp"
 
 // Need to provide getopt on MSVC. 
 //#ifdef WIN32
@@ -94,6 +95,7 @@ int main(int argc, char* argv[])
     MYDate spMinMY, spMaxMY;
     std::string defParamFile;
     std::string siteParamFile;
+    std::unordered_map<std::string, PPPG_OP_VAR> opVars;
 
     /* Parse command line args */
     InputParser input(argc, argv);
@@ -124,10 +126,12 @@ int main(int argc, char* argv[])
 
     // Load the parameters and output variables. 
     InitInputParams();
-    readParamFile(defParamFile);
-    readParamFile(siteParamFile);
-    if (!haveAllParams())
-    exit(EXIT_FAILURE);
+    readSpeciesParamFile(defParamFile);
+    opVars = readSiteParamFile(siteParamFile);
+    if (!haveAllParams()) {
+        exit(EXIT_FAILURE);
+
+    }
 
 
     // Check for a spatial run, if so open input grids and define refGrid. 
@@ -147,7 +151,7 @@ int main(int argc, char* argv[])
     // NOTE: don't think ResetGrids is necessary for GDAL stuff... but I guess we'll see
     // ResetGrids(); 
 
-    readSampleFile( refGrid ); 
+    readSampleFile(opVars, refGrid); 
     std::cout << "Points read from sample file." << std::endl;
 
  
@@ -168,7 +172,7 @@ int main(int argc, char* argv[])
             }
             
             int cellIndex = i * ncols + j;
-            runTreeModel(spMinMY, spMaxMY, cellIndex);
+            runTreeModel(opVars, spMinMY, spMaxMY, cellIndex);
 
             //increment progress
             cellsDone++;

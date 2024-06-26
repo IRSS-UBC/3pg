@@ -22,11 +22,14 @@ Use of this software assumes agreement to this condition of use
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <unordered_set>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include "GDALRasterImage.hpp"
 #include "util.hpp"
 #include "Data_io.hpp"
+#include "ParamStructs.hpp"
+
 
 // namespace fs = std::filesystem;
 static std::string rcsid = "$Id: Data_io.cpp,v 1.10 2001/08/02 06:41:01 lou026 Exp $";
@@ -47,63 +50,6 @@ static std::string rcsid = "$Id: Data_io.cpp,v 1.10 2001/08/02 06:41:01 lou026 E
 #define PPPG_MAX_SERIES_LENGTH PPPG_MAX_SERIES_YEARS*12
 
 extern Logger logger;
-
-// Possible types of parameter - null or not yet set, scalar (constant), 
-// ByteGrid for a BIL, and FloatGrid for a floating point file.  The last 
-// two are handled by the JG Grid class.  
-typedef enum {pNull, pScalar, pTif} ParamSpatial;
-
-typedef struct PPPG_VVAL {
-  ParamSpatial spType = pNull;                   // Scalar, grid, or null
-  double sval;                           // Scalar value. 
-  std::string gridName;                        // ptr to grid file name
-  GDALRasterImage *g;                               // ptr to grid value
-} PPPG_VVAL; 
-
-// 3PG 'parameters'. These are all stored as double.  The 'id' string field 
-// is set to the name of the variable in the initialisation below.  Within 
-// the model itself we don't reference the parameters via this type.  Its 
-// used to help identify parameter lines, and to help get grid values into 
-// the model.  
-typedef struct PPPG_PARAM {
-  std::string id = "";                        // String version of the variable name. 
-  double *adr;                     // The address of the model variable. 
-  bool got = 0;                        // Has the parameter been set? 
-  PPPG_VVAL data;                  // Variant value
-} PPPG_PARAM; 
-
-// 3PG output variables. In spatial mode output variables may be written 
-// repeatedly, on a time step defined by recurStart, recurYear, and recurMonthly. 
-typedef struct PPPG_OP_VAR {
-  std::string id;                       // String version of the variable name. 
-  double *adr;                    // The address of the model variable. 
-  ParamSpatial spType;            // If its a spatial parameter and what grid type. 
-  std::string gridName;  // The gridname, in spatial mode. 
-  //GDALRasterImage *g;                        // The final output grid, in spatial mode. 
-  bool write; // Whether the variable is wanted. 
-  int recurStart;                 // First year to write regular output. 
-  int recurYear = -1;                  // Interval on which to write regular output. 
-  int recurMonth;                 // Single month number we want output in. 
-  bool recurMonthly;              // Whether to write every month in an output year. 
-  //std::vector<GDALRasterImage*> RO;                      // The output tifs for regular output. 
-} PPPG_OP_VAR;
-
-// 3PG 'series' parameters.  This is any parameter with a time series for value, 
-// in particular the climate parameters, and NDVI.  
-typedef struct PPPG_SERIES_PARAM {
-  int start;                             // Calendar year of first entry. 
-  PPPG_VVAL *data;                       // Array of variant values.
-  int vlen;                              // Number of entries in array. 
-  bool oneYear;                          // Array is of a single 'average' year (eg esoclim). 
-  bool got = 0;                              // Have read the series. 
-} PPPG_SERIES_PARAM; 
-
-// 3PG 'management table' parameters.  Only one value per year is allowed.  
-typedef struct PPPG_MT_PARAM {
-  int year;                                   // Calendar year
-  bool got = 0;
-  PPPG_VVAL data; 
-} PPPG_MT_PARAM; 
 
 //----------------------------------------------------------------------------------
 // Global variables.  These are used to push values into the runTreeModel routine. 
@@ -399,54 +345,54 @@ PPPG_PARAM params[] =
 // Initialisation of output variable array. This lists all possible output variables 
 // and sets up the mapping of the output variable to its name, which is used in 
 // parsing the parameter file.  
-PPPG_OP_VAR opVars[] = {
-  {"opVarError", NULL},
-  {"StemNo",     &StemNo},
-  {"WF",         &WF},
-  {"WR",         &WR},
-  {"WS",         &WS},
-  {"TotalW",     &TotalW},
-  {"LAI",        &LAI},
-  {"cLAI",       &cLAI},
-  {"MAI",        &MAI},
-  {"avDBH",      &avDBH},
-  {"BasArea",    &BasArea},
-  {"StandVol",   &StandVol},
-  {"GPP",        &GPPdm},
-  {"cGPP",       &cGPP},
-  {"NPP",        &NPP},
-  {"cNPP",       &cNPP},
-  {"delWAG",     &delWAG},
-  {"cumWabv",    &cumWabv},
-  {"Transp",     &Transp},
-  {"cTransp",    &cTransp},
-  {"ASW",        &ASW},
-  {"fSW",        &fSW},
-  {"fVPD",       &fVPD},
-  {"fT",         &fT},
-  {"fNutr",      &fNutr},
-  {"fFrost",     &fAge},
-  {"APAR",       &APAR},
-  {"APARu",      &APARu},
-  {"EvapTransp", &EvapTransp},
-  {"cEvapTransp",&cEvapTransp}, //Added 08/11/02
-  {"LAIx",       &LAIx},
-  {"ageLAIx",    &ageLAIx},
-  {"MAIx",       &MAIx},    //Added 29/07/2002
-  {"ageMAIx",    &ageMAIx}, //Added 29/07/2002
-  {"FR",         &FR},     //Added 11/07/2002
-  {"PhysMod",    &PhysMod}, //Added 11/07/2002
-  {"alphaC",     &alphaC},  //Added 11/07/2002
-  {"fAge",       &fAge},    //Added 11/07/2002
-  {"fracBB",     &fracBB},
-  {"WUE",        &WUE},     //Added 16/07/02
-  {"cWUE",       &cWUE},    //Added 08/11/02
-  {"CVI",        &CVI},     //Added 16/07/02
-  {"cCVI",       &cCVI},    //Added 08/11/02
-  {"TotalLitter", &TotalLitter}, //Added 16/07/02
-  {"cLitter",    &cLitter},
-  {"",         NULL}
+
+std::unordered_set<std::string> output_var_names {
+    "StemNo",
+    "WF",
+    "WR",
+    "WS",
+    "TotalW",
+    "LAI",
+    "cLAI",
+    "MAI",
+    "avDBH",
+    "BasArea",
+    "StandVol",
+    "GPP",
+    "cGPP",
+    "NPP",
+    "cNPP",
+    "delWAG",
+    "cumWabv",
+    "Transp",
+    "cTransp",
+    "ASW",
+    "fSW",
+    "fVPD",
+    "fT",
+    "fNutr",
+    "fFrost",
+    "APAR",
+    "APARu",
+    "EvapTransp",
+    "cEvapTransp",
+    "LAIx",
+    "ageLAIx",
+    "MAIx",
+    "ageMAIx",
+    "FR",
+    "PhysMod",
+    "alphaC",
+    "fAge",
+    "fracBB",
+    "WUE",
+    "cWUE",
+    "CVI",
+    "cCVI",
+    "TotalLitter",
+    "cLitter"
 };
+
  
 //----------------------------------------------------------------------------------
 
@@ -551,27 +497,6 @@ int pNameToInd(const std::string& id)
   }
  /* std::cout << "Warning, lookup of non-existent parameter name: " << id << std::endl;*/
   //fprintf(stderr, "Warning, lookup of non-existent parameter name: %s\n", 
-  //        id);
-  return 0;
-}
-
-//----------------------------------------------------------------------------------
-
-int opNameToInd(const std::string& id)
-{
-  // Exactly the same as pNameToInd, but looking at the opVars array. 
-  std::size_t pn;
-  std::size_t w1, w2;
-
-  w1 = id.length();
-  for (pn = 0; opVars[pn].id != ""; pn++) {
-    w2 = opVars[pn].id.length();
-    if (id.compare(opVars[pn].id) == 0)
-      if (w1 == w2)
-        return pn;
-  }
-  std::cout << "Warning, lookup of non-existent output variable name: " << id << std::endl;
-  //fprintf(stderr, "Warning, lookup of non-existent output variable name: %s\n", 
   //        id);
   return 0;
 }
@@ -712,7 +637,7 @@ bool getSeriesVal(double& val, int ser, int calMonth, int calYear, int k)
 }
 //----------------------------------------------------------------------------------
 
-void readSampleFile(GDALRasterImage *refGrid)
+void readSampleFile(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, GDALRasterImage *refGrid)
 {
   // Read a text file of sample points, one per line, in the format idstring, 
   // xcoord, ycoord; find the index number of the cell the points fall in. 
@@ -772,11 +697,9 @@ void readSampleFile(GDALRasterImage *refGrid)
     // Write header line for each sample file. 
     // For each output sample file
     fprintf(samplePoints[ind].fp, "year, month, id, ");
-    for (opn = 1; opVars[opn].adr != NULL; opn++)
-    //for (opn = 1; opVars[opn].id != "-1"; opn++)
-      fprintf(samplePoints[ind].fp, "%s, ", opVars[opn].id.c_str());
-    fprintf(samplePoints[ind].fp, "\n");
-
+    for (auto& [key, oV] : opVars) {
+      fprintf(samplePoints[ind].fp, "%s, ", oV.id.c_str());
+    };
     ind++;
   }
   // Make sure end of sample is marked. 
@@ -1052,7 +975,7 @@ bool readInputParam(const std::string& pName, std::vector<std::string> pValue)
 
 //----------------------------------------------------------------------------------
 
-bool readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo)
+PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo)
 {
   // For a parameter name pName and a parameter value, pValue, both as strings, read 
   // the value into an appropriate variable. The parameter name can be either the 
@@ -1061,101 +984,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   std::string cp;
   std::string outstr;
 
-  pInd = pInd1 = pInd2 = 0;
-
-  // Find the index for the p1aram in the opVars array. 
-  // 3PG only output variables. 
-  if (namesMatch("StemNo", pName) ||
-    namesMatch("Stocking density", pName)) pInd1 = opNameToInd("StemNo");
-  else if (namesMatch("WF", pName) ||
-    namesMatch("Weight of foliage", pName)) pInd1 = opNameToInd("WF");
-  else if (namesMatch("WR", pName) ||
-    namesMatch("Weight of roots", pName)) pInd1 = opNameToInd("WR");
-  else if (namesMatch("WS", pName) ||
-    namesMatch("Weight of stems", pName)) pInd1 = opNameToInd("WS");
-  else if (namesMatch("TotalW", pName) ||
-      namesMatch("Total weight", pName)) pInd1 = opNameToInd("TotalW");
-  else if (namesMatch("MAI", pName) ||
-    namesMatch("Mean Annual Increment", pName)) pInd1 = opNameToInd("MAI");
-  else if (namesMatch("avDBH", pName) ||
-    namesMatch("Average DBH", pName)) pInd1 = opNameToInd("avDBH");
-  else if (namesMatch("BasArea", pName) ||
-    namesMatch("Basal Area", pName)) pInd1 = opNameToInd("BasArea");
-  else if (namesMatch("StandVol", pName) ||
-    namesMatch("Stand volume", pName)) pInd1 = opNameToInd("StandVol");
-  else if (namesMatch("Transp", pName) ||
-           namesMatch("Transpiration", pName)) pInd1 = opNameToInd("Transp");
-  else if (namesMatch("cTransp", pName))  pInd1 = opNameToInd("cTransp");
-  else if (namesMatch("ASW", pName) ||
-           namesMatch("Available Soil Water", pName)) pInd1 = opNameToInd("ASW");
-  else if (namesMatch("EvapTransp", pName)) pInd1 = opNameToInd("EvapTransp");
-  else if (namesMatch("cEvapTransp", pName)) pInd1 = opNameToInd("cEvapTransp");
-  else if (namesMatch("LAIx", pName)) pInd1 = opNameToInd("LAIx");
-  else if (namesMatch("ageLAIx", pName)) pInd1 = opNameToInd("ageLAIx"); 
-  else if (namesMatch("GPP", pName) ||
-    namesMatch("Gross Primary Production (tDM/ha)", pName)) pInd1 = opNameToInd("GPP");
-  else if (namesMatch("cGPP", pName))  pInd1 = opNameToInd("cGPP");
-  else if (namesMatch("TotalLitter", pName)) pInd1 = opNameToInd("TotalLitter");
-  else if (namesMatch("cLitter", pName)) pInd1 = opNameToInd("cLitter");
-  
-  // 3PGS only output variables
-  if (namesMatch("delWAG", pName) ||
-    namesMatch("change in aboveground biomass (tDM/ha)", pName)) pInd2 = opNameToInd("delWAG");
-  else if (namesMatch("cumWabv", pName) ||
-    namesMatch("accumulated aboveground biomass (tDM/ha)", pName)) pInd2 = opNameToInd("cumWabv");
-
-  // Check we only matched from the appropriate set. 
-  if (modelMode3PGS) {
-    if (pInd1 != 0) {
-      outstr = "The output variable " + pName + " is not supported in 3PGS mode";
-      std::cout << outstr << std::endl;
-      logger.Log(outstr);
-      exit(EXIT_FAILURE);
-    }
-  }
-  else {
-    if (pInd2 != 0) {
-      outstr = "The output variable " + pName + " is not supported in 3PG mode";
-      std::cout << outstr << std::endl;
-      logger.Log(outstr);
-      exit(EXIT_FAILURE);
-    }
-  }
-  if (modelMode3PGS)
-    pInd = pInd2; 
-  else
-    pInd = pInd1; 
-
-  // Output variables common to both modes. 
-  if (namesMatch("NPP", pName) ||
-    namesMatch("Net Primary Production (tDM/ha)", pName)) pInd = opNameToInd("NPP"); //Modified 26/07/02
-  else if (namesMatch("cNPP", pName))  pInd = opNameToInd("cNPP");
-  else if (namesMatch("LAI", pName) ||
-    namesMatch("Leaf Area Index", pName)) pInd = opNameToInd("LAI");
-  else if (namesMatch("cLAI", pName)) pInd = opNameToInd("cLAI"); //Added 7 November 2002
-  else if (namesMatch("FRout", pName))    pInd = opNameToInd("FR"); //Added 11/07/2002
-  else if (namesMatch("PhysMod", pName))  pInd = opNameToInd("PhysMod");//Added 11/07/2002
-  else if (namesMatch("alphaC", pName))  pInd = opNameToInd("alphaC");//Added 11/07/2002
-  else if (namesMatch("fAge", pName))  pInd = opNameToInd("fAge"); //Added 11/07/2002
-  else if (namesMatch("fracBB", pName))  pInd = opNameToInd("fracBB"); //Added 11/07/2002
-  else if (namesMatch("WUE", pName))  pInd = opNameToInd("WUE"); //Added 16/07/2002
-  else if (namesMatch("cWUE", pName))  pInd = opNameToInd("cWUE");
-  else if (namesMatch("CVI", pName))  pInd = opNameToInd("CVI"); //Added 16/07/2002
-  else if (namesMatch("cCVI", pName))  pInd = opNameToInd("cCVI");
-  else if (namesMatch("fSW", pName))      pInd = opNameToInd("fSW");
-  else if (namesMatch("fVPD", pName))     pInd = opNameToInd("fVPD");
-  else if (namesMatch("fT", pName))       pInd = opNameToInd("fT"); 
-  else if (namesMatch("fNutr", pName))    pInd = opNameToInd("fNutr"); 
-  else if (namesMatch("fFrost", pName))   pInd = opNameToInd("fFrost"); 
-  else if (namesMatch("APAR", pName))     pInd = opNameToInd("APAR"); 
-  else if (namesMatch("APARu", pName))    pInd = opNameToInd("APARu");
-  else if (namesMatch("MAIx", pName))    pInd = opNameToInd("MAIx");
-  else if (namesMatch("ageMAIx", pName))    pInd = opNameToInd("ageMAIx");
-  
-  // Did we match a name?  
-  if (pInd == 0)
-    return false;
-
+  PPPG_OP_VAR opVar;
   if (pValue.empty()) {
     outstr = "No grid name for param " + pName +  " on line: " + to_string(lineNo);
     std::cout << outstr << std::endl;
@@ -1169,11 +998,11 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
       exit(EXIT_FAILURE);
   }
   // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
-  opVars[pInd].gridName = outPath + pValue.front(); 
-  const std::filesystem::path filePath = opVars[pInd].gridName;
+  opVar.gridName = outPath + pValue.front(); 
+  const std::filesystem::path filePath = opVar.gridName;
   if (filePath.extension() == ".tif") // Heed the dot.
   {
-      opVars[pInd].spType = pTif;
+      opVar.spType = pTif;
   }
   else
   {
@@ -1202,7 +1031,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
   if (yearlyOutput == true) {
     // Look for start year
     try {
-      opVars[pInd].recurStart = std::stoi(cp);
+      opVar.recurStart = std::stoi(cp);
     }
     catch (std::invalid_argument const& e) {
       outstr = "Expected an integer start year in recuring output specification on line " +  to_string(lineNo);
@@ -1222,7 +1051,7 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
             logger.Log(outstr);
             exit(EXIT_FAILURE);
         }
-        opVars[pInd].recurYear = interval;
+        opVar.recurYear = interval;
       }
       catch (std::invalid_argument const& e) {
           outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
@@ -1241,15 +1070,15 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
     try {
       cp = pValue.at(3);
       if (cp == "monthly")
-        opVars[pInd].recurMonthly = true;
+        opVar.recurMonthly = true;
       else if (cp == "month") {
-        opVars[pInd].recurMonthly = false;
+        opVar.recurMonthly = false;
         // If 'month', look for the month interger
         try {
           cp = pValue.at(4);
           try {
-            opVars[pInd].recurMonth = std::stoi(cp);
-            if (opVars[pInd].recurMonth == 0)
+            opVar.recurMonth = std::stoi(cp);
+            if (opVar.recurMonth == 0)
             {
                 outstr = "Found month of zero in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
                 std::cout << outstr << std::endl;
@@ -1287,28 +1116,28 @@ bool readOutputParam(const std::string& pName, const std::vector<std::string>& p
     }
   }
   // Mark the variable for later writing
-    opVars[pInd].write = true;
-    std::cout << "   variable: " << opVars[pInd].id << "   grid: " << opVars[pInd].gridName << std::endl;
-    logger.Log("   variable: " + opVars[pInd].id + "   grid: " + opVars[pInd].gridName);
-    if (opVars[pInd].recurStart)
+    opVar.write = true;
+    std::cout << "   variable: " << opVar.id << "   grid: " << opVar.gridName << std::endl;
+    logger.Log("   variable: " + opVar.id + "   grid: " + opVar.gridName);
+    if (opVar.recurStart)
     {
-        string outputGridString = "      starting in " + to_string(opVars[pInd].recurStart) + ", writing every " + to_string(opVars[pInd].recurYear) + " years";
+        string outputGridString = "      starting in " + to_string(opVar.recurStart) + ", writing every " + to_string(opVar.recurYear) + " years";
         std::cout << outputGridString << " years";
-        if (opVars[pInd].recurMonthly)
+        if (opVar.recurMonthly)
         {
             std::cout << ", with monthly values";
             outputGridString = outputGridString + ", with monthly values";
         }
-        else if (opVars[pInd].recurMonth != 0)
+        else if (opVar.recurMonth != 0)
         {
-            std::cout << ", on the " << opVars[pInd].recurMonth << " month";
-            outputGridString = outputGridString + ", on the " + to_string(opVars[pInd].recurMonth) + " month";
+            std::cout << ", on the " << opVar.recurMonth << " month";
+            outputGridString = outputGridString + ", on the " + to_string(opVar.recurMonth) + " month";
 
         }
         std::cout << std::endl;
         logger.Log(outputGridString);
     }
-  return true;
+  return opVar;
 }
 
 string getOutPathTMP(const std::string& siteParamFile)
@@ -1814,7 +1643,46 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
 
 //----------------------------------------------------------------------------------
 
-void readParamFile(const std::string& paramFile)
+void readSpeciesParamFile(const std::string& speciesFile) {
+    FILE* paramFp;
+    std::string line, pName;
+    std::string pValue;
+    std::string cp;
+    int lineNo = 0;
+    int len;
+
+    auto isDoubleQuote = [](char c) { return c == '\"'; };
+    std::ifstream inFile(speciesFile);
+    std::cout << "Reading species parameter from file '" << speciesFile << "'..." << std::endl;
+    logger.Log("Reading  species parameter from file '" + speciesFile + "'...");
+    while (std::getline(inFile, line)) {
+        lineNo++;
+        if (line.empty()) { continue; }
+        if (line[0] == '/' && line[1] == '/') { continue; }
+        // Parse the parameter name and parameter value from Species file
+        // While still implemented at .txt, format must be:
+        //          "paramName", paramValue
+        std::vector<std::string> tokens;
+        boost::split(tokens, line, boost::is_any_of(","), boost::token_compress_on);
+        for (int i = 0; i < tokens.size(); i++) {
+            boost::trim(tokens[i]);
+        }
+        std::string pName = tokens.front();
+        boost::trim_if(pName, boost::is_any_of("\""));
+        std::vector<std::string> pValues;
+        boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+        if (readInputParam(pName, pValues)) { 
+            continue; 
+        }
+        else {
+            std::cout << "Invalid site parameter: " << pName << std::endl;
+            logger.Log("Invalid site parameter: " + pName);
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile)
 {
   // Read a text file containing 3PG parameters.  Comments are allowed
   // and must begin with C++ style '//'.  Comments can begin at any
@@ -1828,24 +1696,15 @@ void readParamFile(const std::string& paramFile)
   std::string line, pName;
   std::string pValue;
   std::string cp;
-  int paramCount=0, lineLength=0, lineNo=0;
-  int readingOutput=0;
+  int lineNo=0;
   int len;
+  std::unordered_map<std::string, PPPG_OP_VAR> opVars;
 
-  // TODO: simplify this whole reading process using boost and std::string
-  // start with: https://stackoverflow.com/questions/7868936/read-file-line-by-line-using-ifstream-in-c
-  // Read input txt file using ifstream
-  // Read each line into a string
-  // Skip blank lines and comments indicted by //
-  // Tokenize each line using boost::split
-  // First token is the parameter name
-  // Second and subsequent tokens are the parameter values
   auto isDoubleQuote = [](char c) { return c == '\"'; };
   std::ifstream inFile(paramFile);
   std::cout << "Reading input parameters from file '" << paramFile << "'..." << std::endl;
   logger.Log("Reading input parameters from file '" + paramFile + "'...");
-  while (std::getline(inFile, line))
-  {
+  while (std::getline(inFile, line)) {
       lineNo++;
     // Skip blank lines
     if (line.empty())
@@ -1870,7 +1729,9 @@ void readParamFile(const std::string& paramFile)
     std::vector<std::string> pValues;
     boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
     if (readInputParam(pName, pValues)) { continue; }
-    else if (readOutputParam(pName, pValues, lineNo)) { continue; }
+    if (output_var_names.find(pName) != output_var_names.end()) {
+        opVars.emplace(pName, readOutputParam(pName, pValues, lineNo));
+    }
     else if (readOtherParam(pName, pValues)) { continue; }
     else if (readInputSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
     else if (readInputManageParam(pName, inFile, lineNo)) { continue; }
@@ -1880,6 +1741,7 @@ void readParamFile(const std::string& paramFile)
         exit(EXIT_FAILURE);
     }
   }
+  return opVars;
 }
 
 //----------------------------------------------------------------------------------
@@ -2247,14 +2109,14 @@ GDALRasterImage* openInputGrids( )
 
 //----------------------------------------------------------------------------------
 
-int writeOutputGrids(bool hitNODATA, long cellIndex) {
+int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, bool hitNODATA, long cellIndex) {
     //for each possible output variable
-    for (int opn = 0; opVars[opn].id != ""; opn++) {
+    for (auto& [pN, opV] : opVars) {
         //if it has been marked to be written
-        if (opVars[opn].write) {
+        if (opV.write) {
             //determine value, name, and tell dataOutput class to write
-            float val = (float)*(opVars[opn].adr);
-            std::string name = opVars[opn].id;
+            float val = (float)(opV.v);
+            std::string name = opV.id;
             dataOutput->write(-1, -1, name, cellIndex, val, hitNODATA);
             //std::cout << "calling dataOutput->write(year=NULL, month=NULL," <<  name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
         }
@@ -2264,19 +2126,19 @@ int writeOutputGrids(bool hitNODATA, long cellIndex) {
 
 //----------------------------------------------------------------------------------
 
-void writeMonthlyOutputGrids(int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex) {
+void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex) {
     //for each possible output variable
-    for (int opn = 0; opVars[opn].id != ""; opn++) {
+    for (auto& [pN, opV] : opVars) {
         //NOTE: I have no idea why both .recurYear and recurStart exist...
         // for now I'm just going to use both the same way that the old function did
         
         //skip output variable if it is not marked for recurring output
-        if (opVars[opn].recurYear == -1) {
+        if (opV.recurYear == -1) {
             continue;
         }
 
         //skip output variable if it is not marked for recurring output
-        if (!opVars[opn].recurStart) {
+        if (!opV.recurStart) {
             continue;
         }
 
@@ -2299,10 +2161,10 @@ void writeMonthlyOutputGrids(int calYear, int calMonth, bool hitNODATA, MYDate m
         }
 
         //determine value, name, and tell dataOutput class to write
-        if (opVars[opn].spType == pTif) {
+        if (opV.spType == pTif) {
             //determine value, name, and tell dataOutput class to write
-            float val = (float)*(opVars[opn].adr);
-            std::string name = opVars[opn].id;
+            float val = (float)(opV.v);
+            std::string name = opV.id;
             dataOutput->write(calYear, calMonth, name, cellIndex, val, hitNODATA);
             //std::cout << "calling dataOutput->write(" << calYear << ", " << calMonth << ", " << name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
         }
@@ -2311,7 +2173,34 @@ void writeMonthlyOutputGrids(int calYear, int calMonth, bool hitNODATA, MYDate m
 
 //----------------------------------------------------------------------------------
 
-void writeSampleFiles(int cellIndex, int month, long calYear) 
+void writeSampleFiles(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int cellIndex, int month, long calYear)
+{
+    int opn, sInd, i;
+    static bool firstTime = true;
+
+    // Do we want to sample this point? 
+    sInd = -1;
+    for (i = 0; samplePoints[i].id[0] != 0; i++)
+        if (samplePoints[i].cellIndex == cellIndex) {
+            sInd = i;
+            break;
+        }
+    if (sInd == -1)
+        return;
+
+    fprintf(samplePoints[sInd].fp, "%d, %d, %s, ", calYear,
+        month, samplePoints[sInd].id.c_str());
+    // For each variable
+    for (auto& [pN, opV] : opVars) {
+        fprintf(samplePoints[sInd].fp, "%f, ", (opV.v));
+    }
+    fprintf(samplePoints[sInd].fp, "\n");
+}
+
+
+//----------------------------------------------------------------------------------
+
+void writeSampleFiles(std::unordered_map<std::string, PPPG_OP_VAR> opVars, int cellIndex, int month, long calYear)
 {
   int opn, sInd, i;
   static bool firstTime = true;
@@ -2329,8 +2218,9 @@ void writeSampleFiles(int cellIndex, int month, long calYear)
   fprintf(samplePoints[sInd].fp, "%d, %d, %s, ", calYear, 
     month, samplePoints[sInd].id.c_str());
   // For each variable
-  for (opn = 1; opVars[opn].adr != NULL; opn++)
-    fprintf(samplePoints[sInd].fp, "%f, ", *(opVars[opn].adr));
+  for (auto& [pN, opV] : opVars) {
+      fprintf(samplePoints[sInd].fp, "%f, ", (opV.v));
+  }
   fprintf(samplePoints[sInd].fp, "\n");
 }
 
