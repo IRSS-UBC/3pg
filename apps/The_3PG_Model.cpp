@@ -251,23 +251,6 @@ double getDayLength(double Lat, int dayOfYear)
 }
 
 //-----------------------------------------------------------------------------
-//Anders Siggins 29/22/01
-double Minimum(double X, double Y)
-{
-    if (X > Y)
-        return Y;
-    else
-        return X;
-}
-//And one that is probably not used...
-double Maximum(double X, double Y)
-{
-    if (X < Y)
-        return Y;
-    else
-        return X;
-}
-//-----------------------------------------------------------------------------
 
 double getVPD(double Tx, double Tn)
 {
@@ -342,54 +325,6 @@ double CanopyTranspiration(double Q, double VPD, double h,
     CT = Etransp / lambda * h;         // converted to kg/m2/day
 
     return CT;
-}
-
-
-//-----------------------------------------------------------------------------
-
-void assignDefaultParameters(void)
-{
-    // We don't actually use this currently.  
-    // Public
-    MaxAge = 50;          // Determines rate of "physiological decline" of forest
-    SLA0 = 4;             // specific leaf area at age 0 (m^2/kg)
-    SLA1 = 4;             // specific leaf area for mature trees (m^2/kg)
-    tSLA = 2.5;           // stand age (years) for SLA = (SLA0+SLA1)/2
-    fullCanAge = 0;       // Age at full canopy cover
-    k = 0.5;              // Radiation extinction coefficient
-    gammaFx = 0.03;       // Coefficients in monthly litterfall rate
-    gammaF0 = 0.001;
-    tgammaF = 24;
-    Rttover = 0.015;      // Root turnover rate per month
-    SWconst0 = 0.7;       // SW constants are 0.7 for sand,0.6 for sandy-loam,
-    //   0.5 for clay-loam, 0.4 for clay
-    SWpower0 = 9;         // Powers in the eqn for SW modifiers are 9 for sand,
-    //   7 for sandy-loam, 5 for clay-loam and 3 for clay
-    Interception = 0.15;  // Proportion of rainfall intercepted by canopy
-    MaxCond = 0.02;       // Maximum canopy conductance (gc, m/s)
-    BLcond = 0.2;         // Canopy boundary layer conductance, assumed constant
-    CoeffCond = 0.05;     // Determines response of canopy conductance to VPD
-    y = 0.47;             // Assimilate use efficiency
-    growthTmax = 32;            // "Critical" biological temperatures: max, min
-    growthTmin = 2;             //   and optimum. Reset if necessary/appropriate
-    growthTopt = 20;
-    kF = 1;               // Number of days production lost per frost days
-    pFS2 = 1;             // Foliage:stem partitioning ratios for D = 2cm
-    pFS20 = 0.15;         //   and D = 20cm
-    StemConst = 0.095;    // Stem allometric parameters
-    StemPower = 2.4;
-    pRx = 0.8;            // maximum root biomass partitioning
-    pRn = 0.25;           // minimum root biomass partitioning
-    m0 = 0;               // Value of m when FR = 0
-    fN0 = 1;              // Value of fN when FR = 0
-    alpha = 0.055;        // Canopy quantum efficiency
-    wSx1000 = 300;     // Max tree stem mass (kg) likely in mature stands of 1000 trees/ha
-    nAge = 4;             // Parameters in age-modifier
-    rAge = 0.95;
-    fracBB0 = 0.15;       // branch & bark fraction at age 0 (m^2/kg)
-    fracBB1 = 0.15;       // branch & bark fraction for mature trees (m^2/kg)
-    tBB = 1.5;            // stand age (years) for fracBB = (fracBB0+fracBB1)/2
-    Density = 0.5;        // Basic density (t/m3)
 }
 
 //-----------------------------------------------------------------------------
@@ -496,9 +431,6 @@ bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
     if (userVpdSeries()) {
         if (!getSeriesVal(VPD, SS_VPD, calMonth, calYear, cellIndex))
             hitNODATA = true;
-
-
-
     }
     else
         VPD = getVPD(Tx, Tn);
@@ -506,14 +438,6 @@ bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
         if (!getSeriesVal(NDVI_AVH, SS_NDVI_AVH, calMonth, calYear, cellIndex))
             hitNODATA = true;
     }
-    //std::cout << "hit noData: " << hitNODATA << std::endl;
-    //std::cout << "SolarRad: " << SolarRad << std::endl;
-    //std::cout << "FrostDays: " << FrostDays << std::endl;
-    //std::cout << "Rain: " << Rain << std::endl;
-    //std::cout << "NetRad: " << NetRad << std::endl;
-    //std::cout << "Tx: " << Tx << std::endl;
-    //std::cout << "Tn: " << Tn << std::endl;
-    //std::cout << "Tav: " << Tav << std::endl;
     return hitNODATA;
 }
 
@@ -575,10 +499,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
         mDayLength[mn] = 86400 * getDayLength(Lat, dayofyr);
     }
 
-    if (haveMinASWTG())
-        useMinASWTG = true;
-    else
-        useMinASWTG = false;
+    useMinASWTG = haveMinASWTG();
 
     if (!loadParamVals(cellIndex)) {
         return;
@@ -592,18 +513,12 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
     haveAvgTempSeries = userTavgSeries();
 
     // Assign initial state of the stand
-
-    //StandAge = StartAge; //(StartAge-1) + 1.0/12.0; //18-01-02
-    //StandAge = 0; //(minMY.year - yearPlanted); // + (cm - StartMonth) / 12.0;
-
-    //New StandAge function
     GetStandAge();
     opVars["StemNo"].v = StemNoi;
     //StartMonth++; //Synchronise with vb version 20-01-02
 
     //Fix for aracruz work.  Implements SeedlingMass distribution
     //that Peter Sands uses for multisite data.
-
     if (haveSeedlingMass())
     {
         WFi = (0.5 * StemNoi * SeedlingMass) / pow(10, 6);
@@ -659,15 +574,12 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
     opVars["FR"].v = FRp;
 
-    // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
-    //previous calculated values are written instead of nodata
-
+    //write initial state of output variables
     writeMonthlyOutputGrids(opVars, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
 
     // Monthly sample point output
     if (samplePointsMonthly)
         writeSampleFiles(opVars, cellIndex, calMonth, calYear);
-
 
     //Start processing loop
     for (cy = spMinMY.year; cy <= spMaxMY.year; cy++) {
@@ -851,7 +763,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             // and APARu. It is the lesser of the soil-water and VPD modifier, times the
             // age modifier:
 
-            opVars["PhysMod"].v = Minimum(opVars["fVPD"].v, opVars["fSW"].v) * opVars["fAge"].v;
+            opVars["PhysMod"].v = std::min(opVars["fVPD"].v, opVars["fSW"].v) * opVars["fAge"].v;
 
             // Determine gross and net biomass production
 
@@ -937,12 +849,10 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 opVars["TotalLitter"].v = opVars["TotalLitter"].v + delLitter;
             }
 
-
             // Now do the water balance ...
-
             // calculate canopy conductance from stomatal conductance
 
-            CanCond = MaxCond * opVars["PhysMod"].v * Minimum(1.0, opVars["LAI"].v / LAIgcx);
+            CanCond = MaxCond * opVars["PhysMod"].v * std::min(1.0, opVars["LAI"].v / LAIgcx);
             //if (fabs(0 - CanCond) < eps)
             if (CanCond == 0)
                 CanCond = 0.0001;
@@ -957,7 +867,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             if (LAImaxIntcptn <= 0)
                 Interception = MaxIntcptn;
             else
-                Interception = MaxIntcptn * Minimum(1, opVars["LAI"].v / LAImaxIntcptn);
+                Interception = MaxIntcptn * std::min((double)1, opVars["LAI"].v / LAImaxIntcptn);
             opVars["EvapTransp"].v = opVars["Transp"].v + Interception * Rain;
             opVars["ASW"].v = opVars["ASW"].v + Rain + (100 * Irrig / 12) - opVars["EvapTransp"].v;        //Irrig is Ml/ha/year
             monthlyIrrig = 0;
@@ -982,7 +892,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 std::cout << "Negative StandAge" << std::endl;
                 //fprintf(logfp, "Negative StandAge");
             }
-
 
             if (!modelMode3PGS) {
 

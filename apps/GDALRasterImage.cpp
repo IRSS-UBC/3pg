@@ -87,7 +87,6 @@ GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid)
 
 };
 
-
 GDALRasterImage::~GDALRasterImage() {
 	// From API docs, why `GDALClose()` and not `~GDALDataset()`: 
 	// Equivalent of the C callable GDALClose(). Except that GDALClose() first decrements the reference count, and then closes only if it has dropped to zero.
@@ -121,18 +120,6 @@ float GDALRasterImage::GetVal(int index) {
 		throw std::invalid_argument("Cannot read pixel value.");
 	}
 	return pixelValue;
-};
-
-std::tuple<int, int> GDALRasterImage::XYfrom(double lat, double lon) {
-	int x = static_cast<int>(floor(inverseTransform[0] + inverseTransform[1] * lon + inverseTransform[2] * lat));
-	int y = static_cast<int>(floor(inverseTransform[3] + inverseTransform[4] * lon + inverseTransform[5] * lat));
-	if ( x < 0 || x > nCols || y < 0 || y > nRows) {
-		throw std::invalid_argument("Lat/lon is outside of raster extent.");
-	}
-
-	// int32_t pixelValue;
-	// assert(GDALRasterIO(band, GF_Read, x, y, 1, 1, &pixelValue, 1, 1, GDT_Int32, 0, 0) == CE_None);
-	return std::make_tuple(x, y);
 };
 
 int GDALRasterImage::IndexFrom(double lat, double lon) {

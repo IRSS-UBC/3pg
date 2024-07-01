@@ -25,22 +25,8 @@ Use of this software assumes agreement to this condition of use
 #include "DataOutput.hpp"
 #include "ParamStructs.hpp"
 
-// Need to provide getopt on MSVC. 
-//#ifdef WIN32
-//extern "C"
-//{
-//  extern int getopt(int argc, char **argv, char *opts);
-//  extern char *optarg;
-//}
-//#endif
-
 // Maximum file path length. 
 #define MAXFILE 1000
-
-// FILE *logfp;
-// char usage[] = 
-// "-d <default parameter file> -s <site parameter file>\n";
-// char program[] = "3pg";
 
 //----------------------------------------------------------------------------------------
 std::string VERSION = "0.1";
@@ -93,11 +79,6 @@ void threadCalculateRow(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYD
 
 int main(int argc, char* argv[])
 {
-    std::string optarg;
-    //extern int optind;
-    //int c;
-    //int result;
-
     GDALRasterImage* refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
     DataOutput* dataOutput; //thread safe data output class
     bool spatial = 0;
@@ -133,16 +114,13 @@ int main(int argc, char* argv[])
     std::cout << COPYMSG << std::endl;
     logger.Log(COPYMSG);
 
-
     // Load the parameters and output variables. 
     InitInputParams();
     readSpeciesParamFile(defParamFile);
     opVars = readSiteParamFile(siteParamFile);
     if (!haveAllParams()) {
         exit(EXIT_FAILURE);
-
     }
-
 
     // Check for a spatial run, if so open input grids and define refGrid. 
     refGrid = openInputGrids();
@@ -158,12 +136,8 @@ int main(int argc, char* argv[])
     std::cout << "Finding run period..." << std::endl;
     findRunPeriod(spMinMY, spMaxMY); 
 
-    // NOTE: don't think ResetGrids is necessary for GDAL stuff... but I guess we'll see
-    // ResetGrids(); 
-
     readSampleFile(opVars, refGrid); 
     std::cout << "Points read from sample file." << std::endl;
-
  
     // Run the model. 
     int cellsDone = 0;

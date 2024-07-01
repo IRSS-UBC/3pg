@@ -2090,28 +2090,6 @@ GDALRasterImage* openInputGrids( )
 
 //----------------------------------------------------------------------------------
 
-//bool copyHeader(GDALRasterImage *refGrid, char *fname )
-//{
-  // Really crappy way to generate a header file, rely on the assignment operator 
-  // in the FloatGrid class.  
-//  GDALRasterImage *fg;
-
-//  fg = new GDALRasterImage;
-//  *fg = *refGrid; 
-//  try {
-//    fg->Write(fname);
-//  } catch (Exception &e) {
-//    delete fg;
-//    sprintf(outstr, "\nException: %s\n", e.Message()); 
-//    logAndPrint(logfp, outstr);  // print as well as Exception msgs don't on Win32. 
-//    return false; 
-//  }
-//  delete fg;
-//  return true; 
-//}
-
-//----------------------------------------------------------------------------------
-
 int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, long cellIndex) {
     //for each possible output variable
     for (auto& [pN, opV] : opVars) {
@@ -2236,74 +2214,6 @@ void writeSampleFiles(std::unordered_map<std::string, PPPG_OP_VAR> opVars, int c
 }
 
 //----------------------------------------------------------------------------------
-// TODO: Reaplce manual LogFile with external library for logging in modern C++
-// FILE *openLogFile(std::string siteParamFile)
-// {
-//   // Open the site parameter file, find the output directory 
-//   // specification, open the logfile in that directory, close the 
-//   // site parameter file.  
-
-//   FILE *logFileFp, *paramFp; 
-//   std::string *cp, *line, *logFileName;
-
-//   if ((paramFp = fopen(siteParamFile, "rb")) == NULL) {
-//     fprintf(stderr, "Could not open site parameter file %s\n", siteParamFile); 
-//     exit(1);
-//   }
-
-//   line = new std::string[1000];
-//   logFileName = new std::string[1000];
-
-//   while (fgets(line, MAXLINE, paramFp) != NULL) {
-//     // Remove comments from end of line by inserting a null character. 
-//     cp = strstr(line, "//");
-//     if (cp != NULL)
-//       *cp = 0;
-
-//     // Consume leading whitespace. 
-//     cp = line + strspn(line, " \t");
-
-//     // Tokenize the line. First token ends with a closing double quote.  
-//     cp = strtok(cp, "\"\n\015");
-//     if (cp == NULL)
-//       continue;
-
-//     // Find the output directory specifier.  Look for ^M (ascii 13), carriage return, in 
-//     // DOS text files. 
-//     if (namesMatch("output directory", cp)) {
-//       cp = strtok(NULL, " \t\n\015");
-//       if (cp == NULL) {
-//         line[0] = '.';
-//         line[1] = '\0';
-//         cp = line;
-//       }
-//       int len = strlen(cp);
-//       if (*(cp + len - 1) != '/') {
-//         *(cp + len) = '/';
-//         *(cp + len + 1) = 0;
-//       }
-//       strcpy(logFileName, cp); 
-//       strcat(logFileName, "logfile.txt");
-
-//       // Open the file
-//       if ((logFileFp = fopen(logFileName, "w")) == NULL) {
-//         fprintf(stderr, "Could not open log file %s\n", logFileName);
-//         exit(1);
-//       }
-//       else {
-//         fclose(paramFp);
-//         delete line;
-//         delete logFileName;
-//         return logFileFp; 
-//       }
-//     }
-//   }
-//   fprintf(stderr, "Could not find \"output directory\" parameter in %s\n", siteParamFile);
-//   exit(1);
-// }
-
-
-//----------------------------------------------------------------------------------
 
 int findRunPeriod( MYDate &minMY, MYDate &maxMY ) {
     int yPlantedMin, sAgeMin, eYearMax, sMonthMax;
@@ -2426,24 +2336,6 @@ bool haveSeedlingMass()
     return true;
   else
     return false;
-}
-
-//----------------------------------------------------------------------------------
-bool haveSpatialRunYears()
-{
-  int pInd;
-
-  pInd = pNameToInd("EndYear");
-  if (!(params[pInd].data.spType == pScalar)) return true;
-
-  pInd = pNameToInd("StartMonth");
-  if (!(params[pInd].data.spType == pScalar)) return true;
-
-  pInd = pNameToInd("yearPlanted");
-  if (!(params[pInd].data.spType == pScalar)) return true;
-
-  return false;
-
 }
 
 //----------------------------------------------------------------------------------
