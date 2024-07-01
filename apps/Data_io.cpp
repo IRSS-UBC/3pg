@@ -2119,7 +2119,6 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
             std::string name = opV.gridName;
             name = name.substr(0, name.find_last_of("."));
             dataOutput->write(-1, -1, name, cellIndex, val, hitNODATA);
-            //std::cout << "calling dataOutput->write(year=NULL, month=NULL," <<  name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
         }
     }
     return EXIT_SUCCESS;
@@ -2130,8 +2129,6 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
 void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex) {
     //for each possible output variable
     for (auto& [pN, opV] : opVars) {
-        //NOTE: I have no idea why both .recurYear and recurStart exist...
-        // for now I'm just going to use both the same way that the old function did
 
         //skip output variable if it is not marked for recurring output
         if (opV.recurYear == -1) {
@@ -2161,18 +2158,24 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
             exit(EXIT_FAILURE);
         }
 
-        //determine value, name, and tell dataOutput class to write
-        if (opV.spType == pTif) {
-            if (!opV.recurMonthly) {
-                if (calMonth == opV.recurMonth) {
-                    //determine value, name, and tell dataOutput class to write
-                    float val = (float)(opV.v);
-                    dataOutput->write(calYear, calMonth, pN, cellIndex, val, hitNODATA);
-                    //std::cout << "calling dataOutput->write(" << calYear << ", " << calMonth << ", " << name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
-
-                }
-            }
+        //skip output variable if we're not meant to be printing every month AND we're not on the month we're meant to be printing
+        if (!opV.recurMonthly && opV.recurMonth != calMonth) {
+            continue;
         }
+
+        //ensure output type is tif
+        if (opV.spType != pTif) {
+            std::string outStr = "output type must be tif";
+            std::cout << outStr << std::endl;
+            logger.Log(outStr);
+            exit(EXIT_FAILURE);
+        }
+
+        //determine value, name, and tell dataOutput class to write
+        float val = (float)(opV.v);
+        std::string name = opV.gridName;
+        name = name.substr(0, name.find_last_of("."));
+        dataOutput->write(calYear, calMonth, name, cellIndex, val, hitNODATA);
     }
 }
 
