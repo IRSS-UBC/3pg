@@ -81,6 +81,16 @@ private:
 
 //----------------------------------------------------------------------------------------
 
+void threadCalculateRow(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate spMinMY, MYDate spMaxMY, int row, int ncols) {
+    int cellIndexStart = row * ncols;
+    for (int j = 0; j < ncols; j++) {
+        int cellIndex = cellIndexStart + j;
+        runTreeModel(opVars, spMinMY, spMaxMY, cellIndex);
+    }
+
+    writeRowDataOutput(row);
+}
+
 int main(int argc, char* argv[])
 {
     std::string optarg;
@@ -163,21 +173,18 @@ int main(int argc, char* argv[])
     logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
 
     for (int i = 0; i < nrows; i++) {
-        for (int j = 0; j < ncols; j++) {
 
-            //calculate/print progress
-            int progress = (100 * cellsDone / cellsTotal);
-            if (progress > lastProgress) {
-                fprintf(stdout, "Completed %2u%%\r", progress);
-            }
-            
-            int cellIndex = i * ncols + j;
-            runTreeModel(opVars, spMinMY, spMaxMY, cellIndex);
-
-            //increment progress
-            cellsDone++;
-            lastProgress = progress;
+        //calculate/print progress
+        int progress = (100 * cellsDone / cellsTotal);
+        if (progress > lastProgress) {
+            fprintf(stdout, "Completed %2u%%\r", progress);
         }
+        
+        threadCalculateRow(opVars, spMinMY, spMaxMY, i, ncols);
+
+        //increment progress
+        cellsDone += ncols;
+        lastProgress = progress;
     }
     deleteDataOutput();
 

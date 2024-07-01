@@ -75,6 +75,9 @@ bool showDetailedResults;                // TRUE ==> show monthly results
 bool showStandSummary;                   // TRUE ==> show stand summary
 bool modelMode3PGS = false;
 
+bool yrPreStart = false;
+bool yrPstEnd = false;
+
 // Site characteristics, site specific parameters
 char siteName[100];                      // name of site
 double Lat = 1000;                       // site latitude
@@ -517,7 +520,7 @@ bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
 //-----------------------------------------------------------------------------
 
 // This is the main routine for the 3PG model
-void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex)
+void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex)
 {
     //  int minCy, maxCy; 
 
@@ -541,10 +544,8 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     double cumLAI;
     double oldVol;    //Added 16/07/02 as part of CVI
 
-    bool hitNODATA = false, yrPreStart = false, yrPstEnd = false;
 
     //New Soilwater modifier adjuster
-
     bool useMinASWTG = false;
     double ASWmod;
 
@@ -555,7 +556,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     int year, calYear, calMonth, runYear, cm, cy;
 
     int thinEventNo, defoltnEventNo;
-
 
     bool haveAvgTempSeries = false;  //Change: - Needs to be available iff 
     //VPD is available
@@ -580,15 +580,9 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     else
         useMinASWTG = false;
 
-    // ANL - Load the parameter values.  On NODATA write NODATA to output 
-    // grids. 
-    hitNODATA = !loadParamVals(cellIndex);
-
-    // May have hit nodata in StartMonth, yearPlanted and EndYear, in which case 
-    // firstRunMonth and LastRunMonth will be meaningless.  In any case, if we aren't at 
-    // NODATA, we have to do all the pre-year stuff below.  
-    if (hitNODATA)
-        goto skipPreYearCalcs;
+    if (!loadParamVals(cellIndex)) {
+        return;
+    }
 
     Initialisation(opVars);
 
@@ -646,31 +640,29 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     avDBHi = opVars["avDBH"].v;
     LAIi = opVars["LAI"].v;
     CumStemLoss = 0;
-
-skipPreYearCalcs:
+    
 
     // Do annual calculations.  The year loop here is controlled by minMY and maxMY, 
     // which refer to the overall run start and end, across all cells.
-
 
     //Print first month results
     calYear = spMinMY.year;
     calMonth = (int)StartMonth;
 
     //Find out if there is supposed to be any data here in the first place...
-    hitNODATA = AssignMonthlyMetData(calMonth, calYear, cellIndex,
-        SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH) || hitNODATA;
+    if (AssignMonthlyMetData(calMonth, calYear, cellIndex, SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH)) {
+        return;
+    }
 
     if (FrostDays > 30)
         FrostDays = 30;
 
     opVars["FR"].v = FRp;
 
-
     // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
     //previous calculated values are written instead of nodata
 
-    writeMonthlyOutputGrids(opVars, calYear, calMonth, hitNODATA || yrPreStart, spMinMY, spMaxMY, cellIndex);
+    writeMonthlyOutputGrids(opVars, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
 
     // Monthly sample point output
     if (samplePointsMonthly)
@@ -683,16 +675,7 @@ skipPreYearCalcs:
         calYear = cy;
         calMonth = (int)StartMonth;
 
-        // If we've already encountered NODATA we don't care about any annual variable 
-        // except runYear. 
-        if (hitNODATA)
-            goto skipYearStartCalcs;
-
         year = cy - (int)yearPlanted;   // seem to still need year for point mode output. 
-
-        // Once we've encountered nodata just cycle through as quickly as possible.  
-        if (hitNODATA || yrPreStart || yrPstEnd)
-            goto skipYearStartCalcs;
 
         // Initialise cumulative variables
         opVars["cLitter"].v = 0;
@@ -733,15 +716,6 @@ skipPreYearCalcs:
             Irrig = lookupManageTable(runYear, MT_IRRIGATION, 0, cellIndex);
         }
         else Irrig = 0;
-
-
-    skipYearStartCalcs:
-        //Fill in noData values for first year. AS 20/01/02
-
-        if (calYear == spMinMY.year)
-
-            for (int beforeCalcMonth = 1; beforeCalcMonth < StartMonth; beforeCalcMonth++)
-                writeMonthlyOutputGrids(opVars, calYear, beforeCalcMonth, true, spMinMY, spMaxMY, cellIndex);
 
         //Initialise output step cumulative variables
         delStemNo = 0;
@@ -802,13 +776,12 @@ skipPreYearCalcs:
                 yrPstEnd = true;
 
 
-            if (hitNODATA || yrPreStart || yrPstEnd)
+            if (yrPreStart || yrPstEnd)
                 goto skipMonthCalcs;
 
-            hitNODATA = AssignMonthlyMetData(calMonth, calYear, cellIndex,
-                SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH) || hitNODATA;
-            if (hitNODATA)
-                goto skipMonthCalcs;
+            if (AssignMonthlyMetData(calMonth, calYear, cellIndex, SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH)) {
+                return;
+            }
 
             dayLength = mDayLength[calMonth];
 
@@ -1110,7 +1083,7 @@ skipPreYearCalcs:
             if (!yrPreStart && !yrPstEnd && !(calYear == spMaxMY.year && calMonth == spMaxMY.mon)) {
                 //the !(calYear == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
                 //output, but rather skip it and the values are eventually written via writeOutputGrids().
-                writeMonthlyOutputGrids(opVars, calYear, calMonth, hitNODATA || yrPreStart, spMinMY, spMaxMY, cellIndex);
+                writeMonthlyOutputGrids(opVars, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
             }
 
             // Monthly sample point output
@@ -1120,7 +1093,7 @@ skipPreYearCalcs:
 
         }
 
-        if (hitNODATA || yrPreStart || yrPstEnd)
+        if (yrPreStart || yrPstEnd)
             goto skipYearEndCalcs;
 
         // Calculate above ground and total Epsilon
@@ -1172,5 +1145,5 @@ skipPreYearCalcs:
         opVars["LAI"].v = opVars["WF"].v * SLA * 0.1;
 
     }
-    writeOutputGrids(opVars, hitNODATA, cellIndex);
+    writeOutputGrids(opVars, cellIndex);
 }

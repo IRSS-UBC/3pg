@@ -445,6 +445,9 @@ void deleteDataOutput() {
     delete dataOutput;
     dataOutput = nullptr;
 }
+CPLErr writeRowDataOutput(int row) {
+    return dataOutput->writeRow(row);
+}
 
 bool openGrid(PPPG_VVAL& vval)
 {
@@ -662,7 +665,7 @@ void readSampleFile(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, GDALRa
   while (fgets(line, MAXLINE-1, sampleIpFp) != NULL) {
     if (sscanf(line, "%s %s %s", id, xstr, ystr) != 3)
       return;
-    // Change 'D' to 'e'.  Arcinfo ungenerate writes exponents with D, 
+    // Change 'D' to 'e'.  Arcinfo ungenerate dats exponents with D, 
     // atof and scanf only read e or E. 
     // TODO: Need to enforce sample points use e/E 
     // for (cp = xstr; *cp != '\0'; cp++)
@@ -2109,7 +2112,7 @@ GDALRasterImage* openInputGrids( )
 
 //----------------------------------------------------------------------------------
 
-int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, bool hitNODATA, long cellIndex) {
+int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, long cellIndex) {
     //for each possible output variable
     for (auto& [pN, opV] : opVars) {
         //if it has been marked to be written
@@ -2118,7 +2121,7 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
             float val = (float)(opV.v);
             std::string name = opV.gridName;
             name = name.substr(0, name.find_last_of("."));
-            dataOutput->write(-1, -1, name, cellIndex, val, hitNODATA);
+            dataOutput->setVal(-1, -1, name, cellIndex, val);
         }
     }
     return EXIT_SUCCESS;
@@ -2126,7 +2129,7 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
 
 //----------------------------------------------------------------------------------
 
-void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex) {
+void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex) {
     //for each possible output variable
     for (auto& [pN, opV] : opVars) {
 
@@ -2175,7 +2178,7 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
         float val = (float)(opV.v);
         std::string name = opV.gridName;
         name = name.substr(0, name.find_last_of("."));
-        dataOutput->write(calYear, calMonth, name, cellIndex, val, hitNODATA);
+        dataOutput->setVal(calYear, calMonth, name, cellIndex, val);
     }
 }
 
