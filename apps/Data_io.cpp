@@ -998,7 +998,7 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
       exit(EXIT_FAILURE);
   }
   // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
-  opVar.gridName = outPath + pValue.front();
+  opVar.gridName = pValue.front();
   const std::filesystem::path filePath = opVar.gridName;
   if (filePath.extension() == ".tif") // Heed the dot.
   {
@@ -2116,7 +2116,9 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
         if (opV.write) {
             //determine value, name, and tell dataOutput class to write
             float val = (float)(opV.v);
-            dataOutput->write(-1, -1, pN, cellIndex, val, hitNODATA);
+            std::string name = opV.gridName;
+            name = name.substr(0, name.find_last_of("."));
+            dataOutput->write(-1, -1, name, cellIndex, val, hitNODATA);
             //std::cout << "calling dataOutput->write(year=NULL, month=NULL," <<  name << ", " << cellIndex << ", " << val << ", " << hitNODATA << ")" << std::endl;
         }
     }
