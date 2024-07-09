@@ -22,6 +22,9 @@ Use of this software assumes agreement to this condition of use
 #include "The_3PG_Model.hpp"
 #include "util.hpp"
 #include <boost/program_options.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/post.hpp>
+#include <thread>
 #include "DataOutput.hpp"
 #include "ParamStructs.hpp"
 
@@ -66,16 +69,6 @@ private:
 };
 
 //----------------------------------------------------------------------------------------
-
-void threadCalculateRow(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate spMinMY, MYDate spMaxMY, int row, int ncols) {
-    int cellIndexStart = row * ncols;
-    for (int j = 0; j < ncols; j++) {
-        int cellIndex = cellIndexStart + j;
-        runTreeModel(opVars, spMinMY, spMaxMY, cellIndex);
-    }
-
-    writeRowDataOutput(row);
-}
 
 int main(int argc, char* argv[])
 {
@@ -138,7 +131,7 @@ int main(int argc, char* argv[])
 
     readSampleFile(opVars, refGrid); 
     std::cout << "Points read from sample file." << std::endl;
- 
+
     // Run the model. 
     int cellsDone = 0;
     int cellsTotal = (nrows) * (ncols); 
@@ -146,20 +139,36 @@ int main(int argc, char* argv[])
     std::cout << "Processing..." << cellsTotal << " cells... " << std::endl;
     logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
 
+    //unsigned int numThreads = std::thread::hardware_concurrency();
+    int nthreads = 2;
+    boost::asio::thread_pool pool(nthreads);
+
     for (int i = 0; i < nrows; i++) {
 
+        //TODO: progress likely won't work
         //calculate/print progress
         int progress = (100 * cellsDone / cellsTotal);
         if (progress > lastProgress) {
             fprintf(stdout, "Completed %2u%%\r", progress);
         }
         
-        threadCalculateRow(opVars, spMinMY, spMaxMY, i, ncols);
+        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, ncols] {
+            int cellIndexStart = i * ncols;
+            for (int j = 0; j < ncols; j++) {
+                int cellIndex = cellIndexStart + j;
+                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex);
+            }
+
+            writeRowDataOutput(i);
+        });
 
         //increment progress
         cellsDone += ncols;
         lastProgress = progress;
     }
+
+    pool.join();
+
     deleteDataOutput();
 
     return EXIT_SUCCESS;
