@@ -60,24 +60,15 @@ extern Logger logger;
 // unused array member at index 0.  
 
 // Controls and counters
-//int StartAge, EndYear;                         // age of trees at start/end of run
-//int StartMonth;                               // month of year to start run
-//int yearPlanted;                              // year trees planted
-// ANL changed these three from int to double
 extern double StartAge, EndYear;                 // age of trees at start/end of run
 extern double StartMonth;                       // month of year to start run
 extern double yearPlanted;                      // year trees planted
-// int DaysInMonth[13];                         // array for days in months
-extern double DaysInMonth[13];                  // array for days in months
-//extern bool showDetailedResults;              // TRUE ==> show monthly results
-//extern bool showStandSummary;                 // TRUE ==> show stand summary
 extern bool modelMode3PGS;
 
 // Site characteristics, site specific parameters
-extern std::string siteName;                      // name of site
 extern double Lat;                              // site latitude
 extern double MaxASW, MinASWp;                  // maximum & minimum available soil water
-extern double FRp, FR;                              // current site fertility rating
+extern double FRp;                              // current site fertility rating
 extern double FRstart, FRend, FRdec;            // Start, end and decrement % for fertility decrease with time
 extern double soilIndex;                        // soil class index
 extern double SWconst, SWpower;                 // soil parameters for soil class
@@ -91,55 +82,16 @@ extern int nIrrigation;                         // size of irrigation array
 //extern MANAGE_TABLE Irrigation[1000];           // time-variant irrigation (ML/y)
 extern double Irrig;                            // current annual irrigation (ML/y)
 
-// Mean monthly weather data
-//int mYears;                                   // years of met data available
-// ANL changed this from int to double
-extern double mYears;                           // years of met data available
-extern double mDayLength[13];                   // day length
-//int mFrostDays[13];                           // frost days/month
-// ANL changed this from int to double
-extern double mFrostDays[13];                   // frost days/month
-extern double mSolarRad[13];                    // solar radiation (MJ/m2/day)
-extern double mTx[13];                          // maximum temperature
-extern double mTn[13];                          // minimum temperature
-extern double mTav[13];                         // mean daily temperature
-extern double mVPD[13];                         // mean daily VPD
-extern double mRain[13];                        // total monthly rain + irrigation
-extern double mNDVI[13];                        // ANL monthly NDVI for 3PGS mode
-extern double mNetRad[13];                      // ANL can use net instead of short wave
-
 // Stand data
-// extern char SpeciesName[100];                // name of species
-// int StandAge;                                // stand age
-// ANL changed StandAge from int to double
-extern double StandAge;                         // stand age
-extern double ASW, ASWi;                        // available soil water
+extern double ASWi;                             // available soil water
 extern double MinASWTG;                         // soil water modifier corrector
-extern double StemNoi, StemNo;                  // stem numbers
+extern double StemNoi;                          // stem numbers
 extern double SeedlingMass;
-extern double WFi, WF;                          // foliage biomass
-extern double WRi, WR;                          // root biomass
-extern double WSi, WS;                          // stem biomass
-extern double LAIi, LAI;                        // canopy leaf area index
-extern double MAIi, MAI;                        // mean annual volume increment
-extern double avDBHi, avDBH;                    // average stem DBH
-extern double TotalW;                           // total biomass
-extern double BasArea;                          // basal area
-extern double StandVol;                         // stem volume
-extern double LAIx, ageLAIx;                    // peak LAI and age at peak LAI
-extern double MAIx, ageMAIx;                    // peak MAI and age at peak MAI
-extern double cumTransp;                        // annual stand transporation
-extern double cumIrrig;                         // annual irrig. to maintain MinASW
-
-// Stand factors that are specifically age dependent
-extern double SLA;
-extern double Littfall;
-extern double fracBB;
-extern double CanCover;
+extern double WFi;                              // foliage biomass
+extern double WRi;                              // root biomass
+extern double WSi;                              // stem biomass
 
 // Parameter values
-// int MaxAge;
-// ANL changed MaxAge from int to double
 extern double MaxAge;
 extern double gammaFx, gammaF0, tgammaF;
 extern double Rttover;
@@ -149,7 +101,6 @@ extern double k;
 extern double pFS2, pFS20;
 extern double StemConst, StemPower;
 extern double SWconst0, SWpower0;
-extern double Interception;
 extern double BLcond;
 extern double MaxCond, CoeffCond;
 extern double y;
@@ -158,19 +109,14 @@ extern double thinPower;           //Added 29-07-02
 extern double mF, mR, mS;          //Added 29-07-02
 extern double wSx1000;
 extern double m0, fN0, fNn;
-extern double alpha, alphaC;  //alphaC added 11/07/02
+extern double alpha;
 extern double pRx, pRn;
 extern double nAge, rAge;
 extern double kF;
 extern double fracBB0, fracBB1, tBB;
-extern double fracBB; //fracBB added 11/07/02
 extern double Density;
 extern double pfsConst, pfsPower;                     // derived from pFS2, pFS20
 extern double rhoMin, rhoMax, tRho;             // Standage varying density 3-06-02 
-extern double PhysMod;
-extern double WUE;                              //Added 16/07/02
-extern double CVI;                              //Added 16/07/02
-extern double TotalLitter;                      //Added 16/07/02
 
 //Conversion factors
 extern double Qa, Qb; 
@@ -182,41 +128,11 @@ extern double LAIgcx;
 extern double MaxIntcptn;
 extern double LAImaxIntcptn;
 
-// Intermediate monthly results
-extern double m, alphaC;
-extern double RAD, PAR;
-extern double lightIntcptn;
-extern double fAge, fT, fFrost;
-extern double fVPD, fSW, fNutr;
-extern double CanCond;
-extern double Transp, EvapTransp;
-extern double AvStemMass;
-extern double APAR, APARu;
-extern double GPPmolc, GPPdm, NPP;
-extern double pR, pS, pF, pFS;
-extern double delWF, delWR, delWS;
-extern double delFloss, delRloss;
-extern double monthlyIrrig;
-
-// Annual results
-extern double cLAI, cGPP, cNPP, cCVI, cRainInt, cEvapTransp, cTransp, cWUE;
-extern double cumGPP, cumWabv;
-extern double abvgrndEpsilon, totalEpsilon;
-extern double StemGrthRate;
-extern double cLitter;
-extern double CumdelWF, CumdelWR, CumdelWS;
-extern double CumAPARU, cumARAD;
-extern double CumStemLoss;
-extern double CutStemMass1, CutStemMass2, CutStemMass3;
-
-//----------------------------------------------------------------------------------
-
 // 3PGS variables
 extern double NDVI_FPAR_intercept, NDVI_FPAR_constant; 
-extern double delWAG;
 
 // ANL - other globals.
-bool yearlyOutput, monthlyOutput; 
+bool yearlyOutput; 
 bool samplePointsYearly = false, samplePointsMonthly = false;
 std::string outPath = "./";
 
@@ -224,8 +140,6 @@ std::string outPath = "./";
 
 // Initialisation of parameter array. This sets up the mapping between the variable 
 // and its name, which is used in parsing the parameter files.
-
-//const std::string paramError = "paramError";
 
 PPPG_PARAM params[] =
 {
@@ -429,8 +343,6 @@ struct {
   int cellIndex;
 } samplePoints[MAX_SAMPLE_POINTS + 1];
 
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 
 //Define and provide initialization/deletion functions for data output:
