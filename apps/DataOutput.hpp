@@ -16,34 +16,36 @@ private:
 	// - create a GDALRasterImage
 	// - write a value to a specific index
 	// - close the GDALRasterImage
-	class ImageWrapper {
+	class ImageBuffer {
 	private:
 		GDALRasterImage* image;
-		std::mutex mutex;
+		std::vector<std::vector<float>*> rows;
 	public:
-		ImageWrapper(std::string filename, GDALRasterImage* refGrid);
-		~ImageWrapper();
+		ImageBuffer(std::string filename, GDALRasterImage* refGrid);
+		~ImageBuffer();
 
-		CPLErr setVal(int index, float val, bool hitNODATA);
+		void setVal(int index, float val);
+		CPLErr writeRow(int row);
 		void close();
 	};
 
 	//map for storing GDALRasterImage wrappers:
 	//	we need a lock since our usage of unordered_map (potential synchronous writes) 
 	//	could cause race conditions and unordered_map does not guarantee thread safety.
-	std::unordered_map<std::string, ImageWrapper*> images;
-	std::mutex imagesMutex;
+	std::unordered_map<std::string, std::unordered_map<int, ImageBuffer*>*> imageBuffers;
+	std::mutex imageBuffersMutex;
 
 	//check the images map. Return the image wrapper associated with the filename key if it exists.
 	//Otherwise, create a new GDALRasterImage at that filepath and return the image wrapper. 
-	ImageWrapper* getImageWrapper(std::string filename);
+	ImageBuffer* getImageBuffer(std::string filename, int year, int month);
 public:
 	DataOutput(GDALRasterImage* refGrid, std::string outpath);
 	~DataOutput();
 
 	//determine the filepath of the output given year, month, name.
-	//call getImageWrapper() to get the associated wrapper.
+	//call getImageBuffer() to get the associated wrapper.
 	//write the correct val at the correct index using index, val, and hitNODATA.
-	CPLErr write(int year, int month, std::string name, int index, float val, bool hitNODATA);
+	void setVal(int year, int month, std::string name, int index, float val);
+	CPLErr DataOutput::writeRow(int row);
 };
 

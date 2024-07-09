@@ -445,6 +445,9 @@ void deleteDataOutput() {
     delete dataOutput;
     dataOutput = nullptr;
 }
+CPLErr writeRowDataOutput(int row) {
+    return dataOutput->writeRow(row);
+}
 
 bool openGrid(PPPG_VVAL& vval)
 {
@@ -662,7 +665,7 @@ void readSampleFile(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, GDALRa
   while (fgets(line, MAXLINE-1, sampleIpFp) != NULL) {
     if (sscanf(line, "%s %s %s", id, xstr, ystr) != 3)
       return;
-    // Change 'D' to 'e'.  Arcinfo ungenerate writes exponents with D, 
+    // Change 'D' to 'e'.  Arcinfo ungenerate dats exponents with D, 
     // atof and scanf only read e or E. 
     // TODO: Need to enforce sample points use e/E 
     // for (cp = xstr; *cp != '\0'; cp++)
@@ -2087,29 +2090,7 @@ GDALRasterImage* openInputGrids( )
 
 //----------------------------------------------------------------------------------
 
-//bool copyHeader(GDALRasterImage *refGrid, char *fname )
-//{
-  // Really crappy way to generate a header file, rely on the assignment operator 
-  // in the FloatGrid class.  
-//  GDALRasterImage *fg;
-
-//  fg = new GDALRasterImage;
-//  *fg = *refGrid; 
-//  try {
-//    fg->Write(fname);
-//  } catch (Exception &e) {
-//    delete fg;
-//    sprintf(outstr, "\nException: %s\n", e.Message()); 
-//    logAndPrint(logfp, outstr);  // print as well as Exception msgs don't on Win32. 
-//    return false; 
-//  }
-//  delete fg;
-//  return true; 
-//}
-
-//----------------------------------------------------------------------------------
-
-int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, bool hitNODATA, long cellIndex) {
+int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, long cellIndex) {
     //for each possible output variable
     for (auto& [pN, opV] : opVars) {
         //if it has been marked to be written
@@ -2118,7 +2099,7 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
             float val = (float)(opV.v);
             std::string name = opV.gridName;
             name = name.substr(0, name.find_last_of("."));
-            dataOutput->write(-1, -1, name, cellIndex, val, hitNODATA);
+            dataOutput->setVal(-1, -1, name, cellIndex, val);
         }
     }
     return EXIT_SUCCESS;
@@ -2126,7 +2107,7 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
 
 //----------------------------------------------------------------------------------
 
-void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex) {
+void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex) {
     //for each possible output variable
     for (auto& [pN, opV] : opVars) {
 
@@ -2175,7 +2156,7 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
         float val = (float)(opV.v);
         std::string name = opV.gridName;
         name = name.substr(0, name.find_last_of("."));
-        dataOutput->write(calYear, calMonth, name, cellIndex, val, hitNODATA);
+        dataOutput->setVal(calYear, calMonth, name, cellIndex, val);
     }
 }
 
@@ -2231,74 +2212,6 @@ void writeSampleFiles(std::unordered_map<std::string, PPPG_OP_VAR> opVars, int c
   }
   fprintf(samplePoints[sInd].fp, "\n");
 }
-
-//----------------------------------------------------------------------------------
-// TODO: Reaplce manual LogFile with external library for logging in modern C++
-// FILE *openLogFile(std::string siteParamFile)
-// {
-//   // Open the site parameter file, find the output directory 
-//   // specification, open the logfile in that directory, close the 
-//   // site parameter file.  
-
-//   FILE *logFileFp, *paramFp; 
-//   std::string *cp, *line, *logFileName;
-
-//   if ((paramFp = fopen(siteParamFile, "rb")) == NULL) {
-//     fprintf(stderr, "Could not open site parameter file %s\n", siteParamFile); 
-//     exit(1);
-//   }
-
-//   line = new std::string[1000];
-//   logFileName = new std::string[1000];
-
-//   while (fgets(line, MAXLINE, paramFp) != NULL) {
-//     // Remove comments from end of line by inserting a null character. 
-//     cp = strstr(line, "//");
-//     if (cp != NULL)
-//       *cp = 0;
-
-//     // Consume leading whitespace. 
-//     cp = line + strspn(line, " \t");
-
-//     // Tokenize the line. First token ends with a closing double quote.  
-//     cp = strtok(cp, "\"\n\015");
-//     if (cp == NULL)
-//       continue;
-
-//     // Find the output directory specifier.  Look for ^M (ascii 13), carriage return, in 
-//     // DOS text files. 
-//     if (namesMatch("output directory", cp)) {
-//       cp = strtok(NULL, " \t\n\015");
-//       if (cp == NULL) {
-//         line[0] = '.';
-//         line[1] = '\0';
-//         cp = line;
-//       }
-//       int len = strlen(cp);
-//       if (*(cp + len - 1) != '/') {
-//         *(cp + len) = '/';
-//         *(cp + len + 1) = 0;
-//       }
-//       strcpy(logFileName, cp); 
-//       strcat(logFileName, "logfile.txt");
-
-//       // Open the file
-//       if ((logFileFp = fopen(logFileName, "w")) == NULL) {
-//         fprintf(stderr, "Could not open log file %s\n", logFileName);
-//         exit(1);
-//       }
-//       else {
-//         fclose(paramFp);
-//         delete line;
-//         delete logFileName;
-//         return logFileFp; 
-//       }
-//     }
-//   }
-//   fprintf(stderr, "Could not find \"output directory\" parameter in %s\n", siteParamFile);
-//   exit(1);
-// }
-
 
 //----------------------------------------------------------------------------------
 
@@ -2423,24 +2336,6 @@ bool haveSeedlingMass()
     return true;
   else
     return false;
-}
-
-//----------------------------------------------------------------------------------
-bool haveSpatialRunYears()
-{
-  int pInd;
-
-  pInd = pNameToInd("EndYear");
-  if (!(params[pInd].data.spType == pScalar)) return true;
-
-  pInd = pNameToInd("StartMonth");
-  if (!(params[pInd].data.spType == pScalar)) return true;
-
-  pInd = pNameToInd("yearPlanted");
-  if (!(params[pInd].data.spType == pScalar)) return true;
-
-  return false;
-
 }
 
 //----------------------------------------------------------------------------------

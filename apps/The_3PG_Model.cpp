@@ -75,6 +75,9 @@ bool showDetailedResults;                // TRUE ==> show monthly results
 bool showStandSummary;                   // TRUE ==> show stand summary
 bool modelMode3PGS = false;
 
+bool yrPreStart = false;
+bool yrPstEnd = false;
+
 // Site characteristics, site specific parameters
 char siteName[100];                      // name of site
 double Lat = 1000;                       // site latitude
@@ -248,23 +251,6 @@ double getDayLength(double Lat, int dayOfYear)
 }
 
 //-----------------------------------------------------------------------------
-//Anders Siggins 29/22/01
-double Minimum(double X, double Y)
-{
-    if (X > Y)
-        return Y;
-    else
-        return X;
-}
-//And one that is probably not used...
-double Maximum(double X, double Y)
-{
-    if (X < Y)
-        return Y;
-    else
-        return X;
-}
-//-----------------------------------------------------------------------------
 
 double getVPD(double Tx, double Tn)
 {
@@ -341,57 +327,9 @@ double CanopyTranspiration(double Q, double VPD, double h,
     return CT;
 }
 
-
 //-----------------------------------------------------------------------------
 
-void assignDefaultParameters(void)
-{
-    // We don't actually use this currently.  
-    // Public
-    MaxAge = 50;          // Determines rate of "physiological decline" of forest
-    SLA0 = 4;             // specific leaf area at age 0 (m^2/kg)
-    SLA1 = 4;             // specific leaf area for mature trees (m^2/kg)
-    tSLA = 2.5;           // stand age (years) for SLA = (SLA0+SLA1)/2
-    fullCanAge = 0;       // Age at full canopy cover
-    k = 0.5;              // Radiation extinction coefficient
-    gammaFx = 0.03;       // Coefficients in monthly litterfall rate
-    gammaF0 = 0.001;
-    tgammaF = 24;
-    Rttover = 0.015;      // Root turnover rate per month
-    SWconst0 = 0.7;       // SW constants are 0.7 for sand,0.6 for sandy-loam,
-    //   0.5 for clay-loam, 0.4 for clay
-    SWpower0 = 9;         // Powers in the eqn for SW modifiers are 9 for sand,
-    //   7 for sandy-loam, 5 for clay-loam and 3 for clay
-    Interception = 0.15;  // Proportion of rainfall intercepted by canopy
-    MaxCond = 0.02;       // Maximum canopy conductance (gc, m/s)
-    BLcond = 0.2;         // Canopy boundary layer conductance, assumed constant
-    CoeffCond = 0.05;     // Determines response of canopy conductance to VPD
-    y = 0.47;             // Assimilate use efficiency
-    growthTmax = 32;            // "Critical" biological temperatures: max, min
-    growthTmin = 2;             //   and optimum. Reset if necessary/appropriate
-    growthTopt = 20;
-    kF = 1;               // Number of days production lost per frost days
-    pFS2 = 1;             // Foliage:stem partitioning ratios for D = 2cm
-    pFS20 = 0.15;         //   and D = 20cm
-    StemConst = 0.095;    // Stem allometric parameters
-    StemPower = 2.4;
-    pRx = 0.8;            // maximum root biomass partitioning
-    pRn = 0.25;           // minimum root biomass partitioning
-    m0 = 0;               // Value of m when FR = 0
-    fN0 = 1;              // Value of fN when FR = 0
-    alpha = 0.055;        // Canopy quantum efficiency
-    wSx1000 = 300;     // Max tree stem mass (kg) likely in mature stands of 1000 trees/ha
-    nAge = 4;             // Parameters in age-modifier
-    rAge = 0.95;
-    fracBB0 = 0.15;       // branch & bark fraction at age 0 (m^2/kg)
-    fracBB1 = 0.15;       // branch & bark fraction for mature trees (m^2/kg)
-    tBB = 1.5;            // stand age (years) for fracBB = (fracBB0+fracBB1)/2
-    Density = 0.5;        // Basic density (t/m3)
-}
-
-//-----------------------------------------------------------------------------
-
-void Initialisation(std::unordered_map<std::string, PPPG_OP_VAR>& opVars)
+void Initialisation()
 {
     // Private
     //double Tanav;
@@ -425,9 +363,6 @@ void Initialisation(std::unordered_map<std::string, PPPG_OP_VAR>& opVars)
         ASWi = MinASW;
     else if (ASWi >= MaxASW)
         ASWi = MaxASW;
-    // Initialise ages
-    opVars["MAIx"].v = 0;
-    opVars["LAIx"].v = 0;
 
     //Basic density
     if (haveRhoMax() == false)
@@ -493,9 +428,6 @@ bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
     if (userVpdSeries()) {
         if (!getSeriesVal(VPD, SS_VPD, calMonth, calYear, cellIndex))
             hitNODATA = true;
-
-
-
     }
     else
         VPD = getVPD(Tx, Tn);
@@ -503,22 +435,107 @@ bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
         if (!getSeriesVal(NDVI_AVH, SS_NDVI_AVH, calMonth, calYear, cellIndex))
             hitNODATA = true;
     }
-    //std::cout << "hit noData: " << hitNODATA << std::endl;
-    //std::cout << "SolarRad: " << SolarRad << std::endl;
-    //std::cout << "FrostDays: " << FrostDays << std::endl;
-    //std::cout << "Rain: " << Rain << std::endl;
-    //std::cout << "NetRad: " << NetRad << std::endl;
-    //std::cout << "Tx: " << Tx << std::endl;
-    //std::cout << "Tn: " << Tn << std::endl;
-    //std::cout << "Tav: " << Tav << std::endl;
     return hitNODATA;
 }
 
 //-----------------------------------------------------------------------------
 
+struct Vars {
+    double WF;
+    double LAIx = 0;
+    double StemNo;
+    double WS;
+    double BasArea;
+    double WR;
+    double MAIx = 0;
+    double ASW;
+    double fracBB;
+    double TotalLitter;
+    double WUE;
+    double cNPP;
+    double avDBH;
+    double LAI;
+    double alphaC;
+    double cLAI;
+    double cTransp;
+    double StandVol;
+    double cEvapTransp;
+    double MAI;
+    double FR;
+    double cLitter;
+    double cumWabv;
+    double cCVI;
+    double cGPP;
+    double fT;
+    double fVPD;
+    double fSW;
+    double fNutr;
+    double fFrost;
+    double fAge;
+    double PhysMod;
+    double APAR;
+    double APARu;
+    double NPP;
+    double TotalW;
+    double Transp;
+    double EvapTransp;
+    double ageMAIx;
+    double ageLAIx;
+    double CVI;
+    double cWUE;
+    double delWAG;
+};
+
+void copyVars(Vars vars, std::unordered_map<std::string, PPPG_OP_VAR>& opVars) {
+    opVars["WF"].v = vars.WF;
+    opVars["LAIx"].v = vars.LAIx;
+    opVars["StemNo"].v = vars.StemNo;
+    opVars["WS"].v = vars.WS;
+    opVars["BasArea"].v = vars.BasArea;
+    opVars["WR"].v = vars.WR;
+    opVars["MAIx"].v = vars.MAIx;
+    opVars["ASW"].v = vars.ASW;
+    opVars["fracBB"].v = vars.fracBB;
+    opVars["TotalLitter"].v = vars.TotalLitter;
+    opVars["WUE"].v = vars.WUE;
+    opVars["cNPP"].v = vars.cNPP;
+    opVars["avDBH"].v = vars.avDBH;
+    opVars["LAI"].v = vars.LAI;
+    opVars["alphaC"].v = vars.alphaC;
+    opVars["cLAI"].v = vars.cLAI;
+    opVars["cTransp"].v = vars.cTransp;
+    opVars["StandVol"].v = vars.StandVol;
+    opVars["cEvapTransp"].v = vars.cEvapTransp;
+    opVars["MAI"].v = vars.MAI;
+    opVars["FR"].v = vars.FR;
+    opVars["cLitter"].v = vars.cLitter;
+    opVars["cumWabv"].v = vars.cumWabv;
+    opVars["cCVI"].v = vars.cCVI;
+    opVars["cGPP"].v = vars.cGPP;
+    opVars["fT"].v = vars.fT;
+    opVars["fVPD"].v = vars.fVPD;
+    opVars["fSW"].v = vars.fSW;
+    opVars["fNutr"].v = vars.fNutr;
+    opVars["fFrost"].v = vars.fFrost;
+    opVars["fAge"].v = vars.fAge;
+    opVars["PhysMod"].v = vars.PhysMod;
+    opVars["APAR"].v = vars.APAR;
+    opVars["APARu"].v = vars.APARu;
+    opVars["NPP"].v = vars.NPP;
+    opVars["TotalW"].v = vars.TotalW;
+    opVars["Transp"].v = vars.Transp;
+    opVars["EvapTransp"].v = vars.EvapTransp;
+    opVars["ageMAIx"].v = vars.ageMAIx;
+    opVars["ageLAIx"].v = vars.ageLAIx;
+    opVars["CVI"].v = vars.CVI;
+    opVars["cWUE"].v = vars.cWUE;
+    opVars["delWAG"].v = vars.delWAG;
+}
+
 // This is the main routine for the 3PG model
-void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex)
+void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex)
 {
+    Vars vars;
     //  int minCy, maxCy; 
 
       // ANL - Note that in a spatial run, almost any input parameter having a
@@ -541,10 +558,8 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     double cumLAI;
     double oldVol;    //Added 16/07/02 as part of CVI
 
-    bool hitNODATA = false, yrPreStart = false, yrPstEnd = false;
 
     //New Soilwater modifier adjuster
-
     bool useMinASWTG = false;
     double ASWmod;
 
@@ -555,7 +570,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     int year, calYear, calMonth, runYear, cm, cy;
 
     int thinEventNo, defoltnEventNo;
-
 
     bool haveAvgTempSeries = false;  //Change: - Needs to be available iff 
     //VPD is available
@@ -575,22 +589,13 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
         mDayLength[mn] = 86400 * getDayLength(Lat, dayofyr);
     }
 
-    if (haveMinASWTG())
-        useMinASWTG = true;
-    else
-        useMinASWTG = false;
+    useMinASWTG = haveMinASWTG();
 
-    // ANL - Load the parameter values.  On NODATA write NODATA to output 
-    // grids. 
-    hitNODATA = !loadParamVals(cellIndex);
+    if (!loadParamVals(cellIndex)) {
+        return;
+    }
 
-    // May have hit nodata in StartMonth, yearPlanted and EndYear, in which case 
-    // firstRunMonth and LastRunMonth will be meaningless.  In any case, if we aren't at 
-    // NODATA, we have to do all the pre-year stuff below.  
-    if (hitNODATA)
-        goto skipPreYearCalcs;
-
-    Initialisation(opVars);
+    Initialisation();
 
     // VPD and NetRad from internal model, or user specified series? 
     haveVpdSeries = userVpdSeries();
@@ -598,18 +603,12 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     haveAvgTempSeries = userTavgSeries();
 
     // Assign initial state of the stand
-
-    //StandAge = StartAge; //(StartAge-1) + 1.0/12.0; //18-01-02
-    //StandAge = 0; //(minMY.year - yearPlanted); // + (cm - StartMonth) / 12.0;
-
-    //New StandAge function
     GetStandAge();
-    opVars["StemNo"].v = StemNoi;
+    vars.StemNo = StemNoi;
     //StartMonth++; //Synchronise with vb version 20-01-02
 
     //Fix for aracruz work.  Implements SeedlingMass distribution
     //that Peter Sands uses for multisite data.
-
     if (haveSeedlingMass())
     {
         WFi = (0.5 * StemNoi * SeedlingMass) / pow(10, 6);
@@ -617,65 +616,61 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
         WSi = WRi;
     }
 
-    opVars["WS"].v = WSi;
-    opVars["WF"].v = WFi;
-    opVars["WR"].v = WRi;
+    vars.WS = WSi;
+    vars.WF = WFi;
+    vars.WR = WRi;
 
-    opVars["ASW"].v = ASWi;
-    opVars["TotalLitter"].v = 0;
+    vars.ASW = ASWi;
+    vars.TotalLitter = 0;
     thinEventNo = 1;
     defoltnEventNo = 1;
 
-    AvStemMass = opVars["WS"].v * 1000 / opVars["StemNo"].v;                             //  kg/tree
-    opVars["avDBH"].v = pow((AvStemMass / StemConst), (1 / StemPower));
-    opVars["BasArea"].v = ((pow((opVars["avDBH"].v / 200), 2)) * Pi) * opVars["StemNo"].v;
+    AvStemMass = vars.WS * 1000 / vars.StemNo;                             //  kg/tree
+    vars.avDBH = pow((AvStemMass / StemConst), (1 / StemPower));
+    vars.BasArea = ((pow((vars.avDBH / 200), 2)) * Pi) * vars.StemNo;
     SLA = SLA1 + (SLA0 - SLA1) * exp(-ln2 * pow((StandAge / tSLA), 2)); //Modified StandAge
-    opVars["LAI"].v = opVars["WF"].v * SLA * 0.1;
-    opVars["cLAI"].v = opVars["LAI"].v;
+    vars.LAI = vars.WF * SLA * 0.1;
+    vars.cLAI = vars.LAI;
 
-    opVars["fracBB"].v = fracBB1 + (fracBB0 - fracBB1) * exp(-ln2 * (StandAge / tBB)); //Modified StandAge
+    vars.fracBB = fracBB1 + (fracBB0 - fracBB1) * exp(-ln2 * (StandAge / tBB)); //Modified StandAge
     Density = rhoMax + (rhoMin - rhoMax) * exp(-ln2 * (StandAge / tRho));
 
-    opVars["StandVol"].v = opVars["WS"].v * (1 - opVars["fracBB"].v) / Density;
-    oldVol = opVars["StandVol"].v;
+    vars.StandVol = vars.WS * (1 - vars.fracBB) / Density;
+    oldVol = vars.StandVol;
 
     if (StandAge > 0)
-        opVars["MAI"].v = opVars["StandVol"].v / StandAge;    //UnModified StandAge
-    else opVars["MAI"].v = 0;
+        vars.MAI = vars.StandVol / StandAge;    //UnModified StandAge
+    else vars.MAI = 0;
 
-    avDBHi = opVars["avDBH"].v;
-    LAIi = opVars["LAI"].v;
+    avDBHi = vars.avDBH;
+    LAIi = vars.LAI;
     CumStemLoss = 0;
-
-skipPreYearCalcs:
+    
 
     // Do annual calculations.  The year loop here is controlled by minMY and maxMY, 
     // which refer to the overall run start and end, across all cells.
-
 
     //Print first month results
     calYear = spMinMY.year;
     calMonth = (int)StartMonth;
 
     //Find out if there is supposed to be any data here in the first place...
-    hitNODATA = AssignMonthlyMetData(calMonth, calYear, cellIndex,
-        SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH) || hitNODATA;
+    if (AssignMonthlyMetData(calMonth, calYear, cellIndex, SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH)) {
+        return;
+    }
 
     if (FrostDays > 30)
         FrostDays = 30;
 
-    opVars["FR"].v = FRp;
+    vars.FR = FRp;
 
-
-    // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
-    //previous calculated values are written instead of nodata
-
-    writeMonthlyOutputGrids(opVars, calYear, calMonth, hitNODATA || yrPreStart, spMinMY, spMaxMY, cellIndex);
+    //write initial state of output variables
+    copyVars(vars, opVars);
+    writeMonthlyOutputGrids(opVars, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
 
     // Monthly sample point output
     if (samplePointsMonthly)
         writeSampleFiles(opVars, cellIndex, calMonth, calYear);
-
 
     //Start processing loop
     for (cy = spMinMY.year; cy <= spMaxMY.year; cy++) {
@@ -683,19 +678,10 @@ skipPreYearCalcs:
         calYear = cy;
         calMonth = (int)StartMonth;
 
-        // If we've already encountered NODATA we don't care about any annual variable 
-        // except runYear. 
-        if (hitNODATA)
-            goto skipYearStartCalcs;
-
         year = cy - (int)yearPlanted;   // seem to still need year for point mode output. 
 
-        // Once we've encountered nodata just cycle through as quickly as possible.  
-        if (hitNODATA || yrPreStart || yrPstEnd)
-            goto skipYearStartCalcs;
-
         // Initialise cumulative variables
-        opVars["cLitter"].v = 0;
+        vars.cLitter = 0;
         CumdelWF = 0;
         CumdelWR = 0;
         CumdelWS = 0;
@@ -703,7 +689,7 @@ skipPreYearCalcs:
         cumARAD = 0;
         cumLAI = 0;
         cumGPP = 0;
-        opVars["cumWabv"].v = 0;            //Now known as cumWabvgrnd
+        vars.cumWabv = 0;            //Now known as cumWabvgrnd
         cumTransp = 0;
         cumEvapTransp = 0;
         cumIrrig = 0;
@@ -720,9 +706,9 @@ skipPreYearCalcs:
         // Get management-related options for current year and cell. 
         // First load param file values, then possibly override them with management table values. 
         if (!haveAgeDepFert())
-            opVars["FR"].v = FRp;
+            vars.FR = FRp;
         if (nFertility > 0)
-            opVars["FR"].v = lookupManageTable(runYear, MT_FERTILITY, FRp, cellIndex);
+            vars.FR = lookupManageTable(runYear, MT_FERTILITY, FRp, cellIndex);
 
         MinASW = MinASWp;
         if (nMinAvailSW > 0)
@@ -734,28 +720,19 @@ skipPreYearCalcs:
         }
         else Irrig = 0;
 
-
-    skipYearStartCalcs:
-        //Fill in noData values for first year. AS 20/01/02
-
-        if (calYear == spMinMY.year)
-
-            for (int beforeCalcMonth = 1; beforeCalcMonth < StartMonth; beforeCalcMonth++)
-                writeMonthlyOutputGrids(opVars, calYear, beforeCalcMonth, true, spMinMY, spMaxMY, cellIndex);
-
         //Initialise output step cumulative variables
         delStemNo = 0;
         cRADint = 0;
         cRainInt = 0;
         cStemDM = 0;
         cSupIrrig = 0;
-        opVars["cLAI"].v = 0;
-        opVars["cCVI"].v = 0;
-        opVars["cNPP"].v = 0;
-        opVars["cGPP"].v = 0;
-        opVars["cTransp"].v = 0;
-        opVars["cEvapTransp"].v = 0;
-        opVars["cLitter"].v = 0;
+        vars.cLAI = 0;
+        vars.cCVI = 0;
+        vars.cNPP = 0;
+        vars.cGPP = 0;
+        vars.cTransp = 0;
+        vars.cEvapTransp = 0;
+        vars.cLitter = 0;
 
         // Do monthly calculations
         for (cm = (int)StartMonth + 1; cm < (int)StartMonth + 13; cm++) {
@@ -781,13 +758,13 @@ skipPreYearCalcs:
                 cStemDM = 0;
                 cRainInt = 0;
                 cSupIrrig = 0;
-                opVars["cLAI"].v = 0;
-                opVars["cCVI"].v = 0;
-                opVars["cGPP"].v = 0;
-                opVars["cNPP"].v = 0;
-                opVars["cTransp"].v = 0;
-                opVars["cEvapTransp"].v = 0;
-                opVars["cLitter"].v = 0;
+                vars.cLAI = 0;
+                vars.cCVI = 0;
+                vars.cGPP = 0;
+                vars.cNPP = 0;
+                vars.cTransp = 0;
+                vars.cEvapTransp = 0;
+                vars.cLitter = 0;
             }
 
             yrPreStart = false;
@@ -802,13 +779,12 @@ skipPreYearCalcs:
                 yrPstEnd = true;
 
 
-            if (hitNODATA || yrPreStart || yrPstEnd)
+            if (yrPreStart || yrPstEnd)
                 goto skipMonthCalcs;
 
-            hitNODATA = AssignMonthlyMetData(calMonth, calYear, cellIndex,
-                SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH) || hitNODATA;
-            if (hitNODATA)
-                goto skipMonthCalcs;
+            if (AssignMonthlyMetData(calMonth, calYear, cellIndex, SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH)) {
+                return;
+            }
 
             dayLength = mDayLength[calMonth];
 
@@ -823,20 +799,20 @@ skipPreYearCalcs:
                 //If we are in a period where we wish FR to decay, make it so.
                 if (haveAgeDepFert() && (FRstart <= StandAge) && (FRend > StandAge))
                 {
-                    opVars["FR"].v = opVars["FR"].v - opVars["FR"].v * FRdec;
+                    vars.FR = vars.FR - vars.FR * FRdec;
                 }
             }
 
             // calculate temperature response function to apply to alpha
             if ((Tav <= growthTmin) || (Tav >= growthTmax))
-                opVars["fT"].v = 0;
+                vars.fT = 0;
             else
-                opVars["fT"].v = ((Tav - growthTmin) / (growthTopt - growthTmin)) *
+                vars.fT = ((Tav - growthTmin) / (growthTopt - growthTmin)) *
                 pow(((growthTmax - Tav) / (growthTmax - growthTopt)),
                     ((growthTmax - growthTopt) / (growthTopt - growthTmin)));
 
             // calculate VPD modifier
-            opVars["fVPD"].v = exp(-CoeffCond * VPD);
+            vars.fVPD = exp(-CoeffCond * VPD);
 
             // calculate soil water modifier
             if (useMinASWTG)
@@ -853,32 +829,32 @@ skipPreYearCalcs:
             else
                 ASWmod = 1;
 
-            MoistRatio = ASWmod * opVars["ASW"].v / MaxASW;
-            opVars["fSW"].v = 1 / (1 + pow(((1 - MoistRatio) / SWconst), SWpower));
+            MoistRatio = ASWmod * vars.ASW / MaxASW;
+            vars.fSW = 1 / (1 + pow(((1 - MoistRatio) / SWconst), SWpower));
 
-            if (opVars["fSW"].v == 1)
+            if (vars.fSW == 1)
                 bool test = true;
 
             if (fNn == 0)
-                opVars["fNutr"].v = 1;
+                vars.fNutr = 1;
             else
-                opVars["fNutr"].v = 1 - (1 - fN0) * pow((1 - opVars["FR"].v), fNn);
+                vars.fNutr = 1 - (1 - fN0) * pow((1 - vars.FR), fNn);
 
             // calculate frost modifier
-            opVars["fFrost"].v = 1 - kF * (FrostDays / 30.0);
+            vars.fFrost = 1 - kF * (FrostDays / 30.0);
 
             // calculate age modifier
             RelAge = StandAge / MaxAge;  //Modified StandAge
             if (modelMode3PGS)
-                opVars["fAge"].v = 1;
+                vars.fAge = 1;
             else
-                opVars["fAge"].v = (1 / (1 + pow((RelAge / rAge), nAge)));
+                vars.fAge = (1 / (1 + pow((RelAge / rAge), nAge)));
 
             // PhysMod is the physiological modifier to be applied to canopy conductance
             // and APARu. It is the lesser of the soil-water and VPD modifier, times the
             // age modifier:
 
-            opVars["PhysMod"].v = Minimum(opVars["fVPD"].v, opVars["fSW"].v) * opVars["fAge"].v;
+            vars.PhysMod = std::min(vars.fVPD, vars.fSW) * vars.fAge;
 
             // Determine gross and net biomass production
 
@@ -886,7 +862,7 @@ skipPreYearCalcs:
             CanCover = 1;
             if ((fullCanAge > 0) && (StandAge < fullCanAge))  //Modified StandAge
                 CanCover = (StandAge) / fullCanAge; //Modified StandAge
-            lightIntcptn = (1 - (exp(-k * opVars["LAI"].v)));
+            lightIntcptn = (1 - (exp(-k * vars.LAI)));
 
 
             // 3PGS. 
@@ -901,9 +877,9 @@ skipPreYearCalcs:
                     FPAR_AVH = 0;
                 // LAI
                 if (FPAR_AVH < 0.05)
-                    opVars["LAI"].v = 0.2;
+                    vars.LAI = 0.2;
                 else
-                    opVars["LAI"].v = -2.0 * log(1 - FPAR_AVH);
+                    vars.LAI = -2.0 * log(1 - FPAR_AVH);
             }
 
             // Calculate PAR, APAR, APARu and GPP
@@ -916,33 +892,33 @@ skipPreYearCalcs:
             PAR = RAD * molPAR_MJ;                      // mol/m^2
             // 3PGS
             if (modelMode3PGS)
-                opVars["APAR"].v = PAR * FPAR_AVH;
+                vars.APAR = PAR * FPAR_AVH;
             else
-                opVars["APAR"].v = PAR * lightIntcptn * CanCover;
-            opVars["APARu"].v = opVars["APAR"].v * opVars["PhysMod"].v;
+                vars.APAR = PAR * lightIntcptn * CanCover;
+            vars.APARu = vars.APAR * vars.PhysMod;
 
 
-            opVars["alphaC"].v = alpha * opVars["fNutr"].v * opVars["fT"].v * opVars["fFrost"].v * opVars["PhysMod"].v;   //22-07-02 for Excel March beta consis.
-            epsilon = gDM_mol * molPAR_MJ * opVars["alphaC"].v;
+            vars.alphaC = alpha * vars.fNutr * vars.fT * vars.fFrost * vars.PhysMod;   //22-07-02 for Excel March beta consis.
+            epsilon = gDM_mol * molPAR_MJ * vars.alphaC;
             RADint = RAD * lightIntcptn * CanCover;
-            GPPmolc = opVars["APARu"].v * opVars["alphaC"].v;                   // mol/m^2
+            GPPmolc = vars.APARu * vars.alphaC;                   // mol/m^2
             GPPdm = epsilon * RADint / 100;               // tDM/ha
-            opVars["NPP"].v = GPPdm * y;                            // assumes respiratory rate is constant
+            vars.NPP = GPPdm * y;                            // assumes respiratory rate is constant
 
             // Determine biomass increments and losses
 
              // calculate partitioning coefficients
-            m = m0 + (1 - m0) * opVars["FR"].v;
-            pFS = pfsConst * pow(opVars["avDBH"].v, pfsPower);
-            if (fabs(opVars["APAR"].v) < 0.000001) opVars["APAR"].v = 0.000001;
-            pR = pRx * pRn / (pRn + (pRx - pRn) * (opVars["APARu"].v / opVars["APAR"].v) * m);
+            m = m0 + (1 - m0) * vars.FR;
+            pFS = pfsConst * pow(vars.avDBH, pfsPower);
+            if (fabs(vars.APAR) < 0.000001) vars.APAR = 0.000001;
+            pR = pRx * pRn / (pRn + (pRx - pRn) * (vars.APARu / vars.APAR) * m);
             pS = (1 - pR) / (1 + pFS);
             pF = 1 - pR - pS;
 
             // calculate biomass increments
-            delWF = opVars["NPP"].v * pF;
-            delWR = opVars["NPP"].v * pR;
-            delWS = opVars["NPP"].v * pS;
+            delWF = vars.NPP * pF;
+            delWR = vars.NPP * pR;
+            delWS = vars.NPP * pS;
 
             // calculate litterfall & root turnover -
             // print out each gamma variable value before computing gammaF
@@ -951,55 +927,53 @@ skipPreYearCalcs:
                 (gammaF0 + (gammaFx - gammaF0) *
                     exp(-12 * log(1 + gammaFx / gammaF0) * StandAge / tgammaF));
             //std::cout << "gammaF = " << gammaF << std::endl;
-            delLitter = gammaF * opVars["WF"].v;
-            delRloss = Rttover * opVars["WR"].v;
+            delLitter = gammaF * vars.WF;
+            delRloss = Rttover * vars.WR;
 
             // Calculate end-of-month biomass
 
             if (!modelMode3PGS) {
-                opVars["WF"].v = opVars["WF"].v + delWF - delLitter;
-                opVars["WR"].v = opVars["WR"].v + delWR - delRloss;
-                opVars["WS"].v = opVars["WS"].v + delWS;
-                opVars["TotalW"].v = opVars["WF"].v + opVars["WR"].v + opVars["WS"].v;
-                opVars["TotalLitter"].v = opVars["TotalLitter"].v + delLitter;
+                vars.WF = vars.WF + delWF - delLitter;
+                vars.WR = vars.WR + delWR - delRloss;
+                vars.WS = vars.WS + delWS;
+                vars.TotalW = vars.WF + vars.WR + vars.WS;
+                vars.TotalLitter = vars.TotalLitter + delLitter;
             }
 
-
             // Now do the water balance ...
-
             // calculate canopy conductance from stomatal conductance
 
-            CanCond = MaxCond * opVars["PhysMod"].v * Minimum(1.0, opVars["LAI"].v / LAIgcx);
+            CanCond = MaxCond * vars.PhysMod * std::min(1.0, vars.LAI / LAIgcx);
             //if (fabs(0 - CanCond) < eps)
             if (CanCond == 0)
                 CanCond = 0.0001;
 
             //transpiration from Penman-Monteith (mm/day converted to mm/month)
-            opVars["Transp"].v = CanopyTranspiration(SolarRad, VPD, dayLength, BLcond,
+            vars.Transp = CanopyTranspiration(SolarRad, VPD, dayLength, BLcond,
                 CanCond, NetRad, haveNetRadSeries);
-            opVars["Transp"].v = DaysInMonth[calMonth] * opVars["Transp"].v;
+            vars.Transp = DaysInMonth[calMonth] * vars.Transp;
 
             // do soil water balance
 
             if (LAImaxIntcptn <= 0)
                 Interception = MaxIntcptn;
             else
-                Interception = MaxIntcptn * Minimum(1, opVars["LAI"].v / LAImaxIntcptn);
-            opVars["EvapTransp"].v = opVars["Transp"].v + Interception * Rain;
-            opVars["ASW"].v = opVars["ASW"].v + Rain + (100 * Irrig / 12) - opVars["EvapTransp"].v;        //Irrig is Ml/ha/year
+                Interception = MaxIntcptn * std::min((double)1, vars.LAI / LAImaxIntcptn);
+            vars.EvapTransp = vars.Transp + Interception * Rain;
+            vars.ASW = vars.ASW + Rain + (100 * Irrig / 12) - vars.EvapTransp;        //Irrig is Ml/ha/year
             monthlyIrrig = 0;
-            if (opVars["ASW"].v < MinASW) {
+            if (vars.ASW < MinASW) {
                 if (MinASW > 0) {               // make up deficit with irrigation
-                    monthlyIrrig = MinASW - opVars["ASW"].v;
+                    monthlyIrrig = MinASW - vars.ASW;
                     cumIrrig = cumIrrig + monthlyIrrig;
                 }
-                opVars["ASW"].v = MinASW;
+                vars.ASW = MinASW;
             }
-            else if (opVars["ASW"].v > MaxASW) {
-                opVars["ASW"].v = MaxASW;
+            else if (vars.ASW > MaxASW) {
+                vars.ASW = MaxASW;
             }
 
-            opVars["WUE"].v = 100 * opVars["NPP"].v / opVars["EvapTransp"].v;
+            vars.WUE = 100 * vars.NPP / vars.EvapTransp;
 
             //StandAge = (cy - yearPlanted) + (cm - StartMonth + 1) / 12.0; //OG position
             StandAge = StandAge + 1.0 / 12.0;
@@ -1010,68 +984,67 @@ skipPreYearCalcs:
                 //fprintf(logfp, "Negative StandAge");
             }
 
-
             if (!modelMode3PGS) {
 
                 // Update tree and stand data
 
                 //Calculate mortality
 
-                wSmax = wSx1000 * pow((1000 / opVars["StemNo"].v), thinPower);
-                AvStemMass = opVars["WS"].v * 1000 / opVars["StemNo"].v;
+                wSmax = wSx1000 * pow((1000 / vars.StemNo), thinPower);
+                AvStemMass = vars.WS * 1000 / vars.StemNo;
                 delStems = 0;
                 if (wSmax < AvStemMass)
                 {
-                    delStems = getMortality(opVars["StemNo"].v, opVars["WS"].v);
-                    opVars["WF"].v = opVars["WF"].v - mF * delStems * (opVars["WF"].v / opVars["StemNo"].v);
-                    opVars["WR"].v = opVars["WR"].v - mR * delStems * (opVars["WR"].v / opVars["StemNo"].v);
-                    opVars["WS"].v = opVars["WS"].v - mS * delStems * (opVars["WS"].v / opVars["StemNo"].v);
-                    opVars["StemNo"].v = opVars["StemNo"].v - delStems;
-                    wSmax = wSx1000 * pow((1000 / opVars["StemNo"].v), thinPower);
-                    AvStemMass = opVars["WS"].v * 1000 /  opVars["StemNo"].v;
+                    delStems = getMortality(vars.StemNo, vars.WS);
+                    vars.WF = vars.WF - mF * delStems * (vars.WF / vars.StemNo);
+                    vars.WR = vars.WR - mR * delStems * (vars.WR / vars.StemNo);
+                    vars.WS = vars.WS - mS * delStems * (vars.WS / vars.StemNo);
+                    vars.StemNo = vars.StemNo - delStems;
+                    wSmax = wSx1000 * pow((1000 / vars.StemNo), thinPower);
+                    AvStemMass = vars.WS * 1000 /  vars.StemNo;
                     delStemNo = delStemNo + delStems;
                 }
 
                 //update age-dependent factors
                 SLA = SLA1 + (SLA0 - SLA1) * exp(-ln2 * pow((StandAge / tSLA), 2));  //Modified StandAge
-                opVars["fracBB"].v = fracBB1 + (fracBB0 - fracBB1) * exp(-ln2 * (StandAge / tBB));  //Modified StandAge
+                vars.fracBB = fracBB1 + (fracBB0 - fracBB1) * exp(-ln2 * (StandAge / tBB));  //Modified StandAge
                 Density = rhoMax + (rhoMin - rhoMax) * exp(-ln2 * (StandAge / tRho));
 
                 //update stsand characteristics
-                opVars["LAI"].v = opVars["WF"].v * SLA * 0.1;
-                opVars["avDBH"].v = pow((AvStemMass / StemConst), (1 / StemPower));
-                opVars["BasArea"].v = (pow((opVars["avDBH"].v / 200), 2) * Pi) *  opVars["StemNo"].v;
-                opVars["StandVol"].v =  opVars["WS"].v * (1 - opVars["fracBB"].v) / Density;
+                vars.LAI = vars.WF * SLA * 0.1;
+                vars.avDBH = pow((AvStemMass / StemConst), (1 / StemPower));
+                vars.BasArea = (pow((vars.avDBH / 200), 2) * Pi) *  vars.StemNo;
+                vars.StandVol =  vars.WS * (1 - vars.fracBB) / Density;
 
-                opVars["CVI"].v =  opVars["StandVol"].v - oldVol;       //Added 16/07/02 
-                oldVol = opVars["StandVol"].v;
+                vars.CVI =  vars.StandVol - oldVol;       //Added 16/07/02 
+                oldVol = vars.StandVol;
 
                 if (StandAge > 0)             //Modified StandAge
-                    opVars["MAI"].v = opVars["StandVol"].v / StandAge;  //UnModified StandAge
+                    vars.MAI = vars.StandVol / StandAge;  //UnModified StandAge
                 else
-                    opVars["MAI"].v = 0;
+                    vars.MAI = 0;
 
                 // Update accumulated totals
 
                 cRADint = cRADint + RADint;
                 aRADint = aRADint + RADint;
-                opVars["cGPP"].v = opVars["cGPP"].v + GPPdm;
+                vars.cGPP = vars.cGPP + GPPdm;
                 aGPP = aGPP + GPPdm;
-                opVars["cNPP"].v = opVars["cNPP"].v + opVars["NPP"].v;
-                aNPP = aNPP + opVars["NPP"].v;
-                opVars["cCVI"].v = opVars["cCVI"].v + opVars["CVI"].v;
-                opVars["cLitter"].v = opVars["cLitter"].v + delLitter;
+                vars.cNPP = vars.cNPP + vars.NPP;
+                aNPP = aNPP + vars.NPP;
+                vars.cCVI = vars.cCVI + vars.CVI;
+                vars.cLitter = vars.cLitter + delLitter;
                 cStemDM = cStemDM + delWS;
                 aStemDM = aStemDM + delWS;
                 cRainInt = cRainInt + RainIntcptn;
-                opVars["cTransp"].v = opVars["cTransp"].v + opVars["Transp"].v;
-                aTransp = aTransp + opVars["Transp"].v;
-                opVars["cEvapTransp"].v = opVars["cEvapTransp"].v + opVars["EvapTransp"].v;
-                aEvapTransp = aEvapTransp + opVars["EvapTransp"].v;
+                vars.cTransp = vars.cTransp + vars.Transp;
+                aTransp = aTransp + vars.Transp;
+                vars.cEvapTransp = vars.cEvapTransp + vars.EvapTransp;
+                aEvapTransp = aEvapTransp + vars.EvapTransp;
                 aSupIrrig = aSupIrrig + monthlyIrrig;
                 cSupIrrig = cSupIrrig + monthlyIrrig;
-                opVars["cWUE"].v = 100 * opVars["cNPP"].v / opVars["cEvapTransp"].v;
-                opVars["cLAI"].v = opVars["cLAI"].v +  opVars["LAI"].v / 12.0;
+                vars.cWUE = 100 * vars.cNPP / vars.cEvapTransp;
+                vars.cLAI = vars.cLAI +  vars.LAI / 12.0;
 
                 // Accumulate biomass increments and LAI
                 //cumTransp = cumTransp + Transp;
@@ -1080,19 +1053,19 @@ skipPreYearCalcs:
                 //CumdelWR = CumdelWR + delWR;
                 //CumdelWS = CumdelWS + delWS;
                 //cLitter = cLitter + delLitter;
-                opVars["cumWabv"].v = opVars["cumWabv"].v + delWF + delWS - delLitter;  // ANL - PROBLEM?  
+                vars.cumWabv = vars.cumWabv + delWF + delWS - delLitter;  // ANL - PROBLEM?  
                 //cumGPP = cumGPP + GPPdm;
                 //cumLAI = cumLAI + LAI;
 
                 // Accumulate intercepted radiation (MJ/m2) and production (t/ha)
                 cumARAD = cumARAD + RAD * lightIntcptn * CanCover;
-                CumAPARU = CumAPARU + opVars["APARu"].v;
+                CumAPARU = CumAPARU + vars.APARu;
             }
 
             // 3PGS
             if (modelMode3PGS) {
-                opVars["delWAG"].v = opVars["NPP"].v * (1 - pR);
-                opVars["cumWabv"].v += opVars["delWAG"].v;
+                vars.delWAG = vars.NPP * (1 - pR);
+                vars.cumWabv += vars.delWAG;
             }
 
         skipMonthCalcs:
@@ -1108,9 +1081,12 @@ skipPreYearCalcs:
             //as little as possible (to keep changes as more manageable chunks), but in the future, we MUST change how this works, 
             //it *should* be pretty simple to just use minMY and maxMY.
             if (!yrPreStart && !yrPstEnd && !(calYear == spMaxMY.year && calMonth == spMaxMY.mon)) {
+                
+
                 //the !(calYear == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
                 //output, but rather skip it and the values are eventually written via writeOutputGrids().
-                writeMonthlyOutputGrids(opVars, calYear, calMonth, hitNODATA || yrPreStart, spMinMY, spMaxMY, cellIndex);
+                copyVars(vars, opVars);
+                writeMonthlyOutputGrids(opVars, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
             }
 
             // Monthly sample point output
@@ -1120,7 +1096,7 @@ skipPreYearCalcs:
 
         }
 
-        if (hitNODATA || yrPreStart || yrPstEnd)
+        if (yrPreStart || yrPstEnd)
             goto skipYearEndCalcs;
 
         // Calculate above ground and total Epsilon
@@ -1139,22 +1115,22 @@ skipPreYearCalcs:
         }
 
         // Update some stand characteristics
-        opVars["LAI"].v = cumLAI / 12.0;
-        opVars["fracBB"].v = fracBB1 + (fracBB0 - fracBB1) * exp(-ln2 * (StandAge / tBB));  //Modified StandAge
-        opVars["StandVol"].v =  opVars["WS"].v * (1 - opVars["fracBB"].v) / Density;
+        vars.LAI = cumLAI / 12.0;
+        vars.fracBB = fracBB1 + (fracBB0 - fracBB1) * exp(-ln2 * (StandAge / tBB));  //Modified StandAge
+        vars.StandVol =  vars.WS * (1 - vars.fracBB) / Density;
         if (StandAge > 0)              //Modified StandAge
-            opVars["MAI"].v = opVars["StandVol"].v / StandAge;   //Modified StandAge
+            vars.MAI = vars.StandVol / StandAge;   //Modified StandAge
         else
-            opVars["MAI"].v = 0;
+            vars.MAI = 0;
 
         // Determine peak LAI & MAI and age at peaks
-        if (opVars["LAI"].v > opVars["LAIx"].v) {
-            opVars["LAIx"].v = opVars["LAI"].v;
-            opVars["ageLAIx"].v = StandAge;  //Modified StandAge
+        if (vars.LAI > vars.LAIx) {
+            vars.LAIx = vars.LAI;
+            vars.ageLAIx = StandAge;  //Modified StandAge
         }
-        if (opVars["MAI"].v > opVars["MAIx"].v) {
-            opVars["MAIx"].v = opVars["MAI"].v;
-            opVars["ageMAIx"].v = StandAge;  //Modified StandAge
+        if (vars.MAI > vars.MAIx) {
+            vars.MAIx = vars.MAI;
+            vars.ageMAIx = StandAge;  //Modified StandAge
         }
 
     skipYearEndCalcs:
@@ -1169,8 +1145,9 @@ skipPreYearCalcs:
         }
 
         // Restore LAI
-        opVars["LAI"].v = opVars["WF"].v * SLA * 0.1;
+        vars.LAI = vars.WF * SLA * 0.1;
 
     }
-    writeOutputGrids(opVars, hitNODATA, cellIndex);
+    copyVars(vars, opVars);
+    writeOutputGrids(opVars, cellIndex);
 }
