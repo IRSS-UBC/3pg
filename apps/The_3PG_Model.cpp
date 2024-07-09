@@ -29,63 +29,32 @@ Use of this software assumes agreement to this condition of use
 // The code for 3PG - March 24th, 2000
 //____________________________________
 
-
-//Changes from August 1999 version:
-//
-//   1) Accumulating annual stand transpiration
-//   2) Introduced minimum avail soil water, with difference made up by
-//      irrigation. Can output monthly and annual irrigation.
-//   3) Start mid year in southern hemisphere
-//   4) Recast alpha(FR) as alpha*fNutr
-//   5) Some change in how functions are parameterised to make parameters
-//      more meaningful
-//   6) Allometric relationships based on DBH in cm
-//   7) Partioning parameterised by pFS for DBH = 2 and 20 cm
-//   8) Model made strictly state-determined by ensuring that LAI,
-//      partitioning, etc determined from current state not a lagged state.
-//   9) SLA made stand-age dependent
-//  10) Non-closed canopy allowed for (not good!)
-//  11) Manner in which modifiers taken into account corrected
-
 //NOTE: The following conversion factors are used:
 //
 //    1 MJ  = 2.3 mol PAR
 //    1 mol = 24 gDM
 
-
-#define ModelVsn "3-PG March2000.24"
-
 #define Pi 3.141592654
 #define ln2 0.693147181
-
 #define eps 0.0001
 
 // Controls and counters
-//int StartAge, EndYear;                  // age of trees at start/end of run
-//int StartMonth;                        // month of year to start run
-//int yearPlanted;                       // year trees planted
-// ANL changed these three from int to double
 double StartAge, EndYear;                 // age of trees at start/end of run
 double StartMonth;                       // month of year to start run
 double yearPlanted;                      // year trees planted
 int DaysInMonth[13] = {                  // array for days in months 
   0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 };
-bool showDetailedResults;                // TRUE ==> show monthly results
-bool showStandSummary;                   // TRUE ==> show stand summary
 bool modelMode3PGS = false;
 
 bool yrPreStart = false;
 bool yrPstEnd = false;
 
 // Site characteristics, site specific parameters
-char siteName[100];                      // name of site
 double Lat = 1000;                       // site latitude
 double MaxASW, MinASW, MinASWp;          // maximum & minimum available soil water, current, param file. 
 double FRp;                          // site fertility rating, current, param file. 
 double FRstart, FRend, FRdec;            // Start, end and decrement % for fertility decrease with time
-//int soilIndex;                         // soil class index
-// ANL changed this from int to double
 double soilIndex;                        // soil class index
 double SWconst, SWpower;                 // soil parameters for soil class
 
@@ -95,29 +64,11 @@ int nMinAvailSW;                         // size of MinAvailSW array
 int nIrrigation;                         // size of irrigation array
 double Irrig;                            // current annual irrigation (ML/y)
 
-// Mean monthly weather data
-//int mYears;                            // years of met data available
-// ANL changed this from int to double
-double mYears = 1.0;                       // years of met data available
-double mDayLength[13];                   // day length
-//int mFrostDays[13];                    // frost days/month
-// ANL changed this from int to double
-double mFrostDays[13];                   // frost days/month
-double mSolarRad[13];                    // solar radiation (MJ/m2/day)
-double mTx[13];                          // maximum temperature
-double mTn[13];                          // minimum temperature
-double mTav[13];                         // mean daily temperature
-double mVPD[13];                         // mean daily VPD
-double mRain[13];                        // total monthly rain + irrigation
-double mNetRad[13];                      // ANL can use net instead of short wave
-
-// Stand data
-char SpeciesName[100];                   // name of species
-// int StandAge;                         // stand age
+// day length
+double mDayLength[13];                   
 
 double SeedlingMass;                     // Alternative way of deriving initial distribution 
-// of mass using seedling mass constant
-// ANL changed StandAge from int to double
+                                         // of mass using seedling mass constant
 double StandAge;                         // stand age
 double ASWi;                        // available soil water
 double MinASWTG;
@@ -126,10 +77,7 @@ double WFi;                          // foliage biomass
 double WRi;                          // root biomass
 double WSi;                          // stem biomass
 double LAIi;                        // canopy leaf area index
-double MAIi;                        // mean annual volume increment
-double avDBHi;                    // average stem DBH                                                                         
-double cumTransp;                        // annual stand transporation
-double cumIrrig;                         // annual irrig. to maintain MinASW
+double MAIi;                        // mean annual volume increment                                                                        
 
 // Stand factors that are specifically age dependent
 double SLA;
@@ -184,42 +132,12 @@ double CanCond;
 double RainIntcptn; //Added 16/07/02
 
 double AvStemMass;
-double GPPmolc, GPPdm;
+double GPPdm;
 double pR, pS, pF, pFS;
 double delWF, delWR, delWS, delStems;
 double delLitter, delRloss;
-double monthlyIrrig;
-
-// Annual results
-double cumGPP;
-double abvgrndEpsilon, totalEpsilon;
-double StemGrthRate;
-double cumEvapTransp;
-double CumdelWF, CumdelWR, CumdelWS;
-double CumAPARU, cumARAD;
-double CumStemLoss;
-double CutStemMass1, CutStemMass2, CutStemMass3;
-
-//Various additional oputputs
-double cRADint;               //intercepted radiation in output period
-double aRADint;               //annual intercepted radiation
-double aGPP;                  //annual GPP
-double aNPP;                  //annual NPP
-double cStemDM;               //stem DM increment in output period
-double aStemDM;               //annual stem DM increment
-double aWUE;                  //annual WUE
-double aSupIrrig;             //annual supplemental irrigation
-double cSupIrrig;             //supplemental irrigation in output period
-double cRainInt;              //rainfall interception in output period
-double aTransp;               //annual transpiration
-double aEvapTransp;           //annual evapotransporation
-double cEpsilonGross;         //gross epsilon in output period
-double aEpsilonGross;         //annual gross epsilon
-double cEpsilonStem;          //epsilon for stemDM in output period
-double aEpsilonStem;          //annual epsilon for stemDM
 
 // ANL - other globals
-double mNDVI[13];      // 3PGS - one years worth of NDVI 
 double NDVI_FPAR_intercept, NDVI_FPAR_constant;
 
 extern bool samplePointsMonthly;
@@ -642,10 +560,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
         vars.MAI = vars.StandVol / StandAge;    //UnModified StandAge
     else vars.MAI = 0;
 
-    avDBHi = vars.avDBH;
     LAIi = vars.LAI;
-    CumStemLoss = 0;
-    
 
     // Do annual calculations.  The year loop here is controlled by minMY and maxMY, 
     // which refer to the overall run start and end, across all cells.
@@ -682,31 +597,14 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
         // Initialise cumulative variables
         vars.cLitter = 0;
-        CumdelWF = 0;
-        CumdelWR = 0;
-        CumdelWS = 0;
-        CumAPARU = 0;
-        cumARAD = 0;
         cumLAI = 0;
-        cumGPP = 0;
         vars.cumWabv = 0;            //Now known as cumWabvgrnd
-        cumTransp = 0;
-        cumEvapTransp = 0;
-        cumIrrig = 0;
-
-        //Initialise annual cumulative variables
-        aStemDM = 0;
-        aRADint = 0;
-        aGPP = 0;
-        aNPP = 0;
-        aEvapTransp = 0;
-        aTransp = 0;
-        aSupIrrig = 0;
 
         // Get management-related options for current year and cell. 
         // First load param file values, then possibly override them with management table values. 
         if (!haveAgeDepFert())
             vars.FR = FRp;
+
         if (nFertility > 0)
             vars.FR = lookupManageTable(runYear, MT_FERTILITY, FRp, cellIndex);
 
@@ -722,10 +620,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
         //Initialise output step cumulative variables
         delStemNo = 0;
-        cRADint = 0;
-        cRainInt = 0;
-        cStemDM = 0;
-        cSupIrrig = 0;
         vars.cLAI = 0;
         vars.cCVI = 0;
         vars.cNPP = 0;
@@ -754,10 +648,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             {
                 //Initialise output step cumulative variables
                 delStemNo = 0;
-                cRADint = 0;
-                cStemDM = 0;
-                cRainInt = 0;
-                cSupIrrig = 0;
                 vars.cLAI = 0;
                 vars.cCVI = 0;
                 vars.cGPP = 0;
@@ -901,7 +791,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             vars.alphaC = alpha * vars.fNutr * vars.fT * vars.fFrost * vars.PhysMod;   //22-07-02 for Excel March beta consis.
             epsilon = gDM_mol * molPAR_MJ * vars.alphaC;
             RADint = RAD * lightIntcptn * CanCover;
-            GPPmolc = vars.APARu * vars.alphaC;                   // mol/m^2
             GPPdm = epsilon * RADint / 100;               // tDM/ha
             vars.NPP = GPPdm * y;                            // assumes respiratory rate is constant
 
@@ -961,12 +850,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 Interception = MaxIntcptn * std::min((double)1, vars.LAI / LAImaxIntcptn);
             vars.EvapTransp = vars.Transp + Interception * Rain;
             vars.ASW = vars.ASW + Rain + (100 * Irrig / 12) - vars.EvapTransp;        //Irrig is Ml/ha/year
-            monthlyIrrig = 0;
             if (vars.ASW < MinASW) {
-                if (MinASW > 0) {               // make up deficit with irrigation
-                    monthlyIrrig = MinASW - vars.ASW;
-                    cumIrrig = cumIrrig + monthlyIrrig;
-                }
                 vars.ASW = MinASW;
             }
             else if (vars.ASW > MaxASW) {
@@ -1025,24 +909,12 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                     vars.MAI = 0;
 
                 // Update accumulated totals
-
-                cRADint = cRADint + RADint;
-                aRADint = aRADint + RADint;
                 vars.cGPP = vars.cGPP + GPPdm;
-                aGPP = aGPP + GPPdm;
                 vars.cNPP = vars.cNPP + vars.NPP;
-                aNPP = aNPP + vars.NPP;
                 vars.cCVI = vars.cCVI + vars.CVI;
                 vars.cLitter = vars.cLitter + delLitter;
-                cStemDM = cStemDM + delWS;
-                aStemDM = aStemDM + delWS;
-                cRainInt = cRainInt + RainIntcptn;
                 vars.cTransp = vars.cTransp + vars.Transp;
-                aTransp = aTransp + vars.Transp;
                 vars.cEvapTransp = vars.cEvapTransp + vars.EvapTransp;
-                aEvapTransp = aEvapTransp + vars.EvapTransp;
-                aSupIrrig = aSupIrrig + monthlyIrrig;
-                cSupIrrig = cSupIrrig + monthlyIrrig;
                 vars.cWUE = 100 * vars.cNPP / vars.cEvapTransp;
                 vars.cLAI = vars.cLAI +  vars.LAI / 12.0;
 
@@ -1056,10 +928,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 vars.cumWabv = vars.cumWabv + delWF + delWS - delLitter;  // ANL - PROBLEM?  
                 //cumGPP = cumGPP + GPPdm;
                 //cumLAI = cumLAI + LAI;
-
-                // Accumulate intercepted radiation (MJ/m2) and production (t/ha)
-                cumARAD = cumARAD + RAD * lightIntcptn * CanCover;
-                CumAPARU = CumAPARU + vars.APARu;
             }
 
             // 3PGS
@@ -1098,21 +966,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
         if (yrPreStart || yrPstEnd)
             goto skipYearEndCalcs;
-
-        // Calculate above ground and total Epsilon
-        if (!modelMode3PGS) {
-            if (aRADint == 0) {
-                //        sprintf(outstr, 
-                //          "Warning: No growth occurred in year with Standage = %4.0f "
-                //          "at cell index %d\n", StandAge, cellIndex);
-                //        fprintf(logfp, outstr);
-                //        fprintf(stderr, outstr);
-            }
-            else {
-                aEpsilonStem = 100 * aStemDM / aRADint;    //100 converts to gDM/MJ
-                aEpsilonGross = 100 * aGPP / aRADint;
-            }
-        }
 
         // Update some stand characteristics
         vars.LAI = cumLAI / 12.0;
