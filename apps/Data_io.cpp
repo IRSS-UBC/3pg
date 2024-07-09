@@ -73,15 +73,6 @@ extern double FRstart, FRend, FRdec;            // Start, end and decrement % fo
 extern double soilIndex;                        // soil class index
 extern double SWconst, SWpower;                 // soil parameters for soil class
 
-// Time variant management factors
-extern int nFertility;                          // size of site fertility array
-//extern MANAGE_TABLE Fertility[1000];            // time-variant site fertility
-extern int nMinAvailSW;                         // size of MinAvailSW array
-//extern MANAGE_TABLE MinAvailSW[1000];           // time-variant MinAvailSW (mm)
-extern int nIrrigation;                         // size of irrigation array
-//extern MANAGE_TABLE Irrigation[1000];           // time-variant irrigation (ML/y)
-extern double Irrig;                            // current annual irrigation (ML/y)
-
 // Stand data
 extern double ASWi;                             // available soil water
 extern double MinASWTG;                         // soil water modifier corrector
@@ -440,59 +431,6 @@ bool getVVal(double &val, PPPG_VVAL vval, int k)
     return false; 
   }
   return true; 
-}
-
-//-----------------------------------------------------------------------------
-
-double lookupManageTable( int year, int table, double def, int k )
-{
-  // Lookup the value of a cell in a management table, for a year. 
-  // Entries in management tables apply up to but not including the 
-  // next year listed, for consistency with the VB version.  Ie, the 
-  // management tables describe periods, not events.  def is the 'default' 
-  // value, which will correspond to the general parameter value for the 
-  // attribute (ie there can be both an "FR" parameter and an FR management 
-  // table).  
-  PPPG_MT_PARAM *mt;  
-  GDALRasterImage *fg;
-  int i;
-  float val; 
-
-  if ( table == MT_FERTILITY ) 
-    mt = FertMT; 
-  else if (table == MT_MINASW )
-    mt = MinAswMT; 
-  else if (table == MT_IRRIGATION )
-    mt = IrrigMT; 
-  else {
-    std::cout << "Program error: called lookupManageTable with invalid table" << std::endl;
-    logger.Log("Program error: called lookupManageTable with invalid table");
-    exit(EXIT_FAILURE);
-  }
-
-  // Load the table entries.  Unfortunately we have to reload every 
-  // entries value to allow values from earlier entries to persist through 
-  // NODATA cells in later entries.  If we hit NODATA, we must look at the next 
-  // table entry as, if it exists, its value will apply. 
-  val = def; 
-  bool hitdata = false; 
-  for (i = 0; mt[i].year > 0; i++) {
-    // Read earlier table entries. 
-    if ( mt[i].data.spType == pScalar ) {
-      val = mt[i].data.sval; 
-    }
-    else if ( mt[i].data.spType == pTif ) {
-      fg = (GDALRasterImage *)mt[i].data.g;
-      if (fg->IsNoData(fg->GetVal(k)))
-        continue; 
-      else
-        val = fg->GetVal(k);
-    }
-    if ( mt[i].year >= year )
-      break;
-  }
-
-  return val; 
 }
 
 //----------------------------------------------------------------------------------
@@ -1290,17 +1228,23 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
   if ( namesMatch( "Management: fertility", pName ) ) {
     tab = FertMT;
     tabName = "Fertility MT";
-    nRead = &nFertility; 
+    //nRead = &nFertility;
+    throw runtime_error("nFertility is initialized at 0 and never changed. This is probably not what we want if we've got here.");
+    nRead = 0;  
   }
   else if ( namesMatch( "Management: irrigation", pName ) ) {
     tab = IrrigMT; 
     tabName = "Irrigation MT";
-    nRead = &nIrrigation; 
+    //nRead = &nIrrigation; 
+    throw runtime_error("nIrrigation is initialized at 0 and never changed. This is probably not what we want if we've got here.");
+    nRead = 0;
   }
   else if ( namesMatch( "Management: MinASW", pName ) ) {
     tab = MinAswMT;
     tabName = "Min ASW MT";
-    nRead = &nMinAvailSW;
+    //nRead = &nMinAvailSW;
+    throw runtime_error("nMinAvailSW is initialized at 0 and never changed. This is probably not what we want if we've got here.");
+    nRead = 0;
   }
   else
     return false; 

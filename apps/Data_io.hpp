@@ -29,8 +29,6 @@ void InitInputParams(void);
 void initDataOutput(GDALRasterImage* refGrid);
 
 bool loadParamVals(int k);
-// table must be one of MT_FERTILITY, MT_MINASW, MT_MINASW. 
-double lookupManageTable( int year, int table, double def, int cellIndex ); 
 /**
  * Find the month/year period over which the model will run.
  *

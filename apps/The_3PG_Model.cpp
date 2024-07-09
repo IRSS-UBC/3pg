@@ -58,12 +58,6 @@ double FRstart, FRend, FRdec;            // Start, end and decrement % for ferti
 double soilIndex;                        // soil class index
 double SWconst, SWpower;                 // soil parameters for soil class
 
-// Time variant management factors
-int nFertility;                          // size of site fertility array
-int nMinAvailSW;                         // size of MinAvailSW array
-int nIrrigation;                         // size of irrigation array
-double Irrig;                            // current annual irrigation (ML/y)
-
 // day length
 double mDayLength[13];                   
 
@@ -605,18 +599,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
         if (!haveAgeDepFert())
             vars.FR = FRp;
 
-        if (nFertility > 0)
-            vars.FR = lookupManageTable(runYear, MT_FERTILITY, FRp, cellIndex);
-
         MinASW = MinASWp;
-        if (nMinAvailSW > 0)
-            MinASW = lookupManageTable(runYear, MT_MINASW, MinASWp, cellIndex);
-
-        Irrig = 0;
-        if (nIrrigation > 0) {
-            Irrig = lookupManageTable(runYear, MT_IRRIGATION, 0, cellIndex);
-        }
-        else Irrig = 0;
 
         //Initialise output step cumulative variables
         delStemNo = 0;
@@ -680,17 +663,10 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
             // Determine the various environmental modifiers
 
-            //Fertility.
-            if (nFertility > 0)
+            //If we are in a period where we wish FR to decay, make it so.
+            if (haveAgeDepFert() && (FRstart <= StandAge) && (FRend > StandAge))
             {
-                //Do nothing
-            }
-            else {
-                //If we are in a period where we wish FR to decay, make it so.
-                if (haveAgeDepFert() && (FRstart <= StandAge) && (FRend > StandAge))
-                {
-                    vars.FR = vars.FR - vars.FR * FRdec;
-                }
+                vars.FR = vars.FR - vars.FR * FRdec;
             }
 
             // calculate temperature response function to apply to alpha
@@ -849,7 +825,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             else
                 Interception = MaxIntcptn * std::min((double)1, vars.LAI / LAImaxIntcptn);
             vars.EvapTransp = vars.Transp + Interception * Rain;
-            vars.ASW = vars.ASW + Rain + (100 * Irrig / 12) - vars.EvapTransp;        //Irrig is Ml/ha/year
+            vars.ASW = vars.ASW + Rain - vars.EvapTransp;       
             if (vars.ASW < MinASW) {
                 vars.ASW = MinASW;
             }
