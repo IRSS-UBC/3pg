@@ -78,13 +78,12 @@ bool modelMode3PGS = false;
 // Site characteristics, site specific parameters
 char siteName[100];                      // name of site
 double Lat = 1000;                       // site latitude
-double MaxASW, MinASW, MinASWp;          // maximum & minimum available soil water, current, param file. 
+double MaxASW, MinASWp;              // maximum & minimum available soil water, current, param file. 
 double FRp;                          // site fertility rating, current, param file. 
 double FRstart, FRend, FRdec;            // Start, end and decrement % for fertility decrease with time
 //int soilIndex;                         // soil class index
 // ANL changed this from int to double
 double soilIndex;                        // soil class index
-double SWconst, SWpower;                 // soil parameters for soil class
 
 // Time variant management factors
 int nFertility;                          // size of site fertility array
@@ -96,7 +95,6 @@ double Irrig;                            // current annual irrigation (ML/y)
 //int mYears;                            // years of met data available
 // ANL changed this from int to double
 double mYears = 1.0;                       // years of met data available
-double mDayLength[13];                   // day length
 //int mFrostDays[13];                    // frost days/month
 // ANL changed this from int to double
 double mFrostDays[13];                   // frost days/month
@@ -110,12 +108,10 @@ double mNetRad[13];                      // ANL can use net instead of short wav
 
 // Stand data
 char SpeciesName[100];                   // name of species
-// int StandAge;                         // stand age
 
 double SeedlingMass;                     // Alternative way of deriving initial distribution 
 // of mass using seedling mass constant
 // ANL changed StandAge from int to double
-double StandAge;                         // stand age
 double ASWi;                        // available soil water
 double MinASWTG;
 double StemNoi;                  // stem numbers
@@ -127,11 +123,6 @@ double MAIi;                        // mean annual volume increment
 double avDBHi;                    // average stem DBH                                                                         
 double cumTransp;                        // annual stand transporation
 double cumIrrig;                         // annual irrig. to maintain MinASW
-
-// Stand factors that are specifically age dependent
-double SLA;
-double gammaF;
-double CanCover;
 
 // Parameter values
 // int MaxAge;
@@ -145,7 +136,6 @@ double k;
 double pFS2, pFS20;
 double StemConst, StemPower;
 double SWconst0, SWpower0;
-double Interception;
 double BLcond;
 double MaxCond, CoeffCond;
 double y;
@@ -159,9 +149,7 @@ double pRx, pRn;
 double nAge, rAge;
 double kF;
 double fracBB0, fracBB1, tBB;
-double Density;
 double rhoMin, rhoMax, tRho;             // Standage varying density 3-06-02 
-double pfsConst, pfsPower;               // derived from pFS2, pFS20
 
 //Conversion factors
 double Qa, Qb;
@@ -174,17 +162,8 @@ double MaxIntcptn;
 double LAImaxIntcptn;
 
 // Intermediate monthly results
-double m, epsilon;
-double RAD, PAR, RADint;
-double lightIntcptn;
-double CanCond;
 double RainIntcptn; //Added 16/07/02
-
-double AvStemMass;
-double GPPmolc, GPPdm;
-double pR, pS, pF, pFS;
-double delWF, delWR, delWS, delStems;
-double delLitter, delRloss;
+double GPPmolc;
 double monthlyIrrig;
 
 // Annual results
@@ -362,7 +341,6 @@ void assignDefaultParameters(void)
     //   0.5 for clay-loam, 0.4 for clay
     SWpower0 = 9;         // Powers in the eqn for SW modifiers are 9 for sand,
     //   7 for sandy-loam, 5 for clay-loam and 3 for clay
-    Interception = 0.15;  // Proportion of rainfall intercepted by canopy
     MaxCond = 0.02;       // Maximum canopy conductance (gc, m/s)
     BLcond = 0.2;         // Canopy boundary layer conductance, assumed constant
     CoeffCond = 0.05;     // Determines response of canopy conductance to VPD
@@ -386,12 +364,11 @@ void assignDefaultParameters(void)
     fracBB0 = 0.15;       // branch & bark fraction at age 0 (m^2/kg)
     fracBB1 = 0.15;       // branch & bark fraction for mature trees (m^2/kg)
     tBB = 1.5;            // stand age (years) for fracBB = (fracBB0+fracBB1)/2
-    Density = 0.5;        // Basic density (t/m3)
 }
 
 //-----------------------------------------------------------------------------
 
-void Initialisation(std::unordered_map<std::string, PPPG_OP_VAR>& opVars)
+void Initialisation(std::unordered_map<std::string, PPPG_OP_VAR>& opVars, double& SWconst, double& SWpower, double MinASW)
 {
     // Private
     //double Tanav;
@@ -404,9 +381,6 @@ void Initialisation(std::unordered_map<std::string, PPPG_OP_VAR>& opVars)
     // Is that what its supposed to do?  As we don't actually use Tanav 
     // anywhre its a moot point, and I've commented it out. 
 
-    // At initialisation param file has only possible value to use.  
-    MinASW = MinASWp;
-
     // If Tanav <= 13.4 Then gammaFx = gammaFx * (1 + 0.04 * (Tanav - 13.4) ^ 4)
       // Assign the SWconst and SWpower parameters for this soil class
     if (soilIndex != 0) {
@@ -417,9 +391,7 @@ void Initialisation(std::unordered_map<std::string, PPPG_OP_VAR>& opVars)
         SWconst = SWconst0;
         SWpower = SWpower0;
     }
-    // Derive some parameters
-    pfsPower = log(pFS20 / pFS2) / log(10);
-    pfsConst = pFS2 / pow(2, pfsPower);
+   
     // Initial ASW must be between min and max ASW
     if (ASWi <= MinASW)
         ASWi = MinASW;
@@ -442,7 +414,7 @@ void Initialisation(std::unordered_map<std::string, PPPG_OP_VAR>& opVars)
 
 //Standage function translated from March beta of Excel 3-PG
 //StartAge and StandAge are considered global variables...
-void GetStandAge(void)
+void GetStandAge(double& StandAge)
 {
 
     //Assign initial stand age
@@ -519,6 +491,56 @@ bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
 // This is the main routine for the 3PG model
 void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex)
 {
+    //before start or after end indication
+    bool yrPreStart = false;
+    bool yrPstEnd = false;
+
+    //minimum available soil water
+    double MinASW = MinASWp;
+
+    //soil parameters for soil class
+    double SWconst;
+    double SWpower;
+
+    //day length (by month)
+    double mDayLength[13];
+
+    //stand age
+    double StandAge;
+
+    // Stand factors that are specifically age dependent
+    double SLA;
+    double gammaF;
+    double CanCover;
+
+    // derived from pFS2, pFS20
+    double pfsPower = log(pFS20 / pFS2) / log(10);
+    double pfsConst = pFS2 / pow(2, pfsPower);
+
+    double Interception;         // Proportion of rainfall intercepted by canopy (used to be assigned 0.15 in assignDefaultParameters)
+    double Density;              // Basic density (t/m3) (used to be assigned 0.5 in assignDefaultParameters)
+
+    // Intermediate monthly results
+    double m;
+    double epsilon;
+    double RAD;
+    double PAR;
+    double RADint;
+    double lightIntcptn;
+    double CanCond;
+    double AvStemMass;
+    double GPPdm;
+    double pR;
+    double pS;
+    double pF;
+    double pFS;
+    double delWF;
+    double delWR;
+    double delWS;
+    double delStems;
+    double delLitter;
+    double delRloss;
+
     //  int minCy, maxCy; 
 
       // ANL - Note that in a spatial run, almost any input parameter having a
@@ -541,7 +563,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     double cumLAI;
     double oldVol;    //Added 16/07/02 as part of CVI
 
-    bool hitNODATA = false, yrPreStart = false, yrPstEnd = false;
+    bool hitNODATA = false;
 
     //New Soilwater modifier adjuster
 
@@ -590,7 +612,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     if (hitNODATA)
         goto skipPreYearCalcs;
 
-    Initialisation(opVars);
+    Initialisation(opVars, SWconst, SWpower, MinASW);
 
     // VPD and NetRad from internal model, or user specified series? 
     haveVpdSeries = userVpdSeries();
@@ -603,7 +625,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     //StandAge = 0; //(minMY.year - yearPlanted); // + (cm - StartMonth) / 12.0;
 
     //New StandAge function
-    GetStandAge();
+    GetStandAge(StandAge);
     opVars["StemNo"].v = StemNoi;
     //StartMonth++; //Synchronise with vb version 20-01-02
 
