@@ -23,6 +23,7 @@ Use of this software assumes agreement to this condition of use
 #include "util.hpp"
 #include <boost/program_options.hpp>
 #include "DataOutput.hpp"
+#include "DataInput.hpp"
 #include "ParamStructs.hpp"
 
 // Need to provide getopt on MSVC. 
@@ -118,6 +119,7 @@ int main(int argc, char* argv[])
 
     std::string outPath = getOutPathTMP(siteParamFile);
     logger.StartLog(outPath);
+    DataInput dataInput();
 
     /* Copyright */
     std::cout << COPYMSG << std::endl;

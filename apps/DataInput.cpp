@@ -1,7 +1,6 @@
 #include "DataInput.hpp"
 
-DataInput::DataInput(Logger& logger) {
-	this->logger = &logger;
+DataInput::DataInput() {
 	this->refGrid = nullptr;
 }
 
@@ -28,9 +27,9 @@ bool DataInput::getScalar(std::vector<std::string> value, PPPG_PARAM& param) {
 		param.data.spType = pScalar;
 
 		//log input param acquired
-		string output = "    " + param.id + "        constant: " + to_string(*(param.adr));
+		std::string output = "    " + param.id + "        constant: " + std::to_string(*(param.adr));
 		std::cout << output << std::endl;
-		this->logger->Log(output);
+		//this->logger->Log(output);
 
 		return true;
 	}
@@ -49,7 +48,7 @@ bool DataInput::getGrid(std::vector<std::string> value, PPPG_PARAM& param) {
 		if (filePath.extension() != ".tif") {
 			std::string errstr = filePath.filename().generic_string() + " is an invalid file type. File extension must be '.tif'";
 			std::cout << errstr << std::endl;
-			this->logger->Log(errstr);
+			//this->logger->Log(errstr);
 			return false;
 		}
 
@@ -57,7 +56,7 @@ bool DataInput::getGrid(std::vector<std::string> value, PPPG_PARAM& param) {
 		if (!std::filesystem::exists(filePath)) {
 			std::string errstr = filePath.string() + " does not exist.";
 			std::cout << errstr << std::endl;
-			this->logger->Log(errstr);
+			//this->logger->Log(errstr);
 			return false;
 		}
 
@@ -71,17 +70,17 @@ bool DataInput::getGrid(std::vector<std::string> value, PPPG_PARAM& param) {
 		}
 
 		//log input param
-		string output = "    " + param.id + "        raster: " + param.data.gridName;
+		std::string output = "    " + param.id + "        raster: " + param.data.gridName;
 		std::cout << output << std::endl;
-		this->logger->Log(output);
+		//this->logger->Log(output);
 		return true;
 	}
 	catch (std::filesystem::filesystem_error const& e) {
 		//set and print/log error string
 		std::string errstr = " " + value.front() + " could not be interpreted as a scalar or grid name";
 		std::cout << errstr << std::endl;
-		this->logger->Log(errstr);
-		this->logger->Log(e.what());
+		//this->logger->Log(errstr);
+		//this->logger->Log(e.what());
 		return false;
 	}
 }
@@ -94,7 +93,7 @@ bool DataInput::openCheckGrid(PPPG_VVAL& vval) {
 	catch (const std::exception& e) {
 		std::string errstr = "failed to open " + vval.gridName + "\n" + e.what();
 		std::cout << errstr << std::endl;
-		this->logger->Log(errstr);
+		//this->logger->Log(errstr);
 		return false;
 	}
 
@@ -114,7 +113,7 @@ bool DataInput::openCheckGrid(PPPG_VVAL& vval) {
 			) {
 			std::string errstr = "Grid dimensions of " + vval.gridName + " differs from " + this->refGrid->name;
 			std::cout << errstr << std::endl;
-			this->logger->Log(errstr);
+			//this->logger->Log(errstr);
 			return false;
 		}
 	}
@@ -205,7 +204,7 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 			errstr = "Missing parameter: at least one of WFi, WRi, and WSi required.";
 		}
 		std::cout << errstr << std::endl;
-		this->logger->Log(errstr);
+		//this->logger->Log(errstr);
 		return false;
 	}
 
@@ -405,9 +404,9 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	//check valid month
 	if (maxMY.mon < 0 || maxMY.mon > 12) {
 		//if month isn't within the range of 0 to 12, print and log error
-		std::string errstr = "Invalid start month detected: " + to_string(minMY.mon);
+		std::string errstr = "Invalid start month detected: " + std::to_string(minMY.mon);
 		std::cout << errstr << std::endl;
-		logger->Log(errstr);
+		//this->logger->Log(errstr);
 
 		//then exit
 		exit(EXIT_FAILURE);
@@ -416,9 +415,9 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	//check valid years
 	if (minMY.year > maxMY.year) {
 		//if minimum year is larger than maximum year, print and log error
-		std::string errstr = "min year (" + to_string(minMY.year) + ") is greater than max year (" + to_string(maxMY.year) + ")";
+		std::string errstr = "min year (" + std::to_string(minMY.year) + ") is greater than max year (" + std::to_string(maxMY.year) + ")";
 		std::cout << errstr << std::endl;
-		logger->Log(errstr);
+		//this->logger->Log(errstr);
 
 		//then exit
 		exit(EXIT_FAILURE);

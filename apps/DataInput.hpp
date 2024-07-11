@@ -7,7 +7,6 @@
 #include <filesystem>
 #include "GDALRasterImage.hpp"
 #include "ParamStructs.hpp"
-#include "util.hpp"
 #include "MYDate.h"
 
 struct InputParams {
@@ -277,14 +276,13 @@ private:
 	std::unordered_map<std::string, PPPG_PARAM> inputParams;
 	GDALRasterImage* refGrid;
 	bool finishedInput = false;
-	Logger* logger;
 
 	bool getScalar(std::vector<std::string> value, PPPG_PARAM& param);
 	bool getGrid(std::vector<std::string> value, PPPG_PARAM& param);
 	double getValFromParam(std::string paramName, int row, int col);
 	bool openCheckGrid(PPPG_VVAL& vval);
 public:
-	DataInput(Logger& logger);
+	DataInput();
 	~DataInput();
 	bool tryAddParam(std::string pname, std::vector<std::string> value);
 	bool inputFinished(bool modelMode3PGS);
