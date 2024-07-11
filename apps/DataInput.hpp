@@ -279,14 +279,14 @@ private:
 
 	bool getScalar(std::vector<std::string> value, PPPG_PARAM& param);
 	bool getGrid(std::vector<std::string> value, PPPG_PARAM& param);
-	double getValFromParam(std::string paramName, int row, int col);
+	double getValFromParam(std::string paramName, long cellIndex);
 	bool openCheckGrid(PPPG_VVAL& vval);
 public:
 	DataInput();
 	~DataInput();
 	bool tryAddParam(std::string pname, std::vector<std::string> value);
 	bool inputFinished(bool modelMode3PGS);
-	InputParams getInputParams(int row, int col);
+	bool DataInput::getInputParams(long cellIndex, InputParams& params);
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
 	PPPG_PARAM* getParamTemp(std::string name);
 };
