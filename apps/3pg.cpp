@@ -148,6 +148,10 @@ int main(int argc, char* argv[])
                 throw std::exception("incorrect spType!!!");
             }
 
+            if (paramsArrayParam.data.spType != pScalar) {
+                continue;
+            }
+
             if (*(paramsArrayParam.adr) != dataInputParam->val) {
                 throw std::exception("incorrect value!!!");
             }
@@ -168,6 +172,27 @@ int main(int argc, char* argv[])
 
     // Check for a spatial run, if so open input grids and define refGrid. 
     refGrid = openInputGrids();
+
+    //check spatial params
+    for (int pn = 1; params[pn].id != ""; pn++) {
+        if (params[pn].data.spType == pTif) {
+            GDALRasterImage* img1 = params[pn].data.g;
+            GDALRasterImage* img2 = dataInput->getParamTemp(params[pn].id)->data.g;
+
+            for (int i = 0; i < img1->nRows; i++) {
+                for (int j = 0; j < img1->nCols; j++) {
+                    double img1Val = img1->GetVal(i, j);
+                    double img2Val = img2->GetVal(i, j);
+                    if (isnan(img1Val) && isnan(img2Val)) {
+                        continue;
+                    }
+                    if (img1Val != img2Val) {
+                        throw std::exception("different raster values in one of the GDALRasterImages");
+                    }
+                }
+            }
+        }
+    }
 
     nrows = refGrid->nRows;
     ncols = refGrid->nCols;
