@@ -228,6 +228,82 @@ extern char outstr[];
 
 //-----------------------------------------------------------------------------
 
+void testInputParams(InputParams& inputParams) {
+    if (inputParams.pFS2 != pFS2) { throw std::exception("pFS2               "); }
+    if (inputParams.pFS20 != pFS20) { throw std::exception("pFS20              "); }
+    if (inputParams.StemConst != StemConst) { throw std::exception("StemConst          "); }
+    if (inputParams.StemPower != StemPower) { throw std::exception("StemPower          "); }
+    if (inputParams.pRx != pRx) { throw std::exception("pRx                "); }
+    if (inputParams.pRn != pRn) { throw std::exception("pRn                "); }
+    if (inputParams.growthTmin != growthTmin) { throw std::exception("growthTmin         "); }
+    if (inputParams.growthTopt != growthTopt) { throw std::exception("growthTopt         "); }
+    if (inputParams.growthTmax != growthTmax) { throw std::exception("growthTmax         "); }
+    if (inputParams.kF != kF) { throw std::exception("kF                 "); }
+    if (inputParams.gammaFx != gammaFx) { throw std::exception("gammaFx            "); }
+    if (inputParams.gammaF0 != gammaF0) { throw std::exception("gammaF0            "); }
+    if (inputParams.tgammaF != tgammaF) { throw std::exception("tgammaF            "); }
+    if (inputParams.Rttover != Rttover) { throw std::exception("Rttover            "); }
+    if (inputParams.MaxCond != MaxCond) { throw std::exception("MaxCond            "); }
+    if (inputParams.CoeffCond != CoeffCond) { throw std::exception("CoeffCond          "); }
+    if (inputParams.BLcond != BLcond) { throw std::exception("BLcond             "); }
+    if (inputParams.m0 != m0) { throw std::exception("m0                 "); }
+    if (inputParams.fN0 != fN0) { throw std::exception("fN0                "); }
+    if (inputParams.fNn != fNn) { throw std::exception("fNn                "); }
+    if (inputParams.thinPower != thinPower) { throw std::exception("thinPower          "); }
+    if (inputParams.mF != mF) { throw std::exception("mF                 "); }
+    if (inputParams.mR != mR) { throw std::exception("mR                 "); }
+    if (inputParams.mS != mS) { throw std::exception("mS                 "); }
+    if (inputParams.SWconst0 != SWconst0) { throw std::exception("SWconst0           "); }
+    if (inputParams.SWpower0 != SWpower0) { throw std::exception("SWpower0           "); }
+    if (inputParams.wSx1000 != wSx1000) { throw std::exception("wSx1000            "); }
+    if (inputParams.MaxAge != MaxAge) { throw std::exception("MaxAge             "); }
+    if (inputParams.nAge != nAge) { throw std::exception("nAge               "); }
+    if (inputParams.rAge != rAge) { throw std::exception("rAge               "); }
+    if (inputParams.SLA0 != SLA0) { throw std::exception("SLA0               "); }
+    if (inputParams.SLA1 != SLA1) { throw std::exception("SLA1               "); }
+    if (inputParams.tSLA != tSLA) { throw std::exception("tSLA               "); }
+    if (inputParams.k != k) { throw std::exception("k                  "); }
+    if (inputParams.fullCanAge != fullCanAge) { throw std::exception("fullCanAge         "); }
+    if (inputParams.alpha != alpha) { throw std::exception("alpha              "); }
+    if (inputParams.fracBB0 != fracBB0) { throw std::exception("fracBB0            "); }
+    if (inputParams.fracBB1 != fracBB1) { throw std::exception("fracBB1            "); }
+    if (inputParams.tBB != tBB) { throw std::exception("tBB                "); }
+    if (inputParams.y != y) { throw std::exception("y                  "); }
+    if (inputParams.rhoMin != rhoMin) { throw std::exception("rhoMin             "); }
+    if (inputParams.rhoMax != rhoMax) { throw std::exception("rhoMax             "); }
+    if (inputParams.tRho != tRho) { throw std::exception("tRho               "); }
+    if (inputParams.Qa != Qa) { throw std::exception("Qa                 "); }
+    if (inputParams.Qb != Qb) { throw std::exception("Qb                 "); }
+    if (inputParams.gDM_mol != gDM_mol) { throw std::exception("gDM_mol            "); }
+    if (inputParams.molPAR_MJ != molPAR_MJ) { throw std::exception("molPAR_MJ          "); }
+    if (inputParams.LAIgcx != LAIgcx) { throw std::exception("LAIgcx             "); }
+    if (inputParams.MaxIntcptn != MaxIntcptn) { throw std::exception("MaxIntcptn         "); }
+    if (inputParams.LAImaxIntcptn != LAImaxIntcptn) { throw std::exception("LAImaxIntcptn      "); }
+    if (inputParams.Lat != Lat) { throw std::exception("Lat                "); }
+    if (inputParams.FRp != FRp) { throw std::exception("FRp                "); }
+    if (inputParams.FRstart != FRstart) { throw std::exception("FRstart            "); }
+    if (inputParams.FRend != FRend) { throw std::exception("FRend              "); }
+    if (inputParams.FRdec != FRdec) { throw std::exception("FRdec              "); }
+    if (inputParams.soilIndex != soilIndex) { throw std::exception("soilIndex          "); }
+    if (inputParams.MaxASW != MaxASW) { throw std::exception("MaxASW             "); }
+    if (inputParams.MinASWp != MinASWp) { throw std::exception("MinASWp            "); }
+    if (inputParams.StartAge != StartAge) { throw std::exception("StartAge           "); }
+    if (inputParams.EndYear != EndYear) { throw std::exception("EndYear            "); }
+    if (inputParams.StartMonth != StartMonth) { throw std::exception("StartMonth         "); }
+    if (inputParams.yearPlanted != yearPlanted) { throw std::exception("yearPlanted        "); }
+    if (inputParams.SeedlingMass != SeedlingMass) { throw std::exception("SeedlingMass       "); }
+    if (inputParams.WFi != WFi) { throw std::exception("WFi                "); }
+    if (inputParams.WRi != WRi) { throw std::exception("WRi                "); }
+    if (inputParams.WSi != WSi) { throw std::exception("WSi                "); }
+    if (inputParams.StemNoi != StemNoi) { throw std::exception("StemNoi            "); }
+    if (inputParams.ASWi != ASWi) { throw std::exception("ASWi               "); }
+    if (inputParams.MinASWTG != MinASWTG) { throw std::exception("MinASWTG           "); }
+    if (inputParams.NDVI_FPAR_intercept != NDVI_FPAR_intercept) { throw std::exception("NDVI_FPAR_intercept"); }
+    if (inputParams.NDVI_FPAR_constant != NDVI_FPAR_constant) { throw std::exception("NDVI_FPAR_constant"); }
+}
+
+//-----------------------------------------------------------------------------
+
 double getDayLength(double Lat, int dayOfYear)
 {
     // gets fraction of day when sun is "up"
@@ -517,7 +593,7 @@ bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
 //-----------------------------------------------------------------------------
 
 // This is the main routine for the 3PG model
-void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex)
+void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput *dataInput)
 {
     //  int minCy, maxCy; 
 
@@ -584,6 +660,12 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     // grids. 
     hitNODATA = !loadParamVals(cellIndex);
 
+    InputParams inputParams;
+    bool testhitNODATA = !dataInput->getInputParams(cellIndex, inputParams);
+    if (hitNODATA != testhitNODATA) {
+        throw std::exception("hitnodata not the same!!!");
+    }
+
     // May have hit nodata in StartMonth, yearPlanted and EndYear, in which case 
     // firstRunMonth and LastRunMonth will be meaningless.  In any case, if we aren't at 
     // NODATA, we have to do all the pre-year stuff below.  
@@ -591,6 +673,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
         goto skipPreYearCalcs;
 
     Initialisation(opVars);
+    testInputParams(inputParams);
 
     // VPD and NetRad from internal model, or user specified series? 
     haveVpdSeries = userVpdSeries();

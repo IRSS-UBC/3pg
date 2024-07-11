@@ -244,7 +244,7 @@ int main(int argc, char* argv[])
             }
             
             int cellIndex = i * ncols + j;
-            runTreeModel(opVars, spMinMY, spMaxMY, cellIndex);
+            runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput);
 
             //increment progress
             cellsDone++;
