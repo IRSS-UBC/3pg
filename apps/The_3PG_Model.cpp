@@ -651,6 +651,10 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
         mDayLength[mn] = 86400 * getDayLength(Lat, dayofyr);
     }
 
+    if (dataInput->haveMinASWTG != haveMinASWTG()) {
+        throw std::exception("haveMinASWTG incorrect!!!");
+    }
+
     if (haveMinASWTG())
         useMinASWTG = true;
     else
@@ -693,6 +697,9 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     //Fix for aracruz work.  Implements SeedlingMass distribution
     //that Peter Sands uses for multisite data.
 
+    if (dataInput->haveSeedlingMass != haveSeedlingMass()) {
+        throw std::exception("haveSeedlingMass incorrect!!!");
+    }
     if (haveSeedlingMass())
     {
         WFi = (0.5 * StemNoi * SeedlingMass) / pow(10, 6);
@@ -802,6 +809,9 @@ skipPreYearCalcs:
 
         // Get management-related options for current year and cell. 
         // First load param file values, then possibly override them with management table values. 
+        if (dataInput->haveAgeDepFert != haveAgeDepFert()) {
+            throw std::exception("haveAgeDepFert incorrect!!!");
+        }
         if (!haveAgeDepFert())
             opVars["FR"].v = FRp;
         if (nFertility > 0)

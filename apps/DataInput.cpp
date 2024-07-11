@@ -208,22 +208,14 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 		return false;
 	}
 
-	//note: we may not need the following if else statement. The previous code mentions it seems to cause
-	//errors when not there. Something to look into (TODO)
-	if (haveSeedlingMass) {
-		//set WFi, WRi, and WSi if seedling mass is set
-		inputParams["WFi"].val = 0;
-		inputParams["WFi"].data.spType = pScalar;
-		inputParams["WRi"].val = 0;
-		inputParams["WRi"].data.spType = pScalar;
-		inputParams["WSi"].val = 0;
-		inputParams["WSi"].data.spType = pScalar;
-	}
-	else {
-		//set SeedlingMass if it isn't already
-		inputParams["SeedlingMass"].val = 0;
-		inputParams["SeedlingMass"].data.spType = pScalar;
-	}
+	this->haveSeedlingMass = haveSeedlingMass;
+	this->haveMinASWTG = this->inputParams.find("MinASWTG") != this->inputParams.end();
+	this->haveAgeDepFert = (
+		this->inputParams.find("FRstart") != this->inputParams.end() &&
+		this->inputParams.find("FRend") != this->inputParams.end() &&
+		this->inputParams.find("FRdec") != this->inputParams.end()
+	);
+
 
 	//if we're using 3PGS, ensure we have all required 3PGS parameters
 	if (modelMode3PGS && this->requiredParams3PGS.size() != 0) {
