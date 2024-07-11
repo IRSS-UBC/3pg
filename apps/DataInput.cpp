@@ -128,15 +128,19 @@ bool DataInput::tryAddParam(std::string name, std::vector<std::string> value) {
 
 	//if the string isn't the exact parameter name, see if it is in the parameter name map
 	if (this->allParams.find(name) == this->allParams.end()) {
+		//search for the actual (shortened) param name
 		auto search = this->paramNames.find(name);
 
+		//if the string passed isn't an input param return false
 		if (search == this->paramNames.end()) {
 			return false;
 		}
 
+		//the string passed is the long version of the input param: set the id accordingly
 		param.id = search->second;
 	}
 	else {
+		//if the string is the exact parameter name, set the id accordingly
 		param.id = name;
 	}
 
@@ -191,7 +195,7 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	bool haveWRi = this->inputParams.find("WRi") != this->inputParams.end();
 	bool haveWSi = this->inputParams.find("WSi") != this->inputParams.end();
 
-	//must have seedling mass and one of WFi, WRi, and WSi
+	//if we don't have seedling mass, need all of WFi, WRi, and WSi
 	if (!haveSeedlingMass && (!haveWFi || !haveWRi || !haveWSi)) {
 		std::string errstr;
 		if (!haveSeedlingMass) {
@@ -339,6 +343,7 @@ double DataInput::getValFromParam(std::string paramName, int row, int col) {
 }
 
 void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
+	//error checking
 	if (!finishedInput) {
 		throw std::exception("should NOT be able to call findRunPeriod() if input failed!");
 	}
@@ -359,8 +364,9 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	determine minMY values 
 	*/
 	if (startAgeParam.data.spType != pScalar && yearPlantedParam.data.spType != pScalar) {
-		//if both are raster, find the minimum sum of min year planted and min start age pixels
-		//we do this because minimum year planted and minimum start age may never occur on the same pixels
+		//if both are raster, find smallest sum of yearPlanted and startAge pixels.
+		//we do this because the minimum sum (which is the year we should start on)
+		//does not have to be at any of the pixels where yearPlanted or startAge are smallest
 		double overallMin = 0;
 		for (int row = 0; row < yearPlantedParam.data.g->nRows; row++) {
 			for (int col = 0; col < yearPlantedParam.data.g->nCols; col++) {
