@@ -351,7 +351,7 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	PPPG_PARAM yearPlantedParam = this->inputParams.find("yearPlanted")->second;
 	PPPG_PARAM startAgeParam = this->inputParams.find("StartAge")->second;
 	PPPG_PARAM endYearParam = this->inputParams.find("EndYear")->second;
-	PPPG_PARAM startMonthParam = this->inputParams.find("startMonth")->second;
+	PPPG_PARAM startMonthParam = this->inputParams.find("StartMonth")->second;
 
 	//get maxes and mins depending on whether they're scalar or grid parameters
 	int yearPlantedMin = (yearPlantedParam.data.spType == pScalar) ? yearPlantedParam.val : yearPlantedParam.data.g->GetMin();
@@ -366,7 +366,7 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 		//if both are raster, find smallest sum of yearPlanted and startAge pixels.
 		//we do this because the minimum sum (which is the year we should start on)
 		//does not have to be at any of the pixels where yearPlanted or startAge are smallest
-		double overallMin = 0;
+		double overallMin = std::numeric_limits<double>::max();
 		for (int row = 0; row < yearPlantedParam.data.g->nRows; row++) {
 			for (int col = 0; col < yearPlantedParam.data.g->nCols; col++) {
 				//convert gotten values to double first so we don't have any overflow of floats as we add them
@@ -376,6 +376,8 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 				overallMin = (curMin < overallMin) ? curMin : overallMin;
 			}
 		}
+
+		minMY.year = overallMin;
 	}
 	else {
 		//otherwise, just add the mins together
