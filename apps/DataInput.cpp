@@ -21,13 +21,13 @@ bool DataInput::getScalar(std::vector<std::string> value, PPPG_PARAM& param) {
 	try {
 		//get the value from the array
 		double val = std::stod(value.front());
-		*(param.adr) = val;
+		param.val = val;
 
 		//mark the data as scalar
 		param.data.spType = pScalar;
 
 		//log input param acquired
-		std::string output = "    " + param.id + "        constant: " + std::to_string(*(param.adr));
+		std::string output = "    " + param.id + "        constant: " + std::to_string(param.val);
 		std::cout << output << std::endl;
 		//this->logger->Log(output);
 
@@ -212,16 +212,16 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	//errors when not there. Something to look into (TODO)
 	if (haveSeedlingMass) {
 		//set WFi, WRi, and WSi if seedling mass is set
-		*inputParams["WFi"].adr = 0;
+		inputParams["WFi"].val = 0;
 		inputParams["WFi"].data.spType = pScalar;
-		*inputParams["WRi"].adr = 0;
+		inputParams["WRi"].val = 0;
 		inputParams["WRi"].data.spType = pScalar;
-		*inputParams["WSi"].adr = 0;
+		inputParams["WSi"].val = 0;
 		inputParams["WSi"].data.spType = pScalar;
 	}
 	else {
 		//set SeedlingMass if it isn't already
-		*inputParams["SeedlingMass"].adr = 0;
+		inputParams["SeedlingMass"].val = 0;
 		inputParams["SeedlingMass"].data.spType = pScalar;
 	}
 
@@ -330,7 +330,7 @@ double DataInput::getValFromParam(std::string paramName, int row, int col) {
 
 	//if the param is scalar, return it's value
 	if (search->second.data.spType == pScalar) {
-		return *search->second.adr;
+		return search->second.val;
 	}
 
 	//if the param is a grid, return the value at the row and column specified
@@ -354,10 +354,10 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	PPPG_PARAM startMonthParam = this->inputParams.find("startMonth")->second;
 
 	//get maxes and mins depending on whether they're scalar or grid parameters
-	int yearPlantedMin = (yearPlantedParam.data.spType == pScalar) ? *yearPlantedParam.adr : yearPlantedParam.data.g->GetMin();
-	int startAgeMin = (startAgeParam.data.spType == pScalar) ? *startAgeParam.adr : startAgeParam.data.g->GetMin();
-	int endYearMax = (endYearParam.data.spType == pScalar) ? *endYearParam.adr : endYearParam.data.g->GetMax();
-	int startMonthMax = (startMonthParam.data.spType == pScalar) ? *startMonthParam.adr : startMonthParam.data.g->GetMax();
+	int yearPlantedMin = (yearPlantedParam.data.spType == pScalar) ? yearPlantedParam.val : yearPlantedParam.data.g->GetMin();
+	int startAgeMin = (startAgeParam.data.spType == pScalar) ? startAgeParam.val : startAgeParam.data.g->GetMin();
+	int endYearMax = (endYearParam.data.spType == pScalar) ? endYearParam.val : endYearParam.data.g->GetMax();
+	int startMonthMax = (startMonthParam.data.spType == pScalar) ? startMonthParam.val : startMonthParam.data.g->GetMax();
 
 	/* 
 	determine minMY values 

@@ -22,6 +22,7 @@ struct PPPG_VVAL {
 typedef struct PPPG_PARAM {
 	std::string id = "";                        // String version of the variable name. 
 	double* adr;                     // The address of the model variable. 
+	double val;
 	bool got = 0;                        // Has the parameter been set? 
 	PPPG_VVAL data;                  // Variant value
 } PPPG_PARAM;
