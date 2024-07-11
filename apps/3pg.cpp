@@ -204,6 +204,21 @@ int main(int argc, char* argv[])
     // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
     std::cout << "Finding run period..." << std::endl;
     findRunPeriod(spMinMY, spMaxMY); 
+    MYDate spMinMYTest;
+    MYDate spMaxMYTest;
+    dataInput->findRunPeriod(spMinMYTest, spMaxMYTest);
+    if (spMinMY.mon != spMinMYTest.mon) {
+        throw std::exception("min month different!!!");
+    }
+    else if (spMinMY.year != spMinMYTest.year) {
+        throw std::exception("min year different!!!");
+    }
+    else if (spMaxMY.mon != spMaxMYTest.mon) {
+        throw std::exception("max month different!!!");
+    }
+    else if (spMaxMY.year != spMaxMYTest.year) {
+        throw std::exception("max year different!!!");
+    }
 
     // NOTE: don't think ResetGrids is necessary for GDAL stuff... but I guess we'll see
     // ResetGrids(); 
