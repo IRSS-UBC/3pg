@@ -1643,7 +1643,7 @@ bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, st
 
 //----------------------------------------------------------------------------------
 
-void readSpeciesParamFile(const std::string& speciesFile) {
+void readSpeciesParamFile(const std::string& speciesFile, DataInput *dataInput) {
     FILE* paramFp;
     std::string line, pName;
     std::string pValue;
@@ -1671,6 +1671,7 @@ void readSpeciesParamFile(const std::string& speciesFile) {
         boost::trim_if(pName, boost::is_any_of("\""));
         std::vector<std::string> pValues;
         boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+        dataInput->tryAddParam(pName, pValues);
         if (readInputParam(pName, pValues)) { 
             continue; 
         }
@@ -1682,7 +1683,7 @@ void readSpeciesParamFile(const std::string& speciesFile) {
     }
 }
 
-std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile)
+std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile, DataInput *dataInput)
 {
   // Read a text file containing 3PG parameters.  Comments are allowed
   // and must begin with C++ style '//'.  Comments can begin at any
@@ -1728,6 +1729,7 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
     // Second and subsequent tokens are the parameter values, put them all into a vector
     std::vector<std::string> pValues;
     boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+    dataInput->tryAddParam(pName, pValues);
     if (readInputParam(pName, pValues)) { continue; }
     if (output_var_names.find(pName) != output_var_names.end()) {
         opVars.emplace(pName, readOutputParam(pName, pValues, lineNo));

@@ -4,6 +4,7 @@
 #include <string>
 #include "GDALRasterImage.hpp"
 #include "DataOutput.hpp"
+#include "DataInput.hpp"
 #include "ParamStructs.hpp"
 // Must include FloatGrid.hpp prior to this. 
 #include "MYDate.h" 
@@ -41,8 +42,8 @@ int findRunPeriod( MYDate &minMY, MYDate &maxMY );
 // Check that min and max month/years are valid.
 bool validRunPeriod(const MYDate& minMY, const MYDate& maxMY);
 
-void readSpeciesParamFile(const std::string& speciesFile);
-std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile);
+void readSpeciesParamFile(const std::string& speciesFile, DataInput *dataInput);
+std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile, DataInput *dataInput);
 void readSampleFile(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, GDALRasterImage* refGrid);
 PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo);
 

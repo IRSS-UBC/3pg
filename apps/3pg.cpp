@@ -55,6 +55,9 @@ std::string COPYMSG = "This version of 3-PG has been revised by:\n"
                         "Better message TBD. Enjoy!\n"
                         "--------------------------------------\n";
 
+extern PPPG_PARAM params[];
+extern bool modelMode3PGS;
+
 Logger logger("logfile.txt");
 
 class InputParser {
@@ -119,7 +122,7 @@ int main(int argc, char* argv[])
 
     std::string outPath = getOutPathTMP(siteParamFile);
     logger.StartLog(outPath);
-    DataInput dataInput();
+    DataInput *dataInput = new DataInput();
 
     /* Copyright */
     std::cout << COPYMSG << std::endl;
@@ -128,8 +131,35 @@ int main(int argc, char* argv[])
 
     // Load the parameters and output variables. 
     InitInputParams();
-    readSpeciesParamFile(defParamFile);
-    opVars = readSiteParamFile(siteParamFile);
+    readSpeciesParamFile(defParamFile, dataInput);
+    opVars = readSiteParamFile(siteParamFile, dataInput);
+
+    //test that dataInput (scalar) parameters match those in the existing parameter array
+    for (int pn = 1; params[pn].id != ""; pn++) {
+        PPPG_PARAM paramsArrayParam = params[pn];
+        if (paramsArrayParam.got == true) {
+            PPPG_PARAM* dataInputParam = dataInput->getParamTemp(paramsArrayParam.id);
+            
+            if (dataInputParam == nullptr) {
+                throw std::exception("parameter should exist!!!");
+            }
+
+            if (paramsArrayParam.data.spType != dataInputParam->data.spType) {
+                throw std::exception("incorrect spType!!!");
+            }
+
+            if (*(paramsArrayParam.adr) != dataInputParam->val) {
+                throw std::exception("incorrect value!!!");
+            }
+        }
+        else {
+            if (dataInput->getParamTemp(paramsArrayParam.id) != nullptr) {
+                throw std::exception("parameter should not exist!!!");
+            }
+        }
+    }
+
+    dataInput->inputFinished(modelMode3PGS);
     if (!haveAllParams()) {
         exit(EXIT_FAILURE);
 

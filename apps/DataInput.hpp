@@ -288,4 +288,5 @@ public:
 	bool inputFinished(bool modelMode3PGS);
 	InputParams getInputParams(int row, int col);
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
+	PPPG_PARAM* getParamTemp(std::string name);
 };
