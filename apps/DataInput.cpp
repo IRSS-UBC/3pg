@@ -453,13 +453,3 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 		exit(EXIT_FAILURE);
 	}
 }
-
-PPPG_PARAM* DataInput::getParamTemp(std::string name) {
-	auto search = this->inputParams.find(name);
-	if (search == this->inputParams.end()) {
-		return nullptr;
-	}
-	else {
-		return &search->second;
-	}
-}

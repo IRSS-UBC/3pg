@@ -288,7 +288,6 @@ public:
 	bool inputFinished(bool modelMode3PGS);
 	bool DataInput::getInputParams(long cellIndex, InputParams& params);
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
-	PPPG_PARAM* getParamTemp(std::string name);
 
 	bool haveSeedlingMass;
 	bool haveMinASWTG;

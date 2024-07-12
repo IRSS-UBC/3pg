@@ -128,71 +128,17 @@ int main(int argc, char* argv[])
     std::cout << COPYMSG << std::endl;
     logger.Log(COPYMSG);
 
-
-    // Load the parameters and output variables. 
-    InitInputParams();
+    // Load the parameters
     readSpeciesParamFile(defParamFile, dataInput);
     opVars = readSiteParamFile(siteParamFile, dataInput);
 
-    //test that dataInput (scalar) parameters match those in the existing parameter array
-    for (int pn = 1; params[pn].id != ""; pn++) {
-        PPPG_PARAM paramsArrayParam = params[pn];
-        if (paramsArrayParam.got == true) {
-            PPPG_PARAM* dataInputParam = dataInput->getParamTemp(paramsArrayParam.id);
-            
-            if (dataInputParam == nullptr) {
-                throw std::exception("parameter should exist!!!");
-            }
-
-            if (paramsArrayParam.data.spType != dataInputParam->data.spType) {
-                throw std::exception("incorrect spType!!!");
-            }
-
-            if (paramsArrayParam.data.spType != pScalar) {
-                continue;
-            }
-
-            if (*(paramsArrayParam.adr) != dataInputParam->val) {
-                throw std::exception("incorrect value!!!");
-            }
-        }
-        else {
-            if (dataInput->getParamTemp(paramsArrayParam.id) != nullptr) {
-                throw std::exception("parameter should not exist!!!");
-            }
-        }
-    }
-
-    dataInput->inputFinished(modelMode3PGS);
-    if (!haveAllParams()) {
+    //check that we have all the correct parameters
+    if (!dataInput->inputFinished(modelMode3PGS) || !haveAllParams()) {
         exit(EXIT_FAILURE);
-
     }
-
 
     // Check for a spatial run, if so open input grids and define refGrid. 
     refGrid = openInputGrids();
-
-    //check spatial params
-    for (int pn = 1; params[pn].id != ""; pn++) {
-        if (params[pn].data.spType == pTif) {
-            GDALRasterImage* img1 = params[pn].data.g;
-            GDALRasterImage* img2 = dataInput->getParamTemp(params[pn].id)->data.g;
-
-            for (int i = 0; i < img1->nRows; i++) {
-                for (int j = 0; j < img1->nCols; j++) {
-                    double img1Val = img1->GetVal(i, j);
-                    double img2Val = img2->GetVal(i, j);
-                    if (isnan(img1Val) && isnan(img2Val)) {
-                        continue;
-                    }
-                    if (img1Val != img2Val) {
-                        throw std::exception("different raster values in one of the GDALRasterImages");
-                    }
-                }
-            }
-        }
-    }
 
     nrows = refGrid->nRows;
     ncols = refGrid->nCols;
@@ -203,29 +149,10 @@ int main(int argc, char* argv[])
     // Find the over all start year and end year. 
     // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
     std::cout << "Finding run period..." << std::endl;
-    findRunPeriod(spMinMY, spMaxMY); 
-    MYDate spMinMYTest;
-    MYDate spMaxMYTest;
-    dataInput->findRunPeriod(spMinMYTest, spMaxMYTest);
-    if (spMinMY.mon != spMinMYTest.mon) {
-        throw std::exception("min month different!!!");
-    }
-    else if (spMinMY.year != spMinMYTest.year) {
-        throw std::exception("min year different!!!");
-    }
-    else if (spMaxMY.mon != spMaxMYTest.mon) {
-        throw std::exception("max month different!!!");
-    }
-    else if (spMaxMY.year != spMaxMYTest.year) {
-        throw std::exception("max year different!!!");
-    }
-
-    // NOTE: don't think ResetGrids is necessary for GDAL stuff... but I guess we'll see
-    // ResetGrids(); 
+    dataInput->findRunPeriod(spMinMY, spMaxMY);
 
     readSampleFile(opVars, refGrid); 
     std::cout << "Points read from sample file." << std::endl;
-
  
     // Run the model. 
     int cellsDone = 0;
