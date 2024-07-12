@@ -13,9 +13,9 @@ DataInput::~DataInput() {
 		PPPG_PARAM param = iterator->second;
 
 		//if it's a grid parameter, we have to clean up it's corrosponding GDALRasterImage
-		if (param.data.spType == pTif && param.data.g != nullptr) {
-			delete param.data.g;
-			param.data.g = nullptr;
+		if (param.spType == pTif && param.g != nullptr) {
+			delete param.g;
+			param.g = nullptr;
 		}
 	}
 }
@@ -27,7 +27,7 @@ bool DataInput::getScalar(std::vector<std::string> value, PPPG_PARAM& param) {
 		param.val = val;
 
 		//mark the data as scalar
-		param.data.spType = pScalar;
+		param.spType = pScalar;
 
 		//log input param acquired
 		std::string output = "    " + param.id + "        constant: " + std::to_string(param.val);
@@ -63,17 +63,16 @@ bool DataInput::getGrid(std::vector<std::string> value, PPPG_PARAM& param) {
 			return false;
 		}
 
-		//set data type and file path
-		param.data.spType = pTif;
-		param.data.gridName = filePath.string();
+		//set data type
+		param.spType = pTif;
 
 		//try opening the grid and compare to the refgrid (or create the refgrid)
-		if (!openCheckGrid(param.data)) {
+		if (!openCheckGrid(filePath.string(), param)) {
 			return false;
 		}
 
 		//log input param
-		std::string output = "    " + param.id + "        raster: " + param.data.gridName;
+		std::string output = "    " + param.id + "        raster: " + param.g->name;
 		std::cout << output << std::endl;
 		logger.Log(output);
 		return true;
@@ -88,13 +87,13 @@ bool DataInput::getGrid(std::vector<std::string> value, PPPG_PARAM& param) {
 	}
 }
 
-bool DataInput::openCheckGrid(PPPG_VVAL& vval) {
+bool DataInput::openCheckGrid(std::string path, PPPG_PARAM& param) {
 	//ensure we can open and read from the file as a GDALRasterImage
 	try {
-		vval.g = new GDALRasterImage(vval.gridName);
+		param.g = new GDALRasterImage(path);
 	}
 	catch (const std::exception& e) {
-		std::string errstr = "failed to open " + vval.gridName + "\n" + e.what();
+		std::string errstr = "failed to open " + path + "\n" + e.what();
 		std::cout << errstr << std::endl;
 		logger.Log(errstr);
 		return false;
@@ -103,18 +102,18 @@ bool DataInput::openCheckGrid(PPPG_VVAL& vval) {
 	//if the refgrid is null, this is grid becomes the refgrid
 	//otherwise, check grid dimensions
 	if (this->refGrid == nullptr) {
-		this->refGrid = vval.g;
+		this->refGrid = param.g;
 	}
 	else {
 		if (
-			(fabs(this->refGrid->xMin - vval.g->xMin) > 0.0001) ||	//check xMin
-			(fabs(this->refGrid->yMin - vval.g->yMin) > 0.0001) ||	//check yMin
-			(fabs(this->refGrid->xMax - vval.g->xMax) > 0.0001) ||	//check xMax
-			(fabs(this->refGrid->yMax - vval.g->yMax) > 0.0001) ||	//check yMax
-			(this->refGrid->nRows != vval.g->nRows) ||				//check nRows
-			(this->refGrid->nCols != vval.g->nCols)					//check nCols
+			(fabs(this->refGrid->xMin - param.g->xMin) > 0.0001) ||	//check xMin
+			(fabs(this->refGrid->yMin - param.g->yMin) > 0.0001) ||	//check yMin
+			(fabs(this->refGrid->xMax - param.g->xMax) > 0.0001) ||	//check xMax
+			(fabs(this->refGrid->yMax - param.g->yMax) > 0.0001) ||	//check yMax
+			(this->refGrid->nRows != param.g->nRows) ||				//check nRows
+			(this->refGrid->nCols != param.g->nCols)					//check nCols
 			) {
-			std::string errstr = "Grid dimensions of " + vval.gridName + " differs from " + this->refGrid->name;
+			std::string errstr = "Grid dimensions of " + path + " differs from " + this->refGrid->name;
 			std::cout << errstr << std::endl;
 			logger.Log(errstr);
 			return false;
@@ -354,13 +353,13 @@ double DataInput::getValFromParam(std::string paramName, long cellIndex) {
 	}
 
 	//if the param is scalar, return it's value
-	if (search->second.data.spType == pScalar) {
+	if (search->second.spType == pScalar) {
 		return search->second.val;
 	}
 
 	//if the param is a grid, return the value at the row and column specified
-	if (search->second.data.spType == pTif) {
-		double val = search->second.data.g->GetVal(cellIndex);
+	if (search->second.spType == pTif) {
+		double val = search->second.g->GetVal(cellIndex);
 		if (isnan(val)) {
 			throw std::runtime_error("nan");
 		}
@@ -385,23 +384,23 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	PPPG_PARAM startMonthParam = this->inputParams.find("StartMonth")->second;
 
 	//get maxes and mins depending on whether they're scalar or grid parameters
-	int yearPlantedMin = (yearPlantedParam.data.spType == pScalar) ? yearPlantedParam.val : yearPlantedParam.data.g->GetMin();
-	int startAgeMin = (startAgeParam.data.spType == pScalar) ? startAgeParam.val : startAgeParam.data.g->GetMin();
-	int endYearMax = (endYearParam.data.spType == pScalar) ? endYearParam.val : endYearParam.data.g->GetMax();
-	int startMonthMax = (startMonthParam.data.spType == pScalar) ? startMonthParam.val : startMonthParam.data.g->GetMax();
+	int yearPlantedMin = (yearPlantedParam.spType == pScalar) ? yearPlantedParam.val : yearPlantedParam.g->GetMin();
+	int startAgeMin = (startAgeParam.spType == pScalar) ? startAgeParam.val : startAgeParam.g->GetMin();
+	int endYearMax = (endYearParam.spType == pScalar) ? endYearParam.val : endYearParam.g->GetMax();
+	int startMonthMax = (startMonthParam.spType == pScalar) ? startMonthParam.val : startMonthParam.g->GetMax();
 
 	/* 
 	determine minMY values 
 	*/
-	if (startAgeParam.data.spType != pScalar && yearPlantedParam.data.spType != pScalar) {
+	if (startAgeParam.spType != pScalar && yearPlantedParam.spType != pScalar) {
 		//if both are raster, find smallest sum of yearPlanted and startAge pixels.
 		//we do this because the minimum sum (which is the year we should start on)
 		//does not have to be at any of the pixels where yearPlanted or startAge are smallest
 		double overallMin = std::numeric_limits<double>::max();
-		for (int row = 0; row < yearPlantedParam.data.g->nRows; row++) {
-			for (int col = 0; col < yearPlantedParam.data.g->nCols; col++) {
+		for (int row = 0; row < yearPlantedParam.g->nRows; row++) {
+			for (int col = 0; col < yearPlantedParam.g->nCols; col++) {
 				//convert gotten values to double first so we don't have any overflow of floats as we add them
-				double curMin = (double)yearPlantedParam.data.g->GetVal(row, col) + (double)startAgeParam.data.g->GetVal(row, col);
+				double curMin = (double)yearPlantedParam.g->GetVal(row, col) + (double)startAgeParam.g->GetVal(row, col);
 				
 				//set the overall minimum accordingly
 				overallMin = (curMin < overallMin) ? curMin : overallMin;
@@ -420,9 +419,9 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	/* 
 	determine maxMY values
 	*/
-	if (endYearParam.data.spType != pScalar && startMonthParam.data.spType != pScalar) {
+	if (endYearParam.spType != pScalar && startMonthParam.spType != pScalar) {
 		//find the maximum month considering only pixels that are the maximum year
-		maxMY.mon = startMonthParam.data.g->maxFromIndices(endYearParam.data.g->getIndicesWhere(endYearMax));
+		maxMY.mon = startMonthParam.g->maxFromIndices(endYearParam.g->getIndicesWhere(endYearMax));
 	}
 	else {
 		//otherwise, just use the start month max
@@ -455,4 +454,9 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 		//then exit
 		exit(EXIT_FAILURE);
 	}
+
+	//valid run period successfully determined
+	string runPeriodStr = "first run year = " + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
+	std::cout << runPeriodStr << std::endl;
+	logger.Log(runPeriodStr);
 }

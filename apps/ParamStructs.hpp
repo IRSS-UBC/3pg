@@ -14,17 +14,18 @@ struct PPPG_VVAL {
 	GDALRasterImage* g;                               // ptr to grid value
 };
 
-// 3PG 'parameters'. These are all stored as double.  The 'id' string field 
-// is set to the name of the variable in the initialisation below.  Within 
-// the model itself we don't reference the parameters via this type.  Its 
-// used to help identify parameter lines, and to help get grid values into 
-// the model.  
 typedef struct PPPG_PARAM {
-	std::string id = "";                        // String version of the variable name. 
-	double* adr;                     // The address of the model variable. 
+	//variable name
+	std::string id = "";
+
+	//indication of scalar or grid parameter
+	ParamSpatial spType = pNull;
+
+	//scalar value
 	double val;
-	bool got = 0;                        // Has the parameter been set? 
-	PPPG_VVAL data;                  // Variant value
+	
+	//grid reference
+	GDALRasterImage* g;
 } PPPG_PARAM;
 
 // 3PG output variables. In spatial mode output variables may be written 

@@ -55,7 +55,6 @@ std::string COPYMSG = "This version of 3-PG has been revised by:\n"
                         "Better message TBD. Enjoy!\n"
                         "--------------------------------------\n";
 
-extern PPPG_PARAM params[];
 extern bool modelMode3PGS;
 
 Logger logger("logfile.txt");

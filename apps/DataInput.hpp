@@ -280,7 +280,7 @@ private:
 	bool getScalar(std::vector<std::string> value, PPPG_PARAM& param);
 	bool getGrid(std::vector<std::string> value, PPPG_PARAM& param);
 	double getValFromParam(std::string paramName, long cellIndex);
-	bool openCheckGrid(PPPG_VVAL& vval);
+	bool openCheckGrid(std::string path, PPPG_PARAM& param);
 public:
 	DataInput();
 	~DataInput();
