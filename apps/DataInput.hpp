@@ -278,10 +278,10 @@ private:
 	GDALRasterImage* refGrid;
 	bool finishedInput = false;
 
-	bool getScalar(std::vector<std::string> value, PPPG_PARAM& param);
-	bool getGrid(std::vector<std::string> value, PPPG_PARAM& param);
+	bool getScalar(std::string value, PPPG_PARAM& param);
+	bool getGrid(std::string value, PPPG_PARAM& param);
 	double getValFromParam(std::string paramName, long cellIndex);
-	bool openCheckGrid(std::string path, PPPG_PARAM& param);
+	bool openCheckGrid(std::string path, GDALRasterImage* grid);
 public:
 	DataInput();
 	~DataInput();

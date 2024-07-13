@@ -20,10 +20,10 @@ DataInput::~DataInput() {
 	}
 }
 
-bool DataInput::getScalar(std::vector<std::string> value, PPPG_PARAM& param) {
+bool DataInput::getScalar(std::string value, PPPG_PARAM& param) {
 	try {
 		//get the value from the array
-		double val = std::stod(value.front());
+		double val = std::stod(value);
 		param.val = val;
 
 		//mark the data as scalar
@@ -42,10 +42,10 @@ bool DataInput::getScalar(std::vector<std::string> value, PPPG_PARAM& param) {
 	}
 }
 
-bool DataInput::getGrid(std::vector<std::string> value, PPPG_PARAM& param) {
+bool DataInput::getGrid(std::string value, PPPG_PARAM& param) {
 	try {
 		//get the file path
-		std::filesystem::path filePath = value.front();
+		std::filesystem::path filePath = value;
 
 		//ensure the file extension is .tif
 		if (filePath.extension() != ".tif") {
@@ -67,7 +67,7 @@ bool DataInput::getGrid(std::vector<std::string> value, PPPG_PARAM& param) {
 		param.spType = pTif;
 
 		//try opening the grid and compare to the refgrid (or create the refgrid)
-		if (!openCheckGrid(filePath.string(), param)) {
+		if (!openCheckGrid(filePath.string(), param.g)) {
 			return false;
 		}
 
@@ -79,7 +79,7 @@ bool DataInput::getGrid(std::vector<std::string> value, PPPG_PARAM& param) {
 	}
 	catch (std::filesystem::filesystem_error const& e) {
 		//set and print/log error string
-		std::string errstr = " " + value.front() + " could not be interpreted as a scalar or grid name";
+		std::string errstr = " " + value + " could not be interpreted as a scalar or grid name";
 		std::cout << errstr << std::endl;
 		logger.Log(errstr);
 		logger.Log(e.what());
@@ -87,10 +87,10 @@ bool DataInput::getGrid(std::vector<std::string> value, PPPG_PARAM& param) {
 	}
 }
 
-bool DataInput::openCheckGrid(std::string path, PPPG_PARAM& param) {
+bool DataInput::openCheckGrid(std::string path, GDALRasterImage* grid) {
 	//ensure we can open and read from the file as a GDALRasterImage
 	try {
-		param.g = new GDALRasterImage(path);
+		grid = new GDALRasterImage(path);
 	}
 	catch (const std::exception& e) {
 		std::string errstr = "failed to open " + path + "\n" + e.what();
@@ -102,16 +102,16 @@ bool DataInput::openCheckGrid(std::string path, PPPG_PARAM& param) {
 	//if the refgrid is null, this is grid becomes the refgrid
 	//otherwise, check grid dimensions
 	if (this->refGrid == nullptr) {
-		this->refGrid = param.g;
+		this->refGrid = grid;
 	}
 	else {
 		if (
-			(fabs(this->refGrid->xMin - param.g->xMin) > 0.0001) ||	//check xMin
-			(fabs(this->refGrid->yMin - param.g->yMin) > 0.0001) ||	//check yMin
-			(fabs(this->refGrid->xMax - param.g->xMax) > 0.0001) ||	//check xMax
-			(fabs(this->refGrid->yMax - param.g->yMax) > 0.0001) ||	//check yMax
-			(this->refGrid->nRows != param.g->nRows) ||				//check nRows
-			(this->refGrid->nCols != param.g->nCols)					//check nCols
+			(fabs(this->refGrid->xMin - grid->xMin) > 0.0001) ||	//check xMin
+			(fabs(this->refGrid->yMin - grid->yMin) > 0.0001) ||	//check yMin
+			(fabs(this->refGrid->xMax - grid->xMax) > 0.0001) ||	//check xMax
+			(fabs(this->refGrid->yMax - grid->yMax) > 0.0001) ||	//check yMax
+			(this->refGrid->nRows != grid->nRows) ||				//check nRows
+			(this->refGrid->nCols != grid->nCols)					//check nCols
 			) {
 			std::string errstr = "Grid dimensions of " + path + " differs from " + this->refGrid->name;
 			std::cout << errstr << std::endl;
@@ -162,7 +162,7 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 	}
 
 	//try to get the value as a scalar
-	if (DataInput::getScalar(value, param)) {
+	if (DataInput::getScalar(value.front(), param)) {
 		//if gotten, add to inputParams map
 		this->inputParams.emplace(param.id, param);
 
@@ -174,7 +174,7 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 	}
 	
 	//try to get the value as a grid
-	if (DataInput::getGrid(value, param)) {
+	if (DataInput::getGrid(value.front(), param)) {
 		//if gotten, add to inputParams map and return
 		this->inputParams.emplace(param.id, param);
 
