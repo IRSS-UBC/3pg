@@ -85,7 +85,8 @@ struct InputParams {
 
 class DataInput {
 private:
-	std::unordered_map<std::string, std::string> paramNames = {
+	//maps and sets for dealing with input parameters
+	std::unordered_map<std::string, std::string> inputParamNames = {
 		{"Foliage:stem partitioning ratio @ D=2 cm", "pFS2"},
 		{"Foliage:stem partitioning ratio @ D=20 cm", "pFS20"},
 		{"Constant in the stem mass v. diam. relationship", "StemConst"},
@@ -159,7 +160,7 @@ private:
 		{"Age at which rho = (rhoMin+rhoMax)/2", "tRho"},
 		{"Year Planted", "yearPlanted"},
 	};
-	std::unordered_set<std::string> allParams = {
+	std::unordered_set<std::string> allInputParams = {
 		"pFS2",
 		"pFS20",
 		"StemConst",
@@ -232,7 +233,7 @@ private:
 		"NDVI_FPAR_intercept",
 		"NDVI_FPAR_constant",
 	};
-	std::unordered_set<std::string> requiredParams3PG = {
+	std::unordered_set<std::string> requiredInputParams3PG = {
 		"pFS2", "pFS20", "StemConst", "StemPower", "pRx", "pRn",
 		"growthTmin", "growthTopt", "growthTmax",
 		"kF",
@@ -255,7 +256,7 @@ private:
 		"LAImaxIntcptn",
 		"thinPower", "mF", "mR", "mS",
 	};
-	std::unordered_set<std::string> requiredParams3PGS = {
+	std::unordered_set<std::string> requiredInputParams3PGS = {
 		"growthTmin", "growthTopt", "growthTmax",
 		"kF",
 		"MaxCond", "CoeffCond", "BLcond",
@@ -272,8 +273,8 @@ private:
 		"StartMonth",
 		"LAImaxIntcptn",
 	}; //TODO do we need to add yearPlanted here???
-
 	std::unordered_map<std::string, PPPG_PARAM> inputParams;
+
 	GDALRasterImage* refGrid;
 	bool finishedInput = false;
 
@@ -284,7 +285,7 @@ private:
 public:
 	DataInput();
 	~DataInput();
-	bool tryAddParam(std::string pname, std::vector<std::string> value);
+	bool tryAddInputParam(std::string pname, std::vector<std::string> value);
 	bool inputFinished(bool modelMode3PGS);
 	bool DataInput::getInputParams(long cellIndex, InputParams& params);
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);

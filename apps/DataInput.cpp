@@ -123,17 +123,17 @@ bool DataInput::openCheckGrid(std::string path, PPPG_PARAM& param) {
 	return true;
 }
 
-bool DataInput::tryAddParam(std::string name, std::vector<std::string> value) {
+bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> value) {
 	//TODO: actual 3pg doesn't care about case (I don't think), make sure that is reflected here
 	PPPG_PARAM param;
 
 	//if the string isn't the exact parameter name, see if it is in the parameter name map
-	if (this->allParams.find(name) == this->allParams.end()) {
+	if (this->allInputParams.find(name) == this->allInputParams.end()) {
 		//search for the actual (shortened) param name
-		auto search = this->paramNames.find(name);
+		auto search = this->inputParamNames.find(name);
 
 		//if the string passed isn't an input param return false
-		if (search == this->paramNames.end()) {
+		if (search == this->inputParamNames.end()) {
 			return false;
 		}
 
@@ -167,8 +167,8 @@ bool DataInput::tryAddParam(std::string name, std::vector<std::string> value) {
 		this->inputParams.emplace(param.id, param);
 
 		//remove from required params set
-		this->requiredParams3PGS.erase(param.id);
-		this->requiredParams3PG.erase(param.id);
+		this->requiredInputParams3PGS.erase(param.id);
+		this->requiredInputParams3PG.erase(param.id);
 
 		return true;
 	}
@@ -179,8 +179,8 @@ bool DataInput::tryAddParam(std::string name, std::vector<std::string> value) {
 		this->inputParams.emplace(param.id, param);
 
 		//remove from required params set
-		this->requiredParams3PGS.erase(param.id);
-		this->requiredParams3PG.erase(param.id);
+		this->requiredInputParams3PGS.erase(param.id);
+		this->requiredInputParams3PG.erase(param.id);
 
 		return true;
 	}
@@ -220,12 +220,12 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 
 
 	//if we're using 3PGS, ensure we have all required 3PGS parameters
-	if (modelMode3PGS && this->requiredParams3PGS.size() != 0) {
+	if (modelMode3PGS && this->requiredInputParams3PGS.size() != 0) {
 		return false;
 	}
 
 	//if we're using 3PG (not 3PGS), ensure we have all required 3PG parameters
-	if (!modelMode3PGS && this->requiredParams3PG.size() != 0) {
+	if (!modelMode3PGS && this->requiredInputParams3PG.size() != 0) {
 		return false;
 	}
 

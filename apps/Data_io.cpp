@@ -1200,7 +1200,7 @@ void readSpeciesParamFile(const std::string& speciesFile, DataInput *dataInput) 
         boost::trim_if(pName, boost::is_any_of("\""));
         std::vector<std::string> pValues;
         boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
-        if (dataInput->tryAddParam(pName, pValues)) {
+        if (dataInput->tryAddInputParam(pName, pValues)) {
             continue; 
         }
         else {
@@ -1257,7 +1257,7 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
     // Second and subsequent tokens are the parameter values, put them all into a vector
     std::vector<std::string> pValues;
     boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
-    if (dataInput->tryAddParam(pName, pValues)) { continue; }
+    if (dataInput->tryAddInputParam(pName, pValues)) { continue; }
     if (output_var_names.find(pName) != output_var_names.end()) {
         opVars.emplace(pName, readOutputParam(pName, pValues, lineNo));
     }
