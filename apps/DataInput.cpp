@@ -87,7 +87,7 @@ bool DataInput::getGrid(std::string value, PPPG_PARAM& param) {
 	}
 }
 
-bool DataInput::openCheckGrid(std::string path, GDALRasterImage* grid) {
+bool DataInput::openCheckGrid(std::string path, GDALRasterImage*& grid) {
 	//ensure we can open and read from the file as a GDALRasterImage
 	try {
 		grid = new GDALRasterImage(path);
@@ -190,6 +190,113 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 	exit(EXIT_FAILURE);
 }
 
+bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> values, std::ifstream& paramFp, int& lineNo) {
+	if (this->allSeriesParams.find(name) == this->allSeriesParams.end()) {
+		return false;
+	}
+	
+	//maps year to a vector of length 12 containing the scalar or grid values of the series
+	std::unordered_map<int, std::vector<PPPG_PARAM>> seriesParamMap;
+
+	if (!values.empty()) {
+		/*
+		parameter is in 'one year' style, where a single year of monthly values is given
+		*/
+
+		//ensure all 12 monthly values are given
+		if (values.size() != 12) {
+			std::string errstr = "there must be 12 monthly values given for parameter " + name + ". There were only " + std::to_string(values.size()) + ".";
+			std::cout << errstr << std::endl;
+			logger.Log(errstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//parameters in the 'one year' style are stored in the seriesParamMap with key -1
+		int seriesParamMapYear = -1;
+		std::vector<PPPG_PARAM> monthlyParams(12);
+
+		for (int i = 0; i < 12; i++) {
+			monthlyParams[i].id = name + " month " + std::to_string(i);
+
+			//try to add as a scalar param
+			if (DataInput::getScalar(values.front(), monthlyParams[i])) {
+				continue;
+			}
+
+			//try to add as a grid param
+			if (DataInput::getGrid(values.front(), monthlyParams[i])) {
+				continue;
+			}
+
+			//if we've made it here it's neither a usable scalar nor grid parameter
+			exit(EXIT_FAILURE);
+		}
+
+		//add to the series parameter map
+		seriesParamMap.emplace(seriesParamMapYear, monthlyParams);
+	}
+	else {
+		//parameter is in 'multi year' style, where the lines following the current one
+		//contain a year followed by monthly values
+		std::string line;
+		while (std::getline(paramFp, line)) {
+			lineNo++;
+			std::vector<std::string> sTokens;
+			sTokens = boost::split(sTokens, line, boost::is_any_of(", \n\t"));
+
+			//if empty we've iterated through every year, stop iterating
+			if (sTokens.empty()) {
+				break;
+			}
+
+			//ensure all 12 monthly values are given
+			if (sTokens.size() != 13) {
+				std::string errstr = "there must be 12 monthly values given for parameter " + name + " at year " + sTokens.front() + ". There were only " + std::to_string(sTokens.size() - 1) + ".";
+				std::cout << errstr << std::endl;
+				logger.Log(errstr);
+				exit(EXIT_FAILURE);
+			}
+
+			//parameters in the 'multi year' style use the year as the key
+			int seriesParamMapYear;
+			std::vector<PPPG_PARAM> monthlyParams(12);
+
+			//try to convert first token to a year
+			try {
+				seriesParamMapYear = std::stoi(sTokens.front());
+			}
+			catch (const std::out_of_range& oor) {
+				std::string errstr = "Year could not be converted to integer on line " + std::to_string(lineNo);
+				std::cout << errstr << std::endl;
+				logger.Log(errstr);
+				exit(EXIT_FAILURE);
+			}
+
+			for (int i = 0; i < 12; i++) {
+				monthlyParams[i].id = name + " year " + sTokens.front() + " month " + std::to_string(i);
+
+				//try to add as a scalar param
+				if (DataInput::getScalar(sTokens[i + 1], monthlyParams[i])) {
+					continue;
+				}
+
+				//try to add as a grid param
+				if (DataInput::getGrid(sTokens[i + 1], monthlyParams[i])) {
+					continue;
+				}
+
+				//if we've made it here it's neither a usable scalar nor grid parameter
+				exit(EXIT_FAILURE);
+			}
+
+			//add to the series parameter map
+			seriesParamMap.emplace(seriesParamMapYear, monthlyParams);
+		}
+	}
+
+	this->seriesParams.emplace(name, seriesParamMap);
+}
+
 bool DataInput::inputFinished(bool modelMode3PGS) {
 	bool haveSeedlingMass = this->inputParams.find("SeedlingMass") != this->inputParams.end();
 	bool haveWFi = this->inputParams.find("WFi") != this->inputParams.end();
@@ -229,6 +336,56 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 		return false;
 	}
 
+	////series parameters
+	//bool haveTmax = this->seriesParams.find("Tmax") != this->seriesParams.end();
+	//bool haveTmin = this->seriesParams.find("Tmin") != this->seriesParams.end();
+	//bool haveTavg = this->seriesParams.find("Tavg") != this->seriesParams.end();
+	//bool haveVPD = this->seriesParams.find("VPD") != this->seriesParams.end();
+	//bool haveRain = this->seriesParams.find("Rain") != this->seriesParams.end();
+	//bool haveSolarRad = this->seriesParams.find("Solar Radtn") != this->seriesParams.end();
+	//bool haveNetRad = this->seriesParams.find("Net radtn") != this->seriesParams.end();
+	//bool haveFrost = this->seriesParams.find("Frost days") != this->seriesParams.end();
+	//
+	////check tmax/tavg
+	//if (!haveTmax && !haveTavg) {
+	//	std::cout << "must have Tmax or Tavg" << std::endl;
+	//	exit(EXIT_FAILURE);
+	//}
+	//
+	////check tmin/tavg
+	//if (!haveTmin && !haveTavg) {
+	//	std::cout << "must have Tmin or Tavg" << std::endl;
+	//	exit(EXIT_FAILURE);
+	//}
+	//
+	////check tavg/vpd
+	//if (haveTavg && !haveVPD) {
+	//	std::cout << "must have VPD if using Tavg" << std::endl;
+	//	exit(EXIT_FAILURE);
+	//}
+	//
+	////check rain
+	//if (!haveRain) {
+	//	std::cout << "must have Rain" << std::endl;
+	//	exit(EXIT_FAILURE);
+	//}
+	//
+	////check solar radation
+	//if (!haveSolarRad) {
+	//	std::cout << "must have Solar Radiation" << std::endl;
+	//	exit(EXIT_FAILURE);
+	//}
+	//
+	////check frost
+	//if (!haveFrost) {
+	//	std::cout << "must have Frost" << std::endl;
+	//	exit(EXIT_FAILURE);
+	//}
+	//
+	//this->haveTavg = haveTavg;
+	//this->haveNetRad = haveNetRad;
+	//this->haveVPD = haveVPD;
+
 	finishedInput = true;
 	return true;
 }
@@ -241,77 +398,77 @@ bool DataInput::getInputParams(long cellIndex, InputParams& params) {
 
 	//declare, copy values into, then return an instance of InputParams
 	try {
-		params.pFS2 = DataInput::getValFromParam("pFS2", cellIndex);
-		params.pFS20 = DataInput::getValFromParam("pFS20", cellIndex);
-		params.StemConst = DataInput::getValFromParam("StemConst", cellIndex);
-		params.StemPower = DataInput::getValFromParam("StemPower", cellIndex);
-		params.pRx = DataInput::getValFromParam("pRx", cellIndex);
-		params.pRn = DataInput::getValFromParam("pRn", cellIndex);
-		params.growthTmin = DataInput::getValFromParam("growthTmin", cellIndex);
-		params.growthTopt = DataInput::getValFromParam("growthTopt", cellIndex);
-		params.growthTmax = DataInput::getValFromParam("growthTmax", cellIndex);
-		params.kF = DataInput::getValFromParam("kF", cellIndex);
-		params.gammaFx = DataInput::getValFromParam("gammaFx", cellIndex);
-		params.gammaF0 = DataInput::getValFromParam("gammaF0", cellIndex);
-		params.tgammaF = DataInput::getValFromParam("tgammaF", cellIndex);
-		params.Rttover = DataInput::getValFromParam("Rttover", cellIndex);
-		params.MaxCond = DataInput::getValFromParam("MaxCond", cellIndex);
-		params.CoeffCond = DataInput::getValFromParam("CoeffCond", cellIndex);
-		params.BLcond = DataInput::getValFromParam("BLcond", cellIndex);
-		params.m0 = DataInput::getValFromParam("m0", cellIndex);
-		params.fN0 = DataInput::getValFromParam("fN0", cellIndex);
-		params.fNn = DataInput::getValFromParam("fNn", cellIndex);
-		params.thinPower = DataInput::getValFromParam("thinPower", cellIndex);
-		params.mF = DataInput::getValFromParam("mF", cellIndex);
-		params.mR = DataInput::getValFromParam("mR", cellIndex);
-		params.mS = DataInput::getValFromParam("mS", cellIndex);
-		params.SWconst0 = DataInput::getValFromParam("SWconst0", cellIndex);
-		params.SWpower0 = DataInput::getValFromParam("SWpower0", cellIndex);
-		params.wSx1000 = DataInput::getValFromParam("wSx1000", cellIndex);
-		params.MaxAge = DataInput::getValFromParam("MaxAge", cellIndex);
-		params.nAge = DataInput::getValFromParam("nAge", cellIndex);
-		params.rAge = DataInput::getValFromParam("rAge", cellIndex);
-		params.SLA0 = DataInput::getValFromParam("SLA0", cellIndex);
-		params.SLA1 = DataInput::getValFromParam("SLA1", cellIndex);
-		params.tSLA = DataInput::getValFromParam("tSLA", cellIndex);
-		params.k = DataInput::getValFromParam("k", cellIndex);
-		params.fullCanAge = DataInput::getValFromParam("fullCanAge", cellIndex);
-		params.alpha = DataInput::getValFromParam("alpha", cellIndex);
-		params.fracBB0 = DataInput::getValFromParam("fracBB0", cellIndex);
-		params.fracBB1 = DataInput::getValFromParam("fracBB1", cellIndex);
-		params.tBB = DataInput::getValFromParam("tBB", cellIndex);
-		params.y = DataInput::getValFromParam("y", cellIndex);
-		params.rhoMin = DataInput::getValFromParam("rhoMin", cellIndex);
-		params.rhoMax = DataInput::getValFromParam("rhoMax", cellIndex);
-		params.tRho = DataInput::getValFromParam("tRho", cellIndex);
-		params.Qa = DataInput::getValFromParam("Qa", cellIndex);
-		params.Qb = DataInput::getValFromParam("Qb", cellIndex);
-		params.gDM_mol = DataInput::getValFromParam("gDM_mol", cellIndex);
-		params.molPAR_MJ = DataInput::getValFromParam("molPAR_MJ", cellIndex);
-		params.LAIgcx = DataInput::getValFromParam("LAIgcx", cellIndex);
-		params.MaxIntcptn = DataInput::getValFromParam("MaxIntcptn", cellIndex);
-		params.LAImaxIntcptn = DataInput::getValFromParam("LAImaxIntcptn", cellIndex);
-		params.Lat = DataInput::getValFromParam("Lat", cellIndex);
-		params.FRp = DataInput::getValFromParam("FRp", cellIndex);
-		params.FRstart = DataInput::getValFromParam("FRstart", cellIndex);
-		params.FRend = DataInput::getValFromParam("FRend", cellIndex);
-		params.FRdec = DataInput::getValFromParam("FRdec", cellIndex);
-		params.soilIndex = DataInput::getValFromParam("soilIndex", cellIndex);
-		params.MaxASW = DataInput::getValFromParam("MaxASW", cellIndex);
-		params.MinASWp = DataInput::getValFromParam("MinASWp", cellIndex);
-		params.StartAge = DataInput::getValFromParam("StartAge", cellIndex);
-		params.EndYear = DataInput::getValFromParam("EndYear", cellIndex);
-		params.StartMonth = DataInput::getValFromParam("StartMonth", cellIndex);
-		params.yearPlanted = DataInput::getValFromParam("yearPlanted", cellIndex);
-		params.SeedlingMass = DataInput::getValFromParam("SeedlingMass", cellIndex);
-		params.WFi = DataInput::getValFromParam("WFi", cellIndex);
-		params.WRi = DataInput::getValFromParam("WRi", cellIndex);
-		params.WSi = DataInput::getValFromParam("WSi", cellIndex);
-		params.StemNoi = DataInput::getValFromParam("StemNoi", cellIndex);
-		params.ASWi = DataInput::getValFromParam("ASWi", cellIndex);
-		params.MinASWTG = DataInput::getValFromParam("MinASWTG", cellIndex);
-		params.NDVI_FPAR_intercept = DataInput::getValFromParam("NDVI_FPAR_intercept", cellIndex);
-		params.NDVI_FPAR_constant = DataInput::getValFromParam("NDVI_FPAR_constant", cellIndex);
+		params.pFS2 = DataInput::getValFromInputParam("pFS2", cellIndex);
+		params.pFS20 = DataInput::getValFromInputParam("pFS20", cellIndex);
+		params.StemConst = DataInput::getValFromInputParam("StemConst", cellIndex);
+		params.StemPower = DataInput::getValFromInputParam("StemPower", cellIndex);
+		params.pRx = DataInput::getValFromInputParam("pRx", cellIndex);
+		params.pRn = DataInput::getValFromInputParam("pRn", cellIndex);
+		params.growthTmin = DataInput::getValFromInputParam("growthTmin", cellIndex);
+		params.growthTopt = DataInput::getValFromInputParam("growthTopt", cellIndex);
+		params.growthTmax = DataInput::getValFromInputParam("growthTmax", cellIndex);
+		params.kF = DataInput::getValFromInputParam("kF", cellIndex);
+		params.gammaFx = DataInput::getValFromInputParam("gammaFx", cellIndex);
+		params.gammaF0 = DataInput::getValFromInputParam("gammaF0", cellIndex);
+		params.tgammaF = DataInput::getValFromInputParam("tgammaF", cellIndex);
+		params.Rttover = DataInput::getValFromInputParam("Rttover", cellIndex);
+		params.MaxCond = DataInput::getValFromInputParam("MaxCond", cellIndex);
+		params.CoeffCond = DataInput::getValFromInputParam("CoeffCond", cellIndex);
+		params.BLcond = DataInput::getValFromInputParam("BLcond", cellIndex);
+		params.m0 = DataInput::getValFromInputParam("m0", cellIndex);
+		params.fN0 = DataInput::getValFromInputParam("fN0", cellIndex);
+		params.fNn = DataInput::getValFromInputParam("fNn", cellIndex);
+		params.thinPower = DataInput::getValFromInputParam("thinPower", cellIndex);
+		params.mF = DataInput::getValFromInputParam("mF", cellIndex);
+		params.mR = DataInput::getValFromInputParam("mR", cellIndex);
+		params.mS = DataInput::getValFromInputParam("mS", cellIndex);
+		params.SWconst0 = DataInput::getValFromInputParam("SWconst0", cellIndex);
+		params.SWpower0 = DataInput::getValFromInputParam("SWpower0", cellIndex);
+		params.wSx1000 = DataInput::getValFromInputParam("wSx1000", cellIndex);
+		params.MaxAge = DataInput::getValFromInputParam("MaxAge", cellIndex);
+		params.nAge = DataInput::getValFromInputParam("nAge", cellIndex);
+		params.rAge = DataInput::getValFromInputParam("rAge", cellIndex);
+		params.SLA0 = DataInput::getValFromInputParam("SLA0", cellIndex);
+		params.SLA1 = DataInput::getValFromInputParam("SLA1", cellIndex);
+		params.tSLA = DataInput::getValFromInputParam("tSLA", cellIndex);
+		params.k = DataInput::getValFromInputParam("k", cellIndex);
+		params.fullCanAge = DataInput::getValFromInputParam("fullCanAge", cellIndex);
+		params.alpha = DataInput::getValFromInputParam("alpha", cellIndex);
+		params.fracBB0 = DataInput::getValFromInputParam("fracBB0", cellIndex);
+		params.fracBB1 = DataInput::getValFromInputParam("fracBB1", cellIndex);
+		params.tBB = DataInput::getValFromInputParam("tBB", cellIndex);
+		params.y = DataInput::getValFromInputParam("y", cellIndex);
+		params.rhoMin = DataInput::getValFromInputParam("rhoMin", cellIndex);
+		params.rhoMax = DataInput::getValFromInputParam("rhoMax", cellIndex);
+		params.tRho = DataInput::getValFromInputParam("tRho", cellIndex);
+		params.Qa = DataInput::getValFromInputParam("Qa", cellIndex);
+		params.Qb = DataInput::getValFromInputParam("Qb", cellIndex);
+		params.gDM_mol = DataInput::getValFromInputParam("gDM_mol", cellIndex);
+		params.molPAR_MJ = DataInput::getValFromInputParam("molPAR_MJ", cellIndex);
+		params.LAIgcx = DataInput::getValFromInputParam("LAIgcx", cellIndex);
+		params.MaxIntcptn = DataInput::getValFromInputParam("MaxIntcptn", cellIndex);
+		params.LAImaxIntcptn = DataInput::getValFromInputParam("LAImaxIntcptn", cellIndex);
+		params.Lat = DataInput::getValFromInputParam("Lat", cellIndex);
+		params.FRp = DataInput::getValFromInputParam("FRp", cellIndex);
+		params.FRstart = DataInput::getValFromInputParam("FRstart", cellIndex);
+		params.FRend = DataInput::getValFromInputParam("FRend", cellIndex);
+		params.FRdec = DataInput::getValFromInputParam("FRdec", cellIndex);
+		params.soilIndex = DataInput::getValFromInputParam("soilIndex", cellIndex);
+		params.MaxASW = DataInput::getValFromInputParam("MaxASW", cellIndex);
+		params.MinASWp = DataInput::getValFromInputParam("MinASWp", cellIndex);
+		params.StartAge = DataInput::getValFromInputParam("StartAge", cellIndex);
+		params.EndYear = DataInput::getValFromInputParam("EndYear", cellIndex);
+		params.StartMonth = DataInput::getValFromInputParam("StartMonth", cellIndex);
+		params.yearPlanted = DataInput::getValFromInputParam("yearPlanted", cellIndex);
+		params.SeedlingMass = DataInput::getValFromInputParam("SeedlingMass", cellIndex);
+		params.WFi = DataInput::getValFromInputParam("WFi", cellIndex);
+		params.WRi = DataInput::getValFromInputParam("WRi", cellIndex);
+		params.WSi = DataInput::getValFromInputParam("WSi", cellIndex);
+		params.StemNoi = DataInput::getValFromInputParam("StemNoi", cellIndex);
+		params.ASWi = DataInput::getValFromInputParam("ASWi", cellIndex);
+		params.MinASWTG = DataInput::getValFromInputParam("MinASWTG", cellIndex);
+		params.NDVI_FPAR_intercept = DataInput::getValFromInputParam("NDVI_FPAR_intercept", cellIndex);
+		params.NDVI_FPAR_constant = DataInput::getValFromInputParam("NDVI_FPAR_constant", cellIndex);
 
 		if (params.yearPlanted < 1 || isnan(params.yearPlanted) || params.StemNoi < 1) {
 			return false;
@@ -336,16 +493,16 @@ bool DataInput::getInputParams(long cellIndex, InputParams& params) {
 	}
 }
 
-double DataInput::getValFromParam(std::string paramName, long cellIndex) {
+double DataInput::getValFromInputParam(std::string paramName, long cellIndex) {
 	auto search = this->inputParams.find(paramName);
 
 	//if the param doesn't exist, set to -1
 	if (search == this->inputParams.end()) {
 		//use predefined default parameters for Lat, rhoMax, rhoMin, and tRho if not set by user
-		if (paramName == "Lat")			{ return 1000; }
+		if (paramName == "Lat") { return 1000; }
 		else if (paramName == "rhoMax") { return 0.5; }
 		else if (paramName == "rhoMin") { return 0.5; }
-		else if (paramName == "tRho")	{ return 4; }
+		else if (paramName == "tRho") { return 4; }
 		else {
 			//otherwise, set to 0
 			return 0;
@@ -360,6 +517,90 @@ double DataInput::getValFromParam(std::string paramName, long cellIndex) {
 	//if the param is a grid, return the value at the row and column specified
 	if (search->second.spType == pTif) {
 		double val = search->second.g->GetVal(cellIndex);
+		if (isnan(val)) {
+			throw std::runtime_error("nan");
+		}
+		else {
+			return val;
+		}
+	}
+
+	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
+}
+
+bool DataInput::getSeriesParams(long cellIndex, int year, int month, SeriesParams& params) {
+	//error checking
+	if (!finishedInput) {
+		throw std::exception("should NOT be able to call getInputParams() if input failed!");
+	}
+
+	try {
+		params.Tmax = DataInput::getValFromSeriesParam("Tmax", year, month, cellIndex);
+		params.Tmin = DataInput::getValFromSeriesParam("Tmin", year, month, cellIndex);
+		params.Tavg = DataInput::getValFromSeriesParam("Tavg", year, month, cellIndex);
+		params.Rain = DataInput::getValFromSeriesParam("Rain", year, month, cellIndex);
+		params.SolarRad = DataInput::getValFromSeriesParam("Solar Radtn", year, month, cellIndex);
+		params.FrostDays = DataInput::getValFromSeriesParam("Frost days", year, month, cellIndex);
+		params.NDVI_AVH = DataInput::getValFromSeriesParam("NDVI_AVG", year, month, cellIndex);
+		params.NetRad = DataInput::getValFromSeriesParam("Net radtn", year, month, cellIndex);
+		params.VPD = DataInput::getValFromSeriesParam("VPD", year, month, cellIndex);
+
+		if (!this->haveTavg) {
+			params.Tavg = (params.Tmax + params.Tmin) / 2;
+		}
+
+		if (!this->haveVPD) {
+			double VPDmax = 6.1078 * exp(17.269 * params.Tmax / (237.3 + params.Tmax));
+			double VPDmin = 6.1078 * exp(17.269 * params.Tmin / (237.3 + params.Tmin));
+			params.VPD = (VPDmax - VPDmin) / 2;
+		}
+
+		return true;
+	}
+	catch (std::runtime_error e) {
+		return false;
+	}
+}
+
+double DataInput::getValFromSeriesParam(std::string paramName, int year, int month, long cellIndex) {
+	std::unordered_map<int, std::vector<PPPG_PARAM>> paramYearMap;
+	std::vector<PPPG_PARAM> paramMonthSeries;
+	PPPG_PARAM param;
+	
+	//find param year map from series params map
+	auto search = this->seriesParams.find(paramName);
+	if (search == this->seriesParams.end()) {
+		return 0;
+	}
+
+	//find param month series vector from param year map
+	//if -1 exists, use that for every year, otherwise search for the current year
+	paramYearMap = search->second;
+	if (paramYearMap.find(-1) != paramYearMap.end()) {
+		paramMonthSeries = paramYearMap.at(-1);
+	}
+	else {
+		try {
+			paramMonthSeries = paramYearMap.at(year);
+		}
+		catch (std::out_of_range e) {
+			std::string errstr = "the year " + std::to_string(year) + " was not found for parameter " + paramName;
+			std::cout << errstr << std::endl;
+			logger.Log(errstr);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	//find param from param month series vector
+	param = paramMonthSeries[month - 1];
+
+	if (param.spType == pScalar) {
+		return param.val;
+	}
+
+	//get parameter value depending on whether it is scalar or grid
+	if (param.spType == pTif) {
+		double val = param.g->GetVal(cellIndex);
 		if (isnan(val)) {
 			throw std::runtime_error("nan");
 		}
