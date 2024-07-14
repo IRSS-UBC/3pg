@@ -86,8 +86,6 @@ struct InputParams {
 };
 
 struct SeriesParams {
-	double Tmax;
-	double Tmin;
 	double Tavg;
 	double Rain;
 	double SolarRad;
@@ -319,6 +317,7 @@ public:
 	bool inputFinished(bool modelMode3PGS);
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
+	GDALRasterImage* getRefGrid();
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
 
 	bool haveSeedlingMass;

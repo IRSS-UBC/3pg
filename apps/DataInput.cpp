@@ -219,12 +219,12 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 			monthlyParams[i].id = name + " month " + std::to_string(i);
 
 			//try to add as a scalar param
-			if (DataInput::getScalar(values.front(), monthlyParams[i])) {
+			if (DataInput::getScalar(values[i], monthlyParams[i])) {
 				continue;
 			}
 
 			//try to add as a grid param
-			if (DataInput::getGrid(values.front(), monthlyParams[i])) {
+			if (DataInput::getGrid(values[i], monthlyParams[i])) {
 				continue;
 			}
 
@@ -336,55 +336,61 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 		return false;
 	}
 
-	////series parameters
-	//bool haveTmax = this->seriesParams.find("Tmax") != this->seriesParams.end();
-	//bool haveTmin = this->seriesParams.find("Tmin") != this->seriesParams.end();
-	//bool haveTavg = this->seriesParams.find("Tavg") != this->seriesParams.end();
-	//bool haveVPD = this->seriesParams.find("VPD") != this->seriesParams.end();
-	//bool haveRain = this->seriesParams.find("Rain") != this->seriesParams.end();
-	//bool haveSolarRad = this->seriesParams.find("Solar Radtn") != this->seriesParams.end();
-	//bool haveNetRad = this->seriesParams.find("Net radtn") != this->seriesParams.end();
-	//bool haveFrost = this->seriesParams.find("Frost days") != this->seriesParams.end();
-	//
-	////check tmax/tavg
-	//if (!haveTmax && !haveTavg) {
-	//	std::cout << "must have Tmax or Tavg" << std::endl;
-	//	exit(EXIT_FAILURE);
-	//}
-	//
-	////check tmin/tavg
-	//if (!haveTmin && !haveTavg) {
-	//	std::cout << "must have Tmin or Tavg" << std::endl;
-	//	exit(EXIT_FAILURE);
-	//}
-	//
-	////check tavg/vpd
-	//if (haveTavg && !haveVPD) {
-	//	std::cout << "must have VPD if using Tavg" << std::endl;
-	//	exit(EXIT_FAILURE);
-	//}
-	//
-	////check rain
-	//if (!haveRain) {
-	//	std::cout << "must have Rain" << std::endl;
-	//	exit(EXIT_FAILURE);
-	//}
-	//
-	////check solar radation
-	//if (!haveSolarRad) {
-	//	std::cout << "must have Solar Radiation" << std::endl;
-	//	exit(EXIT_FAILURE);
-	//}
-	//
-	////check frost
-	//if (!haveFrost) {
-	//	std::cout << "must have Frost" << std::endl;
-	//	exit(EXIT_FAILURE);
-	//}
-	//
-	//this->haveTavg = haveTavg;
-	//this->haveNetRad = haveNetRad;
-	//this->haveVPD = haveVPD;
+	//series parameters
+	bool haveTmax = this->seriesParams.find("Tmax") != this->seriesParams.end();
+	bool haveTmin = this->seriesParams.find("Tmin") != this->seriesParams.end();
+	bool haveTavg = this->seriesParams.find("Tavg") != this->seriesParams.end();
+	bool haveVPD = this->seriesParams.find("VPD") != this->seriesParams.end();
+	bool haveRain = this->seriesParams.find("Rain") != this->seriesParams.end();
+	bool haveSolarRad = this->seriesParams.find("Solar Radtn") != this->seriesParams.end();
+	bool haveNetRad = this->seriesParams.find("Net radtn") != this->seriesParams.end();
+	bool haveFrost = this->seriesParams.find("Frost days") != this->seriesParams.end();
+	
+	//check tmax/tavg
+	if (!haveTmax && !haveTavg) {
+		std::cout << "must have Tmax or Tavg" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	
+	//check tmin/tavg
+	if (!haveTmin && !haveTavg) {
+		std::cout << "must have Tmin or Tavg" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	
+	//check tavg/vpd
+	if (haveTavg && !haveVPD) {
+		std::cout << "must have VPD if using Tavg" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	
+	//check rain
+	if (!haveRain) {
+		std::cout << "must have Rain" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	
+	//check solar radation
+	if (!haveSolarRad) {
+		std::cout << "must have Solar Radiation" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	
+	//check frost
+	if (!haveFrost) {
+		std::cout << "must have Frost" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	
+	this->haveTavg = haveTavg;
+	this->haveNetRad = haveNetRad;
+	this->haveVPD = haveVPD;
+
+	//check model mode which requires NDVI series parameters
+	if (modelMode3PGS && this->seriesParams.find("NDVI_AVH") != this->seriesParams.end()) {
+		std::cout << "3PGS mode should have NDVI series parameters" << std::endl;
+		exit(EXIT_FAILURE);
+	}
 
 	finishedInput = true;
 	return true;
@@ -534,24 +540,34 @@ bool DataInput::getSeriesParams(long cellIndex, int year, int month, SeriesParam
 		throw std::exception("should NOT be able to call getInputParams() if input failed!");
 	}
 
+	//if one of the calls to getValFromSeriesParams() throws an std::runtime_error
+	//it means we're at a nodata pixel
 	try {
-		params.Tmax = DataInput::getValFromSeriesParam("Tmax", year, month, cellIndex);
-		params.Tmin = DataInput::getValFromSeriesParam("Tmin", year, month, cellIndex);
+		double Tmax;
+		double Tmin;
 		params.Tavg = DataInput::getValFromSeriesParam("Tavg", year, month, cellIndex);
 		params.Rain = DataInput::getValFromSeriesParam("Rain", year, month, cellIndex);
 		params.SolarRad = DataInput::getValFromSeriesParam("Solar Radtn", year, month, cellIndex);
 		params.FrostDays = DataInput::getValFromSeriesParam("Frost days", year, month, cellIndex);
-		params.NDVI_AVH = DataInput::getValFromSeriesParam("NDVI_AVG", year, month, cellIndex);
+		params.NDVI_AVH = DataInput::getValFromSeriesParam("NDVI_AVH", year, month, cellIndex);
 		params.NetRad = DataInput::getValFromSeriesParam("Net radtn", year, month, cellIndex);
 		params.VPD = DataInput::getValFromSeriesParam("VPD", year, month, cellIndex);
 
-		if (!this->haveTavg) {
-			params.Tavg = (params.Tmax + params.Tmin) / 2;
+		//if we need Tmax and Tmin, get their series params
+		if (!this->haveTavg || !this->haveVPD) {
+			Tmax = DataInput::getValFromSeriesParam("Tmax", year, month, cellIndex);
+			Tmin = DataInput::getValFromSeriesParam("Tmin", year, month, cellIndex);
 		}
 
+		//calculate Tavg if we don't have it directly
+		if (!this->haveTavg) {
+			params.Tavg = (Tmax + Tmin) / 2;
+		}
+
+		//calculate VPD if we don't have it directly
 		if (!this->haveVPD) {
-			double VPDmax = 6.1078 * exp(17.269 * params.Tmax / (237.3 + params.Tmax));
-			double VPDmin = 6.1078 * exp(17.269 * params.Tmin / (237.3 + params.Tmin));
+			double VPDmax = 6.1078 * exp(17.269 * Tmax / (237.3 + Tmax));
+			double VPDmin = 6.1078 * exp(17.269 * Tmin / (237.3 + Tmin));
 			params.VPD = (VPDmax - VPDmin) / 2;
 		}
 
@@ -700,4 +716,8 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	string runPeriodStr = "first run year = " + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
 	std::cout << runPeriodStr << std::endl;
 	logger.Log(runPeriodStr);
+}
+
+GDALRasterImage* DataInput::getRefGrid() {
+	return this->refGrid;
 }
