@@ -132,12 +132,13 @@ int main(int argc, char* argv[])
     opVars = readSiteParamFile(siteParamFile, dataInput);
 
     //check that we have all the correct parameters
-    if (!dataInput->inputFinished(modelMode3PGS) || !haveAllParams()) {
+    if (!dataInput->inputFinished(modelMode3PGS)) {
         exit(EXIT_FAILURE);
     }
 
     // Check for a spatial run, if so open input grids and define refGrid. 
-    refGrid = openInputGrids();
+    openInputGrids();
+    refGrid = dataInput->getRefGrid();
 
     nrows = refGrid->nRows;
     ncols = refGrid->nCols;
