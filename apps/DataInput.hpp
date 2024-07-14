@@ -95,6 +95,19 @@ struct SeriesParams {
 	double VPD;
 };
 
+typedef enum {
+	NONE = -1,
+	TMAX = 0,
+	TMIN = 1,
+	TAVG = 2,
+	RAIN = 3,
+	SOLAR_RAD = 4,
+	FROST_DAYS = 5,
+	NDVI_AVH = 6,
+	NET_RAD = 7,
+	VPD = 8,
+} SeriesIndex;
+
 class DataInput {
 private:
 	//maps and sets for dealing with input parameters
@@ -288,18 +301,25 @@ private:
 	std::unordered_map<std::string, PPPG_PARAM> inputParams;
 
 	//maps and sets for dealing with series parameters
-	std::unordered_set<std::string> allSeriesParams = {
-		"Tmax",
-		"Tmin",
-		"Tavg",
-		"Rain",
-		"Solar Radtn",
-		"Frost days",
-		"NDVI_AVH",
-		"Net radtn",
-		"VPD",
+	std::unordered_map<std::string, SeriesIndex> seriesParamNameMap = {
+		{"Tmax", SeriesIndex::TMAX},
+		{"Tmin", SeriesIndex::TMIN},
+		{"Tavg", SeriesIndex::TAVG},
+		{"Rain", SeriesIndex::RAIN},
+		{"Solar Radtn", SeriesIndex::SOLAR_RAD},
+		{"Frost days", SeriesIndex::FROST_DAYS},
+		{"NDVI_AVH", SeriesIndex::NDVI_AVH},
+		{"Net radtn", SeriesIndex::NET_RAD},
+		{"VPD", SeriesIndex::VPD},
 	};
-	std::unordered_map<std::string, std::unordered_map<int, std::vector<PPPG_PARAM>>> seriesParams;
+	PPPG_SERIES_PARAM seriesParams[9];
+	std::unordered_set<std::string> acquiredSeriesParams;
+	//std::unordered_map<std::string, std::unordered_map<int, std::vector<PPPG_PARAM>>> seriesParams;
+
+	bool haveTavg;
+	bool haveVPD;
+	bool haveNDVI;
+	bool haveNetRad;
 
 	GDALRasterImage* refGrid;
 	bool finishedInput = false;
@@ -307,7 +327,7 @@ private:
 	bool getScalar(std::string value, PPPG_PARAM& param);
 	bool getGrid(std::string value, PPPG_PARAM& param);
 	double getValFromInputParam(std::string paramName, long cellIndex);
-	double getValFromSeriesParam(std::string paramName, int year, int month, long cellIndex);
+	double getValFromSeriesParam(int paramIndex, int year, int month, long cellIndex);
 	bool openCheckGrid(std::string path, GDALRasterImage*& grid);
 public:
 	DataInput();
@@ -317,6 +337,7 @@ public:
 	bool inputFinished(bool modelMode3PGS);
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
+	bool haveNetRadParam();
 	GDALRasterImage* getRefGrid();
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
 
@@ -324,7 +345,4 @@ public:
 	bool haveMinASWTG;
 	bool haveAgeDepFert;
 
-	bool haveNetRad;
-	bool haveTavg;
-	bool haveVPD;
 };

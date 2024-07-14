@@ -191,12 +191,14 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 }
 
 bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> values, std::ifstream& paramFp, int& lineNo) {
-	if (this->allSeriesParams.find(name) == this->allSeriesParams.end()) {
+	//if the name does not have a corrosponding series param, return
+	auto search = this->seriesParamNameMap.find(name);
+	if (search == this->seriesParamNameMap.end()) {
 		return false;
 	}
 	
-	//maps year to a vector of length 12 containing the scalar or grid values of the series
-	std::unordered_map<int, std::vector<PPPG_PARAM>> seriesParamMap;
+	//get the array index from seriesParamNameMap to get the according PPPG_SERIES_PARAM
+	PPPG_SERIES_PARAM* param = &this->seriesParams[search->second];
 
 	if (!values.empty()) {
 		/*
@@ -212,28 +214,29 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 		}
 
 		//parameters in the 'one year' style are stored in the seriesParamMap with key -1
-		int seriesParamMapYear = -1;
-		std::vector<PPPG_PARAM> monthlyParams(12);
+		param->firstYear = -1;
+		param->lastYear = -1;
+
+		//use only the memory we need (12 indices);
+		param->monthlyParams.resize(12);
+		param->monthlyParams.shrink_to_fit();
 
 		for (int i = 0; i < 12; i++) {
-			monthlyParams[i].id = name + " month " + std::to_string(i);
+			param->monthlyParams[i].id = name + " month " + std::to_string(i);
 
 			//try to add as a scalar param
-			if (DataInput::getScalar(values[i], monthlyParams[i])) {
+			if (DataInput::getScalar(values[i], param->monthlyParams[i])) {
 				continue;
 			}
 
 			//try to add as a grid param
-			if (DataInput::getGrid(values[i], monthlyParams[i])) {
+			if (DataInput::getGrid(values[i], param->monthlyParams[i])) {
 				continue;
 			}
 
 			//if we've made it here it's neither a usable scalar nor grid parameter
 			exit(EXIT_FAILURE);
 		}
-
-		//add to the series parameter map
-		seriesParamMap.emplace(seriesParamMapYear, monthlyParams);
 	}
 	else {
 		//parameter is in 'multi year' style, where the lines following the current one
@@ -241,6 +244,7 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 		std::string line;
 		while (std::getline(paramFp, line)) {
 			lineNo++;
+			int year;
 			std::vector<std::string> sTokens;
 			sTokens = boost::split(sTokens, line, boost::is_any_of(", \n\t"));
 
@@ -257,13 +261,9 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 				exit(EXIT_FAILURE);
 			}
 
-			//parameters in the 'multi year' style use the year as the key
-			int seriesParamMapYear;
-			std::vector<PPPG_PARAM> monthlyParams(12);
-
 			//try to convert first token to a year
 			try {
-				seriesParamMapYear = std::stoi(sTokens.front());
+				year = std::stoi(sTokens.front());
 			}
 			catch (const std::out_of_range& oor) {
 				std::string errstr = "Year could not be converted to integer on line " + std::to_string(lineNo);
@@ -272,29 +272,52 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 				exit(EXIT_FAILURE);
 			}
 
+			//set the first year if it hasn't been set
+			if (param->firstYear == 0) {
+				param->firstYear = year;
+			}
+
+			//set the last year and check to ensure years are given in consecutive order
+			if (param->lastYear == 0) {
+				param->lastYear = year;
+			}
+			else if (year == param->lastYear + 1) {
+				param->lastYear = year;
+			}
+			else {
+				std::string errstr = "yearly inputs for parameter " + name + " are not in consecutive order on line " + std::to_string(lineNo);
+				std::cout << errstr << std::endl;
+				logger.Log(errstr);
+				exit(EXIT_FAILURE);
+			}
+
 			for (int i = 0; i < 12; i++) {
-				monthlyParams[i].id = name + " year " + sTokens.front() + " month " + std::to_string(i);
+				int paramIndex = (param->lastYear - param->firstYear) * 12 + i;
+				param->monthlyParams[paramIndex].id = name + " year " + sTokens.front() + " month " + std::to_string(i);
 
 				//try to add as a scalar param
-				if (DataInput::getScalar(sTokens[i + 1], monthlyParams[i])) {
+				if (DataInput::getScalar(sTokens[i + 1], param->monthlyParams[paramIndex])) {
 					continue;
 				}
 
 				//try to add as a grid param
-				if (DataInput::getGrid(sTokens[i + 1], monthlyParams[i])) {
+				if (DataInput::getGrid(sTokens[i + 1], param->monthlyParams[paramIndex])) {
 					continue;
 				}
 
 				//if we've made it here it's neither a usable scalar nor grid parameter
 				exit(EXIT_FAILURE);
 			}
-
-			//add to the series parameter map
-			seriesParamMap.emplace(seriesParamMapYear, monthlyParams);
 		}
+
+		//determine exact size of vector, and resize accordingly to save memory
+		int size = (param->lastYear + 1 - param->firstYear) * 12;
+		param->monthlyParams.resize(size);
+		param->monthlyParams.shrink_to_fit();
 	}
 
-	this->seriesParams.emplace(name, seriesParamMap);
+	//add series param name to set of acquired params
+	acquiredSeriesParams.insert(name);
 }
 
 bool DataInput::inputFinished(bool modelMode3PGS) {
@@ -337,14 +360,15 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	}
 
 	//series parameters
-	bool haveTmax = this->seriesParams.find("Tmax") != this->seriesParams.end();
-	bool haveTmin = this->seriesParams.find("Tmin") != this->seriesParams.end();
-	bool haveTavg = this->seriesParams.find("Tavg") != this->seriesParams.end();
-	bool haveVPD = this->seriesParams.find("VPD") != this->seriesParams.end();
-	bool haveRain = this->seriesParams.find("Rain") != this->seriesParams.end();
-	bool haveSolarRad = this->seriesParams.find("Solar Radtn") != this->seriesParams.end();
-	bool haveNetRad = this->seriesParams.find("Net radtn") != this->seriesParams.end();
-	bool haveFrost = this->seriesParams.find("Frost days") != this->seriesParams.end();
+	bool haveTmax = this->acquiredSeriesParams.find("Tmax") != this->acquiredSeriesParams.end();
+	bool haveTmin = this->acquiredSeriesParams.find("Tmin") != this->acquiredSeriesParams.end();
+	bool haveTavg = this->acquiredSeriesParams.find("Tavg") != this->acquiredSeriesParams.end();
+	bool haveVPD = this->acquiredSeriesParams.find("VPD") != this->acquiredSeriesParams.end();
+	bool haveRain = this->acquiredSeriesParams.find("Rain") != this->acquiredSeriesParams.end();
+	bool haveSolarRad = this->acquiredSeriesParams.find("Solar Radtn") != this->acquiredSeriesParams.end();
+	bool haveNetRad = this->acquiredSeriesParams.find("Net radtn") != this->acquiredSeriesParams.end();
+	bool haveFrost = this->acquiredSeriesParams.find("Frost days") != this->acquiredSeriesParams.end();
+	bool haveNDVI = this->acquiredSeriesParams.find("NDVI_AVH") != this->acquiredSeriesParams.end();
 	
 	//check tmax/tavg
 	if (!haveTmax && !haveTavg) {
@@ -381,16 +405,17 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 		std::cout << "must have Frost" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	
-	this->haveTavg = haveTavg;
-	this->haveNetRad = haveNetRad;
-	this->haveVPD = haveVPD;
 
 	//check model mode which requires NDVI series parameters
-	if (modelMode3PGS && this->seriesParams.find("NDVI_AVH") != this->seriesParams.end()) {
+	if (modelMode3PGS && this->acquiredSeriesParams.find("NDVI_AVH") != this->acquiredSeriesParams.end()) {
 		std::cout << "3PGS mode should have NDVI series parameters" << std::endl;
 		exit(EXIT_FAILURE);
 	}
+
+	this->haveNDVI = haveNDVI;
+	this->haveNetRad = haveNetRad;
+	this->haveVPD = haveVPD;
+	this->haveTavg = haveTavg;
 
 	finishedInput = true;
 	return true;
@@ -545,27 +570,35 @@ bool DataInput::getSeriesParams(long cellIndex, int year, int month, SeriesParam
 	try {
 		double Tmax;
 		double Tmin;
-		params.Tavg = DataInput::getValFromSeriesParam("Tavg", year, month, cellIndex);
-		params.Rain = DataInput::getValFromSeriesParam("Rain", year, month, cellIndex);
-		params.SolarRad = DataInput::getValFromSeriesParam("Solar Radtn", year, month, cellIndex);
-		params.FrostDays = DataInput::getValFromSeriesParam("Frost days", year, month, cellIndex);
-		params.NDVI_AVH = DataInput::getValFromSeriesParam("NDVI_AVH", year, month, cellIndex);
-		params.NetRad = DataInput::getValFromSeriesParam("Net radtn", year, month, cellIndex);
-		params.VPD = DataInput::getValFromSeriesParam("VPD", year, month, cellIndex);
+
+		//get parameters we will always have
+		params.Rain = DataInput::getValFromSeriesParam(SeriesIndex::RAIN, year, month, cellIndex);
+		params.SolarRad = DataInput::getValFromSeriesParam(SeriesIndex::SOLAR_RAD, year, month, cellIndex);
+		params.FrostDays = DataInput::getValFromSeriesParam(SeriesIndex::FROST_DAYS, year, month, cellIndex);
+
+		//get optional parameters if we have them
+		params.NDVI_AVH = this->haveNDVI ? DataInput::getValFromSeriesParam(SeriesIndex::NDVI_AVH, year, month, cellIndex) : 0;
+		params.NetRad = this->haveNetRad ? DataInput::getValFromSeriesParam(SeriesIndex::NET_RAD, year, month, cellIndex) : 0;
 
 		//if we need Tmax and Tmin, get their series params
 		if (!this->haveTavg || !this->haveVPD) {
-			Tmax = DataInput::getValFromSeriesParam("Tmax", year, month, cellIndex);
-			Tmin = DataInput::getValFromSeriesParam("Tmin", year, month, cellIndex);
+			Tmax = DataInput::getValFromSeriesParam(SeriesIndex::TMAX, year, month, cellIndex);
+			Tmin = DataInput::getValFromSeriesParam(SeriesIndex::TMIN, year, month, cellIndex);
 		}
 
 		//calculate Tavg if we don't have it directly
-		if (!this->haveTavg) {
+		if (this->haveTavg) {
+			params.Tavg = DataInput::getValFromSeriesParam(SeriesIndex::TAVG, year, month, cellIndex);
+		}
+		else {
 			params.Tavg = (Tmax + Tmin) / 2;
 		}
 
 		//calculate VPD if we don't have it directly
-		if (!this->haveVPD) {
+		if (this->haveVPD) {
+			params.VPD = DataInput::getValFromSeriesParam(SeriesIndex::VPD, year, month, cellIndex);
+		}
+		else {
 			double VPDmax = 6.1078 * exp(17.269 * Tmax / (237.3 + Tmax));
 			double VPDmin = 6.1078 * exp(17.269 * Tmin / (237.3 + Tmin));
 			params.VPD = (VPDmax - VPDmin) / 2;
@@ -578,45 +611,23 @@ bool DataInput::getSeriesParams(long cellIndex, int year, int month, SeriesParam
 	}
 }
 
-double DataInput::getValFromSeriesParam(std::string paramName, int year, int month, long cellIndex) {
-	std::unordered_map<int, std::vector<PPPG_PARAM>> paramYearMap;
-	std::vector<PPPG_PARAM> paramMonthSeries;
-	PPPG_PARAM param;
+double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, long cellIndex) {
+	//get parameter from the seriesParam array using the seriesParamNameMap
+	PPPG_SERIES_PARAM* param = &this->seriesParams[paramIndex];
 	
-	//find param year map from series params map
-	auto search = this->seriesParams.find(paramName);
-	if (search == this->seriesParams.end()) {
-		return 0;
-	}
+	//get the location of the current year/month param based on whether we have multiple years in the vector
+	int monthIndex = (param->firstYear == -1) ? (month - 1) : (year - param->firstYear) * 12 + (month - 1);
+	
+	//get the monthly parameter
+	PPPG_PARAM monthParam = param->monthlyParams[monthIndex];
 
-	//find param month series vector from param year map
-	//if -1 exists, use that for every year, otherwise search for the current year
-	paramYearMap = search->second;
-	if (paramYearMap.find(-1) != paramYearMap.end()) {
-		paramMonthSeries = paramYearMap.at(-1);
-	}
-	else {
-		try {
-			paramMonthSeries = paramYearMap.at(year);
-		}
-		catch (std::out_of_range e) {
-			std::string errstr = "the year " + std::to_string(year) + " was not found for parameter " + paramName;
-			std::cout << errstr << std::endl;
-			logger.Log(errstr);
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	//find param from param month series vector
-	param = paramMonthSeries[month - 1];
-
-	if (param.spType == pScalar) {
-		return param.val;
+	if (monthParam.spType == pScalar) {
+		return monthParam.val;
 	}
 
 	//get parameter value depending on whether it is scalar or grid
-	if (param.spType == pTif) {
-		double val = param.g->GetVal(cellIndex);
+	if (monthParam.spType == pTif) {
+		double val = monthParam.g->GetVal(cellIndex);
 		if (isnan(val)) {
 			throw std::runtime_error("nan");
 		}
@@ -720,4 +731,8 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 
 GDALRasterImage* DataInput::getRefGrid() {
 	return this->refGrid;
+}
+
+bool DataInput::haveNetRadParam() {
+	return this->haveNetRad;
 }

@@ -815,7 +815,7 @@ skipPreYearCalcs:
 
             //transpiration from Penman-Monteith (mm/day converted to mm/month)
             opVars["Transp"].v = CanopyTranspiration(sParams.SolarRad, sParams.VPD, dayLength, params.BLcond,
-                CanCond, sParams.NetRad, dataInput->haveNetRad, params);
+                CanCond, sParams.NetRad, dataInput->haveNetRadParam(), params);
             opVars["Transp"].v = DaysInMonth[calMonth] * opVars["Transp"].v;
 
             // do soil water balance
