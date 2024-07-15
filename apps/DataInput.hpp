@@ -344,5 +344,4 @@ public:
 	bool haveSeedlingMass;
 	bool haveMinASWTG;
 	bool haveAgeDepFert;
-
 };

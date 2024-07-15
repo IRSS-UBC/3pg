@@ -733,6 +733,7 @@ skipPreYearCalcs:
             if (modelMode3PGS) {
                 // Initial value of FPAR_AVH from linear fit. 
                 FPAR_AVH = (sParams.NDVI_AVH * params.NDVI_FPAR_constant) + params.NDVI_FPAR_intercept;
+
                 // Constrain FPAR_AVH to within threshhold values. 
                 if (FPAR_AVH > 0.98)
                     FPAR_AVH = 0.98;
@@ -824,6 +825,7 @@ skipPreYearCalcs:
                 Interception = params.MaxIntcptn;
             else
                 Interception = params.MaxIntcptn * Minimum(1, opVars["LAI"].v / params.LAImaxIntcptn);
+
             opVars["EvapTransp"].v = opVars["Transp"].v + Interception * sParams.Rain;
             opVars["ASW"].v = opVars["ASW"].v + sParams.Rain + (100 * Irrig / 12) - opVars["EvapTransp"].v;        //Irrig is Ml/ha/year
             monthlyIrrig = 0;
