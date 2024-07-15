@@ -26,6 +26,7 @@ Use of this software assumes agreement to this condition of use
 #include <boost/asio/post.hpp>
 #include <thread>
 #include "DataOutput.hpp"
+#include "DataInput.hpp"
 #include "ParamStructs.hpp"
 
 // Maximum file path length. 
@@ -42,6 +43,8 @@ std::string COPYMSG = "This version of 3-PG has been revised by:\n"
                         "Revisions based on Siggins' 2.53 version\n\n"
                         "Better message TBD. Enjoy!\n"
                         "--------------------------------------\n";
+
+extern bool modelMode3PGS;
 
 Logger logger("logfile.txt");
 
@@ -69,16 +72,6 @@ private:
 };
 
 //----------------------------------------------------------------------------------------
-
-void threadCalculateRow(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate spMinMY, MYDate spMaxMY, int row, int ncols) {
-    int cellIndexStart = row * ncols;
-    for (int j = 0; j < ncols; j++) {
-        int cellIndex = cellIndexStart + j;
-        runTreeModel(opVars, spMinMY, spMaxMY, cellIndex);
-    }
-
-    writeRowDataOutput(row);
-}
 
 int main(int argc, char* argv[])
 {
@@ -112,21 +105,24 @@ int main(int argc, char* argv[])
 
     std::string outPath = getOutPathTMP(siteParamFile);
     logger.StartLog(outPath);
+    DataInput *dataInput = new DataInput();
 
     /* Copyright */
     std::cout << COPYMSG << std::endl;
     logger.Log(COPYMSG);
 
-    // Load the parameters and output variables. 
-    InitInputParams();
-    readSpeciesParamFile(defParamFile);
-    opVars = readSiteParamFile(siteParamFile);
-    if (!haveAllParams()) {
+    // Load the parameters
+    readSpeciesParamFile(defParamFile, dataInput);
+    opVars = readSiteParamFile(siteParamFile, dataInput);
+
+    //check that we have all the correct parameters
+    if (!dataInput->inputFinished(modelMode3PGS)) {
         exit(EXIT_FAILURE);
     }
 
     // Check for a spatial run, if so open input grids and define refGrid. 
-    refGrid = openInputGrids();
+    openInputGrids();
+    refGrid = dataInput->getRefGrid();
 
     nrows = refGrid->nRows;
     ncols = refGrid->nCols;
@@ -137,11 +133,11 @@ int main(int argc, char* argv[])
     // Find the over all start year and end year. 
     // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
     std::cout << "Finding run period..." << std::endl;
-    findRunPeriod(spMinMY, spMaxMY); 
+    dataInput->findRunPeriod(spMinMY, spMaxMY);
 
     readSampleFile(opVars, refGrid); 
     std::cout << "Points read from sample file." << std::endl;
-
+ 
     // Run the model. 
     int cellsDone = 0;
     int cellsTotal = (nrows) * (ncols); 
@@ -162,11 +158,11 @@ int main(int argc, char* argv[])
             fprintf(stdout, "Completed %2u%%\r", progress);
         }
         
-        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, ncols] {
+        boost::asio::post(pool, [&opVars, spMinMY, spMaxMY, i, ncols, dataInput] {
             int cellIndexStart = i * ncols;
             for (int j = 0; j < ncols; j++) {
                 int cellIndex = cellIndexStart + j;
-                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex);
+                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput);
             }
 
             writeRowDataOutput(i);

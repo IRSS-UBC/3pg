@@ -14,16 +14,18 @@ struct PPPG_VVAL {
 	GDALRasterImage* g;                               // ptr to grid value
 };
 
-// 3PG 'parameters'. These are all stored as double.  The 'id' string field 
-// is set to the name of the variable in the initialisation below.  Within 
-// the model itself we don't reference the parameters via this type.  Its 
-// used to help identify parameter lines, and to help get grid values into 
-// the model.  
 typedef struct PPPG_PARAM {
-	std::string id = "";                        // String version of the variable name. 
-	double* adr;                     // The address of the model variable. 
-	bool got = 0;                        // Has the parameter been set? 
-	PPPG_VVAL data;                  // Variant value
+	//variable name
+	std::string id = "";
+
+	//indication of scalar or grid parameter
+	ParamSpatial spType = pNull;
+
+	//scalar value
+	double val;
+	
+	//grid reference
+	GDALRasterImage* g;
 } PPPG_PARAM;
 
 // 3PG output variables. In spatial mode output variables may be written 
@@ -41,15 +43,20 @@ typedef struct PPPG_OP_VAR {
 	bool recurMonthly;              // Whether to write every month in an output year. 
 	//std::vector<GDALRasterImage*> RO;                      // The output tifs for regular output. 
 } PPPG_OP_VAR;
-
-// 3PG 'series' parameters.  This is any parameter with a time series for value, 
-// in particular the climate parameters, and NDVI.  
+ 
 typedef struct PPPG_SERIES_PARAM {
-	int start;                             // Calendar year of first entry. 
-	PPPG_VVAL* data;                       // Array of variant values.
-	int vlen;                              // Number of entries in array. 
-	bool oneYear;                          // Array is of a single 'average' year (eg esoclim). 
-	bool got = 0;                              // Have read the series. 
+	//monthlyParams will always contain a multiple of 12 params, the first year is the
+	//first year in the vector (monthlyparams[0] will be January of the first year)
+	//first year will be set to -1 if the same monthly params will be used in every year.
+	int firstYear = 0;
+
+	//end year, used to ensure we don't try to get an element in the vector that doesn't exist
+	//there will always be (lastYear + 1 - firstYear) * 12 elements in the vector
+	//unless first year is set to -1 indicating there are only 12 elements.
+	int lastYear = 0;
+
+	//vector containing monthl params
+	std::vector<PPPG_PARAM> monthlyParams;
 } PPPG_SERIES_PARAM;
 
 // 3PG 'management table' parameters.  Only one value per year is allowed.  
