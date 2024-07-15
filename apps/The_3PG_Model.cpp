@@ -1,5 +1,3 @@
-//static char rcsid[] = "$Id: The_3PG_Model.cpp,v 1.6 2001/08/02 06:51:42 lou026 Exp $";
-
 /*
 All source code remains the property and copyright of CSIRO.
 
@@ -10,15 +8,6 @@ of relying on this software.
 Use of this software assumes agreement to this condition of use
 */
 
-
-// Model routine for 3PG.  This is basically a translation of the VB 
-// version to C, particularly in the routine runTreeModel.  Most 
-// of the comments are from the VB version.  
-// 
-// Because of this VB basis, there are a few non-standard aspects to 
-// this program.  Some arrays are indexed from 1, which means that 
-// the first entry (element 0) is unused.  There are a *lot* of global 
-// variables, in particular the model parameters, declared in this file. 
 #include <iostream>
 #include <math.h>
 #include <stdio.h>
@@ -26,38 +15,16 @@ Use of this software assumes agreement to this condition of use
 #include "The_3PG_Model.hpp"
 //____________________________________
 //
-// The code for 3PG - March 24th, 2000
+// The code for 3PG - July, 2024
 //____________________________________
-
-
-//Changes from August 1999 version:
-//
-//   1) Accumulating annual stand transpiration
-//   2) Introduced minimum avail soil water, with difference made up by
-//      irrigation. Can output monthly and annual irrigation.
-//   3) Start mid year in southern hemisphere
-//   4) Recast alpha(FR) as alpha*fNutr
-//   5) Some change in how functions are parameterised to make parameters
-//      more meaningful
-//   6) Allometric relationships based on DBH in cm
-//   7) Partioning parameterised by pFS for DBH = 2 and 20 cm
-//   8) Model made strictly state-determined by ensuring that LAI,
-//      partitioning, etc determined from current state not a lagged state.
-//   9) SLA made stand-age dependent
-//  10) Non-closed canopy allowed for (not good!)
-//  11) Manner in which modifiers taken into account corrected
 
 //NOTE: The following conversion factors are used:
 //
 //    1 MJ  = 2.3 mol PAR
 //    1 mol = 24 gDM
 
-
-#define ModelVsn "3-PG March2000.24"
-
 #define Pi 3.141592654
 #define ln2 0.693147181
-
 #define eps 0.0001
 
 // Controls and counters
@@ -66,15 +33,7 @@ int DaysInMonth[13] = {                  // array for days in months
 };
 bool showDetailedResults;                // TRUE ==> show monthly results
 bool showStandSummary;                   // TRUE ==> show stand summary
-bool modelMode3PGS = false;
-
-// Site characteristics, site specific parameters
-char siteName[100];                      // name of site
-double MinASW;                           
-
-//int soilIndex;                         // soil class index
-// ANL changed this from int to double
-double soilIndex;                        // soil class index
+bool modelMode3PGS = false;                         
 
 // Time variant management factors
 int nFertility;                          // size of site fertility array
@@ -82,82 +41,8 @@ int nMinAvailSW;                         // size of MinAvailSW array
 int nIrrigation;                         // size of irrigation array
 double Irrig;                            // current annual irrigation (ML/y)
 
-// Mean monthly weather data
-//int mYears;                            // years of met data available
-// ANL changed this from int to double
-double mYears = 1.0;                       // years of met data available
-//int mFrostDays[13];                    // frost days/month
-// ANL changed this from int to double
-double mFrostDays[13];                   // frost days/month
-double mSolarRad[13];                    // solar radiation (MJ/m2/day)
-double mTx[13];                          // maximum temperature
-double mTn[13];                          // minimum temperature
-double mTav[13];                         // mean daily temperature
-double mVPD[13];                         // mean daily VPD
-double mRain[13];                        // total monthly rain + irrigation
-double mNetRad[13];                      // ANL can use net instead of short wave
-
-// Stand data
-char SpeciesName[100];                   // name of species
-
-// of mass using seedling mass constant
-// ANL changed StandAge from int to double
-double StandAge;                         // stand age
-double LAIi;                        // canopy leaf area index
-double MAIi;                        // mean annual volume increment
-double avDBHi;                    // average stem DBH                                                                         
-double cumTransp;                        // annual stand transporation
-double cumIrrig;                         // annual irrig. to maintain MinASW
-
-// Parameter values
-// int MaxAge;
-// ANL changed MaxAge from int to double
-double Interception;
-double Density; 
-double pfsConst, pfsPower;               // derived from pFS2, pFS20
-
-// Intermediate monthly results
-double RainIntcptn; //Added 16/07/02
-double GPPmolc;
-double monthlyIrrig;
-
-// Annual results
-double cumGPP;
-double abvgrndEpsilon, totalEpsilon;
-double StemGrthRate;
-double cumEvapTransp;
-double CumdelWF, CumdelWR, CumdelWS;
-double CumAPARU, cumARAD;
-double CumStemLoss;
-double CutStemMass1, CutStemMass2, CutStemMass3;
-
-//Various additional oputputs
-double cRADint;               //intercepted radiation in output period
-double aRADint;               //annual intercepted radiation
-double aGPP;                  //annual GPP
-double aNPP;                  //annual NPP
-double cStemDM;               //stem DM increment in output period
-double aStemDM;               //annual stem DM increment
-double aWUE;                  //annual WUE
-double aSupIrrig;             //annual supplemental irrigation
-double cSupIrrig;             //supplemental irrigation in output period
-double cRainInt;              //rainfall interception in output period
-double aTransp;               //annual transpiration
-double aEvapTransp;           //annual evapotransporation
-double cEpsilonGross;         //gross epsilon in output period
-double aEpsilonGross;         //annual gross epsilon
-double cEpsilonStem;          //epsilon for stemDM in output period
-double aEpsilonStem;          //annual epsilon for stemDM
-
-// ANL - other globals
-double mNDVI[13];      // 3PGS - one years worth of NDVI 
-
 extern bool samplePointsMonthly;
 extern bool samplePointsYearly;
-
-// ANL - globals defined in 3pg.cpp
-//extern FILE* logfp;
-extern char outstr[];
 
 //-----------------------------------------------------------------------------
 
@@ -383,12 +268,42 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
         return;
     }
 
+    //various variables that used to be global but I have no idea how necessary they are to the modol
+    double aEpsilonGross;
+    double aEpsilonStem;
+    double aEvapTransp;
+    double aGPP;
+    double aNPP;
+    double aRADint;
+    double aStemDM;
+    double aSupIrrig;
+    double aTransp;
+    double avDBHi;
+    double cRADint;
+    double cRainInt;
+    double cStemDM;
+    double cSupIrrig;
+    double CumAPARU;
+    double cumARAD;
+    double CumdelWF;
+    double CumdelWR;
+    double CumdelWS;
+    double cumEvapTransp;
+    double cumGPP;
+    double cumIrrig;
+    double CumStemLoss;
+    double cumTransp;
+    double GPPmolc;
+    double LAIi;
+    double monthlyIrrig;
+    double RainIntcptn = 0;
+
     //before start or after end indication
     bool yrPreStart = false;
     bool yrPstEnd = false;
 
     // At initialisation param file has only possible value to use.  
-    MinASW = params.MinASWp;
+    double MinASW = params.MinASWp;
 
     //soil parameters for soil class
     double SWconst;
@@ -406,8 +321,8 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     double CanCover;
 
     // Derive some parameters
-    pfsPower = log(params.pFS20 / params.pFS2) / log(10);
-    pfsConst = params.pFS2 / pow(2, pfsPower);
+    double pfsPower = log(params.pFS20 / params.pFS2) / log(10);
+    double pfsConst = params.pFS2 / pow(2, pfsPower);
 
     double Interception;         // Proportion of rainfall intercepted by canopy (used to be assigned 0.15 in assignDefaultParameters)
     double Density;              // Basic density (t/m3) (used to be assigned 0.5 in assignDefaultParameters)
@@ -432,19 +347,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     double delStems;
     double delLitter;
     double delRloss;
-
-    //  int minCy, maxCy; 
-
-      // ANL - Note that in a spatial run, almost any input parameter having a
-      // NODATA value will result in NODATA outputs.  To support this,
-      // once we hit NODATA, we use a sequence of goto's to ensure that we
-      // still go through all of the output hoops, but don't really do any
-      // calculations.  The exception to this is that grids that are part of 
-      // management tables may have NODATA cells, these cells cause that 
-      // row in the management table to be ignored, for just that cell. 
-
-      // The following variables probabaly could be Public so they can be
-      // printed as part of the monthly output ...
 
     double RelAge;
     int dayofyr;
@@ -485,9 +387,9 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     useMinASWTG = dataInput->haveMinASWTG;
 
     // Assign the SWconst and SWpower parameters for this soil class
-    if (soilIndex != 0) {
-        SWconst = 0.8 - 0.1 * soilIndex;
-        SWpower = 11 - 2 * soilIndex;
+    if (params.soilIndex != 0) {
+        SWconst = 0.8 - 0.1 * params.soilIndex;
+        SWpower = 11 - 2 * params.soilIndex;
     }
     else {
         SWconst = params.SWconst0;

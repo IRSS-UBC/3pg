@@ -344,7 +344,7 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
    int pInd, pInd1, pInd2;
   std::string cp;
   std::string outstr;
-  bool yearlyOutput;
+  bool yearlyOutput = false;
 
   PPPG_OP_VAR opVar;
   if (pValue.empty()) {
