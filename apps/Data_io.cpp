@@ -10,7 +10,6 @@ of relying on this software.
 Use of this software assumes agreement to this condition of use
 */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -30,7 +29,6 @@ Use of this software assumes agreement to this condition of use
 #include "Data_io.hpp"
 #include "ParamStructs.hpp"
 
-
 // namespace fs = std::filesystem;
 static std::string rcsid = "$Id: Data_io.cpp,v 1.10 2001/08/02 06:41:01 lou026 Exp $";
 
@@ -45,28 +43,15 @@ static std::string rcsid = "$Id: Data_io.cpp,v 1.10 2001/08/02 06:41:01 lou026 E
 #define MAXLINE 1000
 #endif
 
-#define GRID_NAME_LENGTH 300
 #define PPPG_MAX_SERIES_YEARS 150
 #define PPPG_MAX_SERIES_LENGTH PPPG_MAX_SERIES_YEARS*12
 
-extern Logger logger;
-
-//----------------------------------------------------------------------------------
-// Global variables.  These are used to push values into the runTreeModel routine. 
-// Where the VB version uses an integer variable the equivalent C declaration 
-// has been left in but commented.  Apart from that this section is a direct 
-// translation from the The_3PG_Model module in the VB version.  Note that the 
-// arrays used directly by the models have been left '1' based, so there is an 
-// unused array member at index 0.  
+//logger
+extern Logger logger; 
 
 // Controls and counters
 extern double DaysInMonth[13];                  // array for days in months
 extern bool modelMode3PGS;
-
-// Site characteristics, site specific parameters
-extern std::string siteName;                      // name of site
-extern double FR;                              // current site fertility rating
-extern double SWconst, SWpower;                 // soil parameters for soil class
 
 // Time variant management factors
 extern int nFertility;                          // size of site fertility array
@@ -77,91 +62,6 @@ extern int nIrrigation;                         // size of irrigation array
 //extern MANAGE_TABLE Irrigation[1000];           // time-variant irrigation (ML/y)
 extern double Irrig;                            // current annual irrigation (ML/y)
 
-// Mean monthly weather data
-//int mYears;                                   // years of met data available
-// ANL changed this from int to double
-extern double mYears;                           // years of met data available
-extern double mDayLength[13];                   // day length
-//int mFrostDays[13];                           // frost days/month
-// ANL changed this from int to double
-extern double mFrostDays[13];                   // frost days/month
-extern double mSolarRad[13];                    // solar radiation (MJ/m2/day)
-extern double mTx[13];                          // maximum temperature
-extern double mTn[13];                          // minimum temperature
-extern double mTav[13];                         // mean daily temperature
-extern double mVPD[13];                         // mean daily VPD
-extern double mRain[13];                        // total monthly rain + irrigation
-extern double mNDVI[13];                        // ANL monthly NDVI for 3PGS mode
-extern double mNetRad[13];                      // ANL can use net instead of short wave
-
-// Stand data
-// extern char SpeciesName[100];                // name of species
-// int StandAge;                                // stand age
-// ANL changed StandAge from int to double
-extern double StandAge;                         // stand age
-extern double ASW;                        // available soil water
-extern double StemNo;                  // stem numbers
-extern double WF;                          // foliage biomass
-extern double WR;                          // root biomass
-extern double WS;                          // stem biomass
-extern double LAIi, LAI;                        // canopy leaf area index
-extern double MAIi, MAI;                        // mean annual volume increment
-extern double avDBHi, avDBH;                    // average stem DBH
-extern double TotalW;                           // total biomass
-extern double BasArea;                          // basal area
-extern double StandVol;                         // stem volume
-extern double LAIx, ageLAIx;                    // peak LAI and age at peak LAI
-extern double MAIx, ageMAIx;                    // peak MAI and age at peak MAI
-extern double cumTransp;                        // annual stand transporation
-extern double cumIrrig;                         // annual irrig. to maintain MinASW
-
-// Stand factors that are specifically age dependent
-extern double SLA;
-extern double Littfall;
-extern double fracBB;
-extern double CanCover;
-
-// Parameter values
-// int MaxAge;
-// ANL changed MaxAge from int to double
-extern double Interception;
-extern double Density;
-extern double pfsConst, pfsPower;                     // derived from pFS2, pFS20
-
-// Intermediate monthly results
-extern double m, alphaC;
-extern double RAD, PAR;
-extern double lightIntcptn;
-extern double fAge, fT, fFrost;
-extern double fVPD, fSW, fNutr;
-extern double CanCond;
-extern double Transp, EvapTransp;
-extern double AvStemMass;
-extern double APAR, APARu;
-extern double GPPmolc, GPPdm, NPP;
-extern double pR, pS, pF, pFS;
-extern double delWF, delWR, delWS;
-extern double delFloss, delRloss;
-extern double monthlyIrrig;
-
-// Annual results
-extern double cLAI, cGPP, cNPP, cCVI, cRainInt, cEvapTransp, cTransp, cWUE;
-extern double cumGPP, cumWabv;
-extern double abvgrndEpsilon, totalEpsilon;
-extern double StemGrthRate;
-extern double cLitter;
-extern double CumdelWF, CumdelWR, CumdelWS;
-extern double CumAPARU, cumARAD;
-extern double CumStemLoss;
-extern double CutStemMass1, CutStemMass2, CutStemMass3;
-
-//----------------------------------------------------------------------------------
-
-// 3PGS variables
-extern double delWAG;
-
-// ANL - other globals.
-bool yearlyOutput, monthlyOutput; 
 bool samplePointsYearly = false, samplePointsMonthly = false;
 std::string outPath = "./";
 
@@ -444,6 +344,7 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
    int pInd, pInd1, pInd2;
   std::string cp;
   std::string outstr;
+  bool yearlyOutput;
 
   PPPG_OP_VAR opVar;
   if (pValue.empty()) {
