@@ -246,12 +246,14 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 			lineNo++;
 			int year;
 			std::vector<std::string> sTokens;
-			sTokens = boost::split(sTokens, line, boost::is_any_of(", \n\t"));
 
 			//if empty we've iterated through every year, stop iterating
-			if (sTokens.empty()) {
+			if (line.size() == 0) {
 				break;
 			}
+
+			//get the year and monthly tokens from the current line
+			sTokens = boost::split(sTokens, line, boost::is_any_of(", \n\t"), boost::token_compress_on);
 
 			//ensure all 12 monthly values are given
 			if (sTokens.size() != 13) {
@@ -291,6 +293,9 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 				exit(EXIT_FAILURE);
 			}
 
+			//resize the params vector to fit 12 more values
+			param->monthlyParams.resize(param->monthlyParams.size() + 12);
+
 			for (int i = 0; i < 12; i++) {
 				int paramIndex = (param->lastYear - param->firstYear) * 12 + i;
 				param->monthlyParams[paramIndex].id = name + " year " + sTokens.front() + " month " + std::to_string(i);
@@ -309,11 +314,6 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 				exit(EXIT_FAILURE);
 			}
 		}
-
-		//determine exact size of vector, and resize accordingly to save memory
-		int size = (param->lastYear + 1 - param->firstYear) * 12;
-		param->monthlyParams.resize(size);
-		param->monthlyParams.shrink_to_fit();
 	}
 
 	//add series param name to set of acquired params

@@ -988,7 +988,14 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
 
     // Second and subsequent tokens are the parameter values, put them all into a vector
     std::vector<std::string> pValues;
-    boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+
+    //in the case where series parameters are given by year, there will only be one token on the line
+    //and boost::split() will throw an error. Check to make sure the token size is safe to call this
+    //function on.
+    if (tokens.size() > 1) {
+        boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+    }
+
     if (dataInput->tryAddInputParam(pName, pValues)) { continue; }
     if (output_var_names.find(pName) != output_var_names.end()) {
         opVars.emplace(pName, readOutputParam(pName, pValues, lineNo));
