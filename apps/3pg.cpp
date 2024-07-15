@@ -73,6 +73,43 @@ private:
 
 //----------------------------------------------------------------------------------------
 
+class Progress {
+private:
+    int progress;
+    int lastProgress;
+    int rowsTotal;
+    int rowsDone;
+    std::mutex progressMutex;
+public:
+    Progress(int rowsTotal) {
+        this->rowsTotal = rowsTotal;
+        this->rowsDone = 0;
+        this->progress = 0;
+        this->lastProgress = -1;
+    }
+    void rowCompleted() {
+        //lock mutex
+        this->progressMutex.lock();
+
+        //increment rows
+        this->rowsDone++;
+
+        //calculate updated percentage
+        this->progress = (100 * this->rowsDone / this->rowsTotal);
+
+        //if percentage has incremented, display
+        if (this->progress > this->lastProgress) {
+            fprintf(stdout, "Completed %2u%%\r", this->progress);
+            this->lastProgress = this->progress;
+        }
+
+        //release mutex
+        this->progressMutex.unlock();
+    }
+};
+
+//----------------------------------------------------------------------------------------
+
 int main(int argc, char* argv[])
 {
     GDALRasterImage* refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
@@ -139,9 +176,7 @@ int main(int argc, char* argv[])
     std::cout << "Points read from sample file." << std::endl;
  
     // Run the model. 
-    int cellsDone = 0;
-    int cellsTotal = (nrows) * (ncols); 
-    int lastProgress = -1; 
+    long cellsTotal = nrows * ncols;
     std::cout << "Processing..." << cellsTotal << " cells... " << std::endl;
     logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
 
@@ -149,16 +184,10 @@ int main(int argc, char* argv[])
     int nthreads = 1;
     boost::asio::thread_pool pool(nthreads);
 
-    for (int i = 0; i < nrows; i++) {
+    Progress progress(refGrid->nRows);
 
-        //TODO: progress likely won't work
-        //calculate/print progress
-        int progress = (100 * cellsDone / cellsTotal);
-        if (progress > lastProgress) {
-            fprintf(stdout, "Completed %2u%%\r", progress);
-        }
-        
-        boost::asio::post(pool, [&opVars, spMinMY, spMaxMY, i, ncols, dataInput] {
+    for (int i = 0; i < nrows; i++) {
+        boost::asio::post(pool, [&opVars, spMinMY, spMaxMY, i, ncols, dataInput, &progress] {
             int cellIndexStart = i * ncols;
             for (int j = 0; j < ncols; j++) {
                 int cellIndex = cellIndexStart + j;
@@ -166,16 +195,14 @@ int main(int argc, char* argv[])
             }
 
             writeRowDataOutput(i);
+            progress.rowCompleted();
         });
-
-        //increment progress
-        cellsDone += ncols;
-        lastProgress = progress;
     }
 
     pool.join();
 
     deleteDataOutput();
+    delete dataInput;
 
     return EXIT_SUCCESS;
 }
