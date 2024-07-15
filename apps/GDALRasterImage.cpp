@@ -191,15 +191,29 @@ bool GDALRasterImage::IsNoData(float val) {
 };
 
  float GDALRasterImage::GetMin() {
- 	float min;
- 	min = band->GetMinimum();
+	float min = std::numeric_limits<float>::max();
+	for (int i = 0; i < this->nRows; i++) {
+		for (int j = 0; j < this->nCols; j++) {
+			float check = this->GetVal(i, j);
+			if (!isnan(check)) {
+				min = (min > check) ? check : min;
+			}
+		}
+	}
  	return min;
  };
 
  float GDALRasterImage::GetMax() {
- 	float max;
- 	max = band->GetMaximum();
- 	return max;
+	 float max = std::numeric_limits<float>::min();
+	 for (int i = 0; i < this->nRows; i++) {
+		 for (int j = 0; j < this->nCols; j++) {
+			 float check = this->GetVal(i, j);
+			 if (!isnan(check)) {
+				 max = (max < check) ? check : max;
+			 }
+		 }
+	 }
+	 return max;
  };
 
  std::vector<std::pair<int, int>> GDALRasterImage::getIndicesWhere(const double& value) {

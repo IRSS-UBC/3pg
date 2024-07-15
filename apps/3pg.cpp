@@ -23,6 +23,7 @@ Use of this software assumes agreement to this condition of use
 #include "util.hpp"
 #include <boost/program_options.hpp>
 #include "DataOutput.hpp"
+#include "DataInput.hpp"
 #include "ParamStructs.hpp"
 
 // Need to provide getopt on MSVC. 
@@ -53,6 +54,8 @@ std::string COPYMSG = "This version of 3-PG has been revised by:\n"
                         "Revisions based on Siggins' 2.53 version\n\n"
                         "Better message TBD. Enjoy!\n"
                         "--------------------------------------\n";
+
+extern bool modelMode3PGS;
 
 Logger logger("logfile.txt");
 
@@ -118,21 +121,20 @@ int main(int argc, char* argv[])
 
     std::string outPath = getOutPathTMP(siteParamFile);
     logger.StartLog(outPath);
+    DataInput *dataInput = new DataInput();
 
     /* Copyright */
     std::cout << COPYMSG << std::endl;
     logger.Log(COPYMSG);
 
+    // Load the parameters
+    readSpeciesParamFile(defParamFile, dataInput);
+    opVars = readSiteParamFile(siteParamFile, dataInput);
 
-    // Load the parameters and output variables. 
-    InitInputParams();
-    readSpeciesParamFile(defParamFile);
-    opVars = readSiteParamFile(siteParamFile);
-    if (!haveAllParams()) {
+    //check that we have all the correct parameters
+    if (!dataInput->inputFinished(modelMode3PGS) || !haveAllParams()) {
         exit(EXIT_FAILURE);
-
     }
-
 
     // Check for a spatial run, if so open input grids and define refGrid. 
     refGrid = openInputGrids();
@@ -146,14 +148,10 @@ int main(int argc, char* argv[])
     // Find the over all start year and end year. 
     // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
     std::cout << "Finding run period..." << std::endl;
-    findRunPeriod(spMinMY, spMaxMY); 
-
-    // NOTE: don't think ResetGrids is necessary for GDAL stuff... but I guess we'll see
-    // ResetGrids(); 
+    dataInput->findRunPeriod(spMinMY, spMaxMY);
 
     readSampleFile(opVars, refGrid); 
     std::cout << "Points read from sample file." << std::endl;
-
  
     // Run the model. 
     int cellsDone = 0;
@@ -172,7 +170,7 @@ int main(int argc, char* argv[])
             }
             
             int cellIndex = i * ncols + j;
-            runTreeModel(opVars, spMinMY, spMaxMY, cellIndex);
+            runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput);
 
             //increment progress
             cellsDone++;
