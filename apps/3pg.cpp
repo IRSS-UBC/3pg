@@ -181,13 +181,13 @@ int main(int argc, char* argv[])
     logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
 
     //unsigned int numThreads = std::thread::hardware_concurrency();
-    int nthreads = 1;
+    int nthreads = 2;
     boost::asio::thread_pool pool(nthreads);
 
     Progress progress(refGrid->nRows);
 
     for (int i = 0; i < nrows; i++) {
-        boost::asio::post(pool, [&opVars, spMinMY, spMaxMY, i, ncols, dataInput, &progress] {
+        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, ncols, dataInput, &progress] {
             int cellIndexStart = i * ncols;
             for (int j = 0; j < ncols; j++) {
                 int cellIndex = cellIndexStart + j;

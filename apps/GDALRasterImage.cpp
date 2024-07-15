@@ -105,21 +105,20 @@ void GDALRasterImage::Close() {
 
 float GDALRasterImage::GetVal(int x, int y) {
 	float pixelValue;
+	//exception thrown when this isn't locked. I *assume* that's because there's potential race conditions and GDAL is smart
+	//enough to warn us of them in debug mode.
+	this->mutex.lock();
 	if (band->RasterIO(GF_Read, x, y, 1, 1, &pixelValue, 1, 1, GDT_Float32, 0, 0) != CE_None) {
 		throw std::invalid_argument("Cannot read pixel value.");
 	}
+	this->mutex.unlock();
 	return pixelValue;
 };
 
 float GDALRasterImage::GetVal(int index) {
 	// Get the value of the pixel at the given index
 	std::tuple<int, int> xy = IndexToXY(index);
-	float pixelValue;
-
-	if (band->RasterIO(GF_Read, std::get<0>(xy), std::get<1>(xy), 1, 1, &pixelValue, 1, 1, GDT_Float32, 0, 0) != CE_None) {
-		throw std::invalid_argument("Cannot read pixel value.");
-	}
-	return pixelValue;
+	return GDALRasterImage::GetVal(std::get<0>(xy), std::get<1>(xy));
 };
 
 int GDALRasterImage::IndexFrom(double lat, double lon) {

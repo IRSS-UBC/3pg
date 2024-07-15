@@ -258,7 +258,7 @@ void copyVars(Vars vars, std::unordered_map<std::string, PPPG_OP_VAR>& opVars) {
 }
 
 // This is the main routine for the 3PG model
-void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput *dataInput)
+void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput *dataInput)
 {
     Vars vars;
 
