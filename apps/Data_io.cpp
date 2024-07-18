@@ -218,22 +218,6 @@ std::unordered_set<std::string> output_var_names {
     "cLitter"
 };
 
- 
-//----------------------------------------------------------------------------------
-
-// 3PG series parameters, climate and NDVI. These either have 12 values, for 
-// nominal values such as Esoclim data, or some multiple of 12 values, for time 
-// series data.  
-PPPG_SERIES_PARAM Tmax_vals;
-PPPG_SERIES_PARAM Tmin_vals;
-PPPG_SERIES_PARAM Tavg_vals;
-PPPG_SERIES_PARAM Rain_vals;
-PPPG_SERIES_PARAM SolarRad_vals;
-PPPG_SERIES_PARAM FrostDays_vals;
-PPPG_SERIES_PARAM NdviAvh_vals;
-PPPG_SERIES_PARAM NetRad_vals;
-PPPG_SERIES_PARAM Vpd_vals;
-
 // 3PG management table parameters. At most one value per year. 
 PPPG_MT_PARAM FertMT[PPPG_MAX_SERIES_YEARS+1];
 PPPG_MT_PARAM IrrigMT[PPPG_MAX_SERIES_YEARS+1];
@@ -378,61 +362,6 @@ double lookupManageTable( int year, int table, double def, int k )
 
 //----------------------------------------------------------------------------------
 
-bool getSeriesVal(double& val, int ser, int calMonth, int calYear, int k)
-{
-    PPPG_SERIES_PARAM* series;
-    std::string errstr;
-
-    // Which series. 
-    switch (ser) {
-    case SS_TMAX:      series = &Tmax_vals;      break;
-    case SS_TMIN:      series = &Tmin_vals;      break;
-    case SS_TAVG:      series = &Tavg_vals;      break;
-    case SS_RAIN:      series = &Rain_vals;      break;
-    case SS_SOLARRAD:  series = &SolarRad_vals;  break;
-    case SS_FROSTDAYS: series = &FrostDays_vals; break;
-    case SS_NDVI_AVH:  series = &NdviAvh_vals;   break;
-    case SS_NETRAD:    series = &NetRad_vals;    break;
-    case SS_VPD:       series = &Vpd_vals;       break;
-    default: break;
-    }
-
-    // Long run or 1 year data.
-    int i;
-    if (series->oneYear) {
-        // calYear is irrelevant, calMonth will range from 1 to 12, series elements will 
-        // be indexed from 0 to 11. 
-        i = calMonth - 1;
-    }
-    else {
-        // Long run data. 
-        i = (calYear - series->start) * 12 + calMonth - 1;
-        if (i > series->vlen * 12 - 1) {
-            errstr = "Attempted lookup of series element " + to_string(i) + " in series " + to_string(ser) + ", only " + to_string((series->vlen * 12 - 1)) + " entries in series.\nCheck Start age and End years.";
-            std::cout << errstr << std::endl;
-            logger.Log(errstr);
-            exit(EXIT_FAILURE);
-        }
-        if (i < 0)
-        {
-            errstr = "Attempted lookup of year before start year";
-            std::cout << errstr << std::endl;
-            logger.Log(errstr);
-            exit(EXIT_FAILURE);
-        }
-    }
-    if (getVVal(val, series->data[i], k))
-        if (series->data[i].g->IsNoData(val)) {
-            return false;
-        }
-        else {
-            return true;
-        }  
-    return false; 
-
-}
-//----------------------------------------------------------------------------------
-
 void readSampleFile(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, GDALRasterImage *refGrid)
 {
   // Read a text file of sample points, one per line, in the format idstring, 
@@ -555,7 +484,8 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
     yearlyOutput = true;
   }
   catch (const std::out_of_range& oor) {
-    std::cout << "No recurring year output detected." << std::endl;
+      // No recurring year output
+      yearlyOutput = false;
   }
   if (yearlyOutput == true) {
     // Look for start year
@@ -975,203 +905,6 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
 
 //----------------------------------------------------------------------------------
 
-bool readInputSeriesParam(std::string pName, std::vector<std::string> pValue, std::ifstream& paramFp, int &lineNo)
-{
-  // Read 'series' input parameters, ie climate and NDVI. 
-  // Two styles of input are permitted. 
-  // Firstly, the parameter name can be followed on the same line by 12 values, in this case the 12 values will 
-  // be reused for each run year.
-  // Secondly, the parameter name can be the only thing on the line (other than a comment),
-  // on each following line must be a year followed by 12 values, until the sequence is terminated by a blank 
-  // line.  The year values must be in ascending order. 
-  PPPG_SERIES_PARAM *series; 
-  int ser; 
-  int series_yr, prev_yr; 
-  std::string tok, line;
-
-  // Which series. 
-  if (      namesMatch ("Tmax",        pName ) ) ser = SS_TMAX; 
-  else if ( namesMatch ("Tmin",        pName ) ) ser = SS_TMIN;
-  else if ( namesMatch ("Tavg",        pName ) ) ser = SS_TAVG;
-  else if ( namesMatch ("Rain",        pName ) ) ser = SS_RAIN; 
-  else if ( namesMatch ("Solar Radtn", pName ) ) ser = SS_SOLARRAD; 
-  else if ( namesMatch ("Frost days",  pName ) ) ser = SS_FROSTDAYS; 
-  else if ( namesMatch ("NDVI_AVH",    pName ) ) ser = SS_NDVI_AVH; 
-  else if ( namesMatch ("Net radtn",   pName ) ) ser = SS_NETRAD; 
-  else if ( namesMatch ("VPD",         pName ) ) ser = SS_VPD; 
-  else return false; 
-
-  switch (ser) {
-  case SS_TMAX:      series = &Tmax_vals; break; 
-  case SS_TMIN:      series = &Tmin_vals; break; 
-  case SS_TAVG:      series = &Tavg_vals; break;
-  case SS_RAIN:      series = &Rain_vals; break; 
-  case SS_SOLARRAD:  series = &SolarRad_vals; break; 
-  case SS_FROSTDAYS: series = &FrostDays_vals; break; 
-  case SS_NDVI_AVH:  series = &NdviAvh_vals; break; 
-  case SS_NETRAD:    series = &NetRad_vals; break; 
-  case SS_VPD:       series = &Vpd_vals; break; 
-  default: break;
-  }
-
-  // Check that latitude is already set. 
-  /*if (Lat > 400) {
-    sprintf(outstr, "Must set Latitude parameter before series parameters\n");
-    logAndExit(logfp, outstr);
-  }
-  */
-  // See which style of input the series has, and where to start
-  // populating the series arrays. In the northern hemisphere the
-  // model will run from january to december, in the southern
-  // hemisphere it will run from july to june. The series parameters
-  // are indexed from january of the starting year in both case.  When
-  // we only have one years data and are running in the southern
-  // hemisphere put the Jan-June values after the July-Dec values.
-  if (pValue.empty()) 
-    // First style described above. 
-    series->oneYear = false;
-  else 
-    // Second style above.  
-    series->oneYear = true; 
-  
-  // Read values for one year style. 
-  if ( series->oneYear ) {
-    series->vlen = 1; 
-    series->data = new PPPG_VVAL[series->vlen * 12]; 
-    int i;
-
-    for ( i = 0; i < 12; i++ ) {
-      try{
-        std::string mValue = pValue.at(i);
-        if ( readParam( series->data[i], pValue[i] ) ) {
-          if ( series->data[i].spType == pScalar ) {
-              string monthlyConstantStr = "   " + pName + "           month " + to_string(i + 1) + " constant: " + to_string(series->data[i].sval);
-              std::cout << monthlyConstantStr << std::endl;
-              logger.Log(monthlyConstantStr);
-          }
-          else if (series->data[i].spType == pTif) {
-              string monthlyGridStr = "   " + pName + "          month " + to_string(i + 1) + " grid: " + series->data[i].gridName;
-              std::cout << monthlyGridStr << std::endl;
-              logger.Log(monthlyGridStr);
-          }
-          }
-          else {
-            string monthlyFailStr = "Could not read parameter " + pName + " at month " + to_string(i + 1);
-            std::cout << monthlyFailStr << std::endl;
-            logger.Log(monthlyFailStr);
-            exit(EXIT_FAILURE);
-          }
-      } catch (const std::out_of_range& oor) {
-          std::cout << "No value for " << pName << " at month "  << i+1 << std::endl;
-          logger.Log("No value for " + pName + " at month " + to_string(i + 1));
-          exit(EXIT_FAILURE);
-          // sprintf(outstr, "Incomplete series on line %d.\n", lineNo); 
-          // logAndExit(logfp, outstr); 
-      }
-    }
-    series->got = true;
-
-    if (i < 12) {
-        std::cout << "Incomplete series on line " << lineNo << std::endl;
-        logger.Log("Incomplete series on line " + to_string(lineNo));
-        exit(EXIT_FAILURE);
-    }
-  }
-  // Time series style
-  else {
-    // Find out how many years in the series. 
-    int place = paramFp.tellg(); 
-    int ss_lineNo = lineNo; 
-    prev_yr = -1; 
-    while ( std::getline( paramFp, line )) {
-      lineNo++;
-      std::vector<std::string> sTokens;
-      sTokens = boost::split(sTokens, line, boost::is_any_of(", \n\t"));
-      if ( sTokens.empty() )
-        break;
-      try {
-        series_yr = std::stoi(sTokens.front());
-      }
-      catch (const std::out_of_range& oor) {
-        std::cout << "Could not read year in series data at line " << lineNo << std::endl;
-        logger.Log("Couls not read year in series data at line " + to_string(lineNo));
-        exit(EXIT_FAILURE);
-        // logAndExit(logfp, outstr); 
-      }
-      if ( prev_yr < 0 ) {
-        prev_yr = series_yr - 1;
-        series->start = series_yr;
-      }
-      if (series_yr - 1 != prev_yr) {
-        std::cout << "Series year on line " << lineNo << " is not consecutive." << std::endl;
-        logger.Log("Series year on line " + to_string(lineNo) + " is not consecutive.");
-        exit(EXIT_FAILURE);
-        // sprintf(outstr, "series year on line %d is not consecutive\n", lineNo);
-        // logAndExit(logfp, outstr);
-      }
-      prev_yr = series_yr; 
-    }
-    series->vlen = series_yr - series->start + 1; 
-    
-    // Allocate the space and read the series, have already checked the years. 
-    paramFp.seekg(place);
-    lineNo = ss_lineNo; 
-    series->data = new PPPG_VVAL[series->vlen * 12]; 
-    for ( int ss = 0; ss < series->vlen; ss++) {
-      std::getline( paramFp, line );
-      lineNo++; 
-      std::vector<std::string> sTokens;
-      sTokens = boost::split(sTokens, line, boost::is_any_of(", \n\t")); 
-      if (sTokens.size() != 13) {
-        std::cout << "Could not parse series format (year and months) on " << lineNo << std::endl;
-        logger.Log("Could not parse series format (year and months) on " + to_string(lineNo));
-        exit(EXIT_FAILURE);
-      }
-      try {
-        series_yr = std::stoi(sTokens.front());
-      }
-      catch (std::invalid_argument const& inv) {
-          std::cout << "Could not read series year on line " << lineNo << std::endl;
-          logger.Log("Could not read series year on line " + to_string(lineNo));
-          exit(EXIT_FAILURE);
-      }
-      // Read the monthly values. 
-      int si; 
-      for (int mn = 0; mn < 12; mn++) {
-        si = ss * 12 + mn;
-        tok = pValue.at(mn);
-        if ( readParam(series->data[si], tok ) ) {
-            if (series->data[si].spType == pScalar)
-            {
-                string monthVStr = "   " + pName + " year " + to_string(series->start + ss) + " month " + to_string(mn + 1) + " constant: " + to_string(series->data[si].sval);
-                std::cout << monthVStr << std::endl;
-                logger.Log(monthVStr);
-            }
-                
-            else if (series->data[si].spType == pTif)
-            {
-                string monthTIFStr = "   " + pName + " year " + to_string(series->start + ss) + " month " + to_string(mn + 1) + " grid: " + series->data[si].gridName;
-                std::cout << monthTIFStr << std::endl;
-                logger.Log(monthTIFStr);
-            }
-            
-            // fprintf(logfp, "   %-34s  %4d/%02d grid: %s\n", pName, series->start + ss, mn+1, series->data[si].gridName );
-        }
-        else {
-          std::cout << "Could not read parameter " << pName << " at line " << lineNo << std::endl;
-          logger.Log("Could not read parameter " + pName + " at line " + to_string(lineNo));
-          exit(EXIT_FAILURE);
-
-        }
-      }
-    }
-    series->got = true; 
-  }
-  return true;
-}
-
-//----------------------------------------------------------------------------------
-
 void readSpeciesParamFile(const std::string& speciesFile, DataInput *dataInput) {
     FILE* paramFp;
     std::string line, pName;
@@ -1200,7 +933,7 @@ void readSpeciesParamFile(const std::string& speciesFile, DataInput *dataInput) 
         boost::trim_if(pName, boost::is_any_of("\""));
         std::vector<std::string> pValues;
         boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
-        if (dataInput->tryAddParam(pName, pValues)) {
+        if (dataInput->tryAddInputParam(pName, pValues)) {
             continue; 
         }
         else {
@@ -1256,13 +989,20 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
 
     // Second and subsequent tokens are the parameter values, put them all into a vector
     std::vector<std::string> pValues;
-    boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
-    if (dataInput->tryAddParam(pName, pValues)) { continue; }
+
+    //in the case where series parameters are given by year, there will only be one token on the line
+    //and boost::split() will throw an error. Check to make sure the token size is safe to call this
+    //function on.
+    if (tokens.size() > 1) {
+        boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+    }
+
+    if (dataInput->tryAddInputParam(pName, pValues)) { continue; }
     if (output_var_names.find(pName) != output_var_names.end()) {
         opVars.emplace(pName, readOutputParam(pName, pValues, lineNo));
     }
     else if (readOtherParam(pName, pValues)) { continue; }
-    else if (readInputSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
+    else if (dataInput->tryAddSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
     else if (readInputManageParam(pName, inFile, lineNo)) { continue; }
     else {
         std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
@@ -1271,61 +1011,6 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
     }
   }
   return opVars;
-}
-
-//----------------------------------------------------------------------------------
-
-bool haveAllParams()
-{ 
-  // Check that we have read a value for all parameters. 
-  int i, pInd;
-  int indSeed, indWRi, indWFi, indWSi;  //indexes for values to check if required variable available
-  bool missing = false;
-
-  std::cout << "Checking all required parameters have been set.." << std::endl;
-  logger.Log("Checking all required parameters have been set..");
-
-  // Temperature series
-  if ((!Tmax_vals.got) && (!userTavgSeries())){
-    std::cout << "No Tmax or Tavg data" << std::endl;
-    exit(EXIT_FAILURE);
-    // logAndExit(logfp, "No Tmax or Tavg data");
-  }
-  if ((!Tmin_vals.got) && (!userTavgSeries())) {
-    std::cout << "No Tmin or Tavg data" << std::endl;
-    exit(EXIT_FAILURE);
-    // logAndExit(logfp, "No Tmin or Tavg data");
-  }
-  if (userTavgSeries()) {
-    std::cout << "Using Tavg series" << std::endl;
-    if (!userVpdSeries())
-      std::cout << "No VPD series but VPD series is required if Tavg series is used" << std::endl;
-      exit(EXIT_FAILURE);
-      // logAndExit(logfp, "A VPD series is required if an average temperature series is used\n"); 
-  }
-  if (!Rain_vals.got) {
-    std::cout << "No Rain data" << std::endl;
-    exit(EXIT_FAILURE);
-    // logAndExit(logfp, "No Rain data");
-  }
-  if (!SolarRad_vals.got && !NetRad_vals.got) {
-    std::cout << "No Solar or Net Radiation data" << std::endl;
-    exit(EXIT_FAILURE);
-    // logAndExit(logfp, "No Solar or Net Radiation data");
-  }
-  if (!FrostDays_vals.got) {
-    std::cout << "No Frost data" << std::endl;
-    exit(EXIT_FAILURE);
-    // logAndExit(logfp, "No Frost data");
-  }
-
-  // Check various optional parameters
-  //if ( !modelMode3PGS && NdviAvh_vals->got) {
-  if ( !modelMode3PGS && NdviAvh_vals.got) {
-    std::cout << "NdviAvh_vals not used in 3PGS mode." << std::endl;
-    logger.Log("NdviAvh_vals not used in 3PGS mode.");
-  }
-  return !missing;
 }
 
 //----------------------------------------------------------------------------------
@@ -1342,36 +1027,6 @@ GDALRasterImage* openInputGrids( )
 
   std::cout << "Opening input rasters..." << std::endl;
   logger.Log("Opening input rasters...");
-
-  // Open all series grids. 
-  // For each series. 
-  PPPG_SERIES_PARAM *serlist[] = { &Tmax_vals, &Tmin_vals, &Rain_vals, &SolarRad_vals, 
-    &FrostDays_vals, &NdviAvh_vals, &NetRad_vals, &Vpd_vals, &Tavg_vals, NULL }; 
-  for (j = 0; serlist[j] != NULL; j++) {
-    ser = serlist[j];
-    for (int i = 0; i < ser->vlen * 12; i++) {
-      if ( openGrid( ser->data[i] ) ) {
-        spatial = true; 
-        if ( first ) {
-          refGrid = (GDALRasterImage *)(ser->data[i].g);
-          first = false;
-        }
-        else if ( ( fabs( refGrid->xMin - ser->data[i].g->xMin ) > 0.0001 ) 
-          || ( fabs( refGrid->yMin - ser->data[i].g->yMin ) > 0.0001 )
-          || ( fabs( refGrid->xMax - ser->data[i].g->xMax ) > 0.0001 )
-          || ( fabs( refGrid->yMax - ser->data[i].g->yMax ) > 0.0001 ) 
-          || ( refGrid->nRows != ser->data[i].g->nRows ) 
-          || ( refGrid->nCols != ser->data[i].g->nCols ) ) {
-            std::cout << "Grid dimensions must match, raster " << ser->data[i].gridName << " differs from first raster." << std::endl;
-            logger.Log("Grid dimensions must match, raster " + ser->data[i].gridName + " differs from first raster.");
-            exit(EXIT_FAILURE);
-          // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
-          //   ser->data[i].gridName ); 
-          // logAndExit(logfp, outstr); 
-        }
-      }
-    }
-  }
 
   // Open all management table grids. 
   PPPG_MT_PARAM *tab;
@@ -1402,14 +1057,13 @@ GDALRasterImage* openInputGrids( )
     }
   }
 
-  if (!spatial) {
-    std::cout << "None" << std::endl;
-    // fprintf(logfp, "none\n");
-    refGrid = NULL; 
-  }
+  //if (!spatial) {
+  //  std::cout << "None" << std::endl;
+  //  // fprintf(logfp, "none\n");
+  //  refGrid = NULL; 
+  //}
 
-
-  return refGrid;
+  return nullptr;
 }
 
 //----------------------------------------------------------------------------------
@@ -1535,25 +1189,4 @@ void writeSampleFiles(std::unordered_map<std::string, PPPG_OP_VAR> opVars, int c
       fprintf(samplePoints[sInd].fp, "%f, ", (opV.v));
   }
   fprintf(samplePoints[sInd].fp, "\n");
-}
-
-//----------------------------------------------------------------------------------
-
-bool userVpdSeries(void)
-{
-  return (Vpd_vals.data != NULL); 
-}
-
-//----------------------------------------------------------------------------------
-
-bool userNetRadSeries(void)
-{
-  return (NetRad_vals.data != NULL);
-}
-
-//----------------------------------------------------------------------------------
-
-bool userTavgSeries(void)
-{
-  return (Tavg_vals.data != NULL); 
 }

@@ -297,61 +297,6 @@ void GetStandAge(double& StandAge, InputParams & params)
 
 //-----------------------------------------------------------------------------
 
-bool AssignMonthlyMetData(int calMonth, int calYear, long cellIndex,
-    double& SolarRad, double& FrostDays, double& Rain,
-    double& NetRad, double& Tav, double& Tx, double& Tn,
-    double& VPD, double& NDVI_AVH)
-{
-    bool hitNODATA;
-
-    hitNODATA = false;
-
-    if (!getSeriesVal(SolarRad, SS_SOLARRAD, calMonth, calYear, cellIndex)) hitNODATA = true;
-    if (!getSeriesVal(FrostDays, SS_FROSTDAYS, calMonth, calYear, cellIndex)) hitNODATA = true;
-    if (!getSeriesVal(Rain, SS_RAIN, calMonth, calYear, cellIndex)) hitNODATA = true;
-    if (userNetRadSeries()) {
-        if (!getSeriesVal(NetRad, SS_NETRAD, calMonth, calYear, cellIndex))
-            hitNODATA = true;
-    }
-
-    if (userTavgSeries())
-    {
-        if (!getSeriesVal(Tav, SS_TAVG, calMonth, calYear, cellIndex))
-            hitNODATA = true;
-    }
-    else
-    {
-        if (!getSeriesVal(Tx, SS_TMAX, calMonth, calYear, cellIndex)) hitNODATA = true;
-        if (!getSeriesVal(Tn, SS_TMIN, calMonth, calYear, cellIndex)) hitNODATA = true;
-        Tav = (Tx + Tn) / 2;
-    }
-
-    if (userVpdSeries()) {
-        if (!getSeriesVal(VPD, SS_VPD, calMonth, calYear, cellIndex))
-            hitNODATA = true;
-
-
-
-    }
-    else
-        VPD = getVPD(Tx, Tn);
-    if (modelMode3PGS) {
-        if (!getSeriesVal(NDVI_AVH, SS_NDVI_AVH, calMonth, calYear, cellIndex))
-            hitNODATA = true;
-    }
-    //std::cout << "hit noData: " << hitNODATA << std::endl;
-    //std::cout << "SolarRad: " << SolarRad << std::endl;
-    //std::cout << "FrostDays: " << FrostDays << std::endl;
-    //std::cout << "Rain: " << Rain << std::endl;
-    //std::cout << "NetRad: " << NetRad << std::endl;
-    //std::cout << "Tx: " << Tx << std::endl;
-    //std::cout << "Tn: " << Tn << std::endl;
-    //std::cout << "Tav: " << Tav << std::endl;
-    return hitNODATA;
-}
-
-//-----------------------------------------------------------------------------
-
 // This is the main routine for the 3PG model
 void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput *dataInput)
 {
@@ -425,7 +370,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
 
     double RelAge;
     int dayofyr;
-    double MoistRatio, NetRad; // PhysMod has been moved
+    double MoistRatio; // PhysMod has been moved
     double wSmax;
     double delStemNo;
 
@@ -438,7 +383,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     double ASWmod;
 
     // monthly met data
-    double SolarRad, Tx, Tn, Tav, VPD, FrostDays, dayLength, Rain;
+    double dayLength;
 
     // year and month counters, etc
     int year, calYear, calMonth, runYear, cm, cy;
@@ -451,9 +396,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
 
 // 3PGS - variables for 3PGS
     double FPAR_AVH;
-    double NDVI_AVH;
-    bool haveVpdSeries = false;
-    bool haveNetRadSeries = false;
 
     //std::cout << "\n\nCELL INDEX " << cellIndex << "!!!!!!!!!!!!!!!!!!!!!\n\n" << std::endl;
     // Compute daylengths
@@ -496,11 +438,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, MYDate s
     // Initialise ages
     opVars["MAIx"].v = 0;
     opVars["LAIx"].v = 0;
-
-    // VPD and NetRad from internal model, or user specified series? 
-    haveVpdSeries = userVpdSeries();
-    haveNetRadSeries = userNetRadSeries();
-    haveAvgTempSeries = userTavgSeries();
 
     // Assign initial state of the stand
 
@@ -560,11 +497,11 @@ skipPreYearCalcs:
     calMonth = (int)params.StartMonth;
 
     //Find out if there is supposed to be any data here in the first place...
-    hitNODATA = AssignMonthlyMetData(calMonth, calYear, cellIndex,
-        SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH) || hitNODATA;
+    SeriesParams sParams;
+    hitNODATA = !dataInput->getSeriesParams(cellIndex, calYear, calMonth, sParams) || hitNODATA;
 
-    if (FrostDays > 30)
-        FrostDays = 30;
+    if (sParams.FrostDays > 30)
+        sParams.FrostDays = 30;
 
     opVars["FR"].v = params.FRp;
 
@@ -707,8 +644,8 @@ skipPreYearCalcs:
             if (hitNODATA || yrPreStart || yrPstEnd)
                 goto skipMonthCalcs;
 
-            hitNODATA = AssignMonthlyMetData(calMonth, calYear, cellIndex,
-                SolarRad, FrostDays, Rain, NetRad, Tav, Tx, Tn, VPD, NDVI_AVH) || hitNODATA;
+            hitNODATA = !dataInput->getSeriesParams(cellIndex, calYear, calMonth, sParams) || hitNODATA;
+
             if (hitNODATA)
                 goto skipMonthCalcs;
 
@@ -730,15 +667,15 @@ skipPreYearCalcs:
             }
 
             // calculate temperature response function to apply to alpha
-            if ((Tav <= params.growthTmin) || (Tav >= params.growthTmax))
+            if ((sParams.Tavg <= params.growthTmin) || (sParams.Tavg >= params.growthTmax))
                 opVars["fT"].v = 0;
             else
-                opVars["fT"].v = ((Tav - params.growthTmin) / (params.growthTopt - params.growthTmin)) *
-                pow(((params.growthTmax - Tav) / (params.growthTmax - params.growthTopt)),
+                opVars["fT"].v = ((sParams.Tavg - params.growthTmin) / (params.growthTopt - params.growthTmin)) *
+                pow(((params.growthTmax - sParams.Tavg) / (params.growthTmax - params.growthTopt)),
                     ((params.growthTmax - params.growthTopt) / (params.growthTopt - params.growthTmin)));
 
             // calculate VPD modifier
-            opVars["fVPD"].v = exp(-params.CoeffCond * VPD);
+            opVars["fVPD"].v = exp(-params.CoeffCond * sParams.VPD);
 
             // calculate soil water modifier
             if (useMinASWTG)
@@ -767,7 +704,7 @@ skipPreYearCalcs:
                 opVars["fNutr"].v = 1 - (1 - params.fN0) * pow((1 - opVars["FR"].v), params.fNn);
 
             // calculate frost modifier
-            opVars["fFrost"].v = 1 - params.kF * (FrostDays / 30.0);
+            opVars["fFrost"].v = 1 - params.kF * (sParams.FrostDays / 30.0);
 
             // calculate age modifier
             RelAge = StandAge / params.MaxAge;  //Modified StandAge
@@ -795,7 +732,8 @@ skipPreYearCalcs:
             // Calculate FPAR_AVH and LAI from NDVI data. 
             if (modelMode3PGS) {
                 // Initial value of FPAR_AVH from linear fit. 
-                FPAR_AVH = (NDVI_AVH * params.NDVI_FPAR_constant) + params.NDVI_FPAR_intercept;
+                FPAR_AVH = (sParams.NDVI_AVH * params.NDVI_FPAR_constant) + params.NDVI_FPAR_intercept;
+
                 // Constrain FPAR_AVH to within threshhold values. 
                 if (FPAR_AVH > 0.98)
                     FPAR_AVH = 0.98;
@@ -814,7 +752,7 @@ skipPreYearCalcs:
             //   alphaC is alpha, the nominal "canopy qunatum efficiency", multiplied by
             //     modifiers to take into account effects of nutrition, temperature and
             //     frost on photosynthetic rate
-            RAD = SolarRad * DaysInMonth[calMonth];        // MJ/m^2
+            RAD = sParams.SolarRad * DaysInMonth[calMonth];        // MJ/m^2
             PAR = RAD * params.molPAR_MJ;                      // mol/m^2
             // 3PGS
             if (modelMode3PGS)
@@ -877,8 +815,8 @@ skipPreYearCalcs:
                 CanCond = 0.0001;
 
             //transpiration from Penman-Monteith (mm/day converted to mm/month)
-            opVars["Transp"].v = CanopyTranspiration(SolarRad, VPD, dayLength, params.BLcond,
-                CanCond, NetRad, haveNetRadSeries, params);
+            opVars["Transp"].v = CanopyTranspiration(sParams.SolarRad, sParams.VPD, dayLength, params.BLcond,
+                CanCond, sParams.NetRad, dataInput->haveNetRadParam(), params);
             opVars["Transp"].v = DaysInMonth[calMonth] * opVars["Transp"].v;
 
             // do soil water balance
@@ -887,8 +825,9 @@ skipPreYearCalcs:
                 Interception = params.MaxIntcptn;
             else
                 Interception = params.MaxIntcptn * Minimum(1, opVars["LAI"].v / params.LAImaxIntcptn);
-            opVars["EvapTransp"].v = opVars["Transp"].v + Interception * Rain;
-            opVars["ASW"].v = opVars["ASW"].v + Rain + (100 * Irrig / 12) - opVars["EvapTransp"].v;        //Irrig is Ml/ha/year
+
+            opVars["EvapTransp"].v = opVars["Transp"].v + Interception * sParams.Rain;
+            opVars["ASW"].v = opVars["ASW"].v + sParams.Rain + (100 * Irrig / 12) - opVars["EvapTransp"].v;        //Irrig is Ml/ha/year
             monthlyIrrig = 0;
             if (opVars["ASW"].v < MinASW) {
                 if (MinASW > 0) {               // make up deficit with irrigation

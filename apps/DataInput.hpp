@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include "GDALRasterImage.hpp"
 #include "ParamStructs.hpp"
 #include "MYDate.h"
@@ -83,9 +85,33 @@ struct InputParams {
 	double NDVI_FPAR_constant;
 };
 
+struct SeriesParams {
+	double Tavg;
+	double Rain;
+	double SolarRad;
+	double FrostDays;
+	double NDVI_AVH;
+	double NetRad;
+	double VPD;
+};
+
+typedef enum {
+	NONE = -1,
+	TMAX = 0,
+	TMIN = 1,
+	TAVG = 2,
+	RAIN = 3,
+	SOLAR_RAD = 4,
+	FROST_DAYS = 5,
+	NDVI_AVH = 6,
+	NET_RAD = 7,
+	VPD = 8,
+} SeriesIndex;
+
 class DataInput {
 private:
-	std::unordered_map<std::string, std::string> paramNames = {
+	//maps and sets for dealing with input parameters
+	std::unordered_map<std::string, std::string> inputParamNames = {
 		{"Foliage:stem partitioning ratio @ D=2 cm", "pFS2"},
 		{"Foliage:stem partitioning ratio @ D=20 cm", "pFS20"},
 		{"Constant in the stem mass v. diam. relationship", "StemConst"},
@@ -159,7 +185,7 @@ private:
 		{"Age at which rho = (rhoMin+rhoMax)/2", "tRho"},
 		{"Year Planted", "yearPlanted"},
 	};
-	std::unordered_set<std::string> allParams = {
+	std::unordered_set<std::string> allInputParams = {
 		"pFS2",
 		"pFS20",
 		"StemConst",
@@ -232,7 +258,7 @@ private:
 		"NDVI_FPAR_intercept",
 		"NDVI_FPAR_constant",
 	};
-	std::unordered_set<std::string> requiredParams3PG = {
+	std::unordered_set<std::string> requiredInputParams3PG = {
 		"pFS2", "pFS20", "StemConst", "StemPower", "pRx", "pRn",
 		"growthTmin", "growthTopt", "growthTmax",
 		"kF",
@@ -255,7 +281,7 @@ private:
 		"LAImaxIntcptn",
 		"thinPower", "mF", "mR", "mS",
 	};
-	std::unordered_set<std::string> requiredParams3PGS = {
+	std::unordered_set<std::string> requiredInputParams3PGS = {
 		"growthTmin", "growthTopt", "growthTmax",
 		"kF",
 		"MaxCond", "CoeffCond", "BLcond",
@@ -272,21 +298,47 @@ private:
 		"StartMonth",
 		"LAImaxIntcptn",
 	}; //TODO do we need to add yearPlanted here???
-
 	std::unordered_map<std::string, PPPG_PARAM> inputParams;
+
+	//maps and sets for dealing with series parameters
+	std::unordered_map<std::string, SeriesIndex> seriesParamNameMap = {
+		{"Tmax", SeriesIndex::TMAX},
+		{"Tmin", SeriesIndex::TMIN},
+		{"Tavg", SeriesIndex::TAVG},
+		{"Rain", SeriesIndex::RAIN},
+		{"Solar Radtn", SeriesIndex::SOLAR_RAD},
+		{"Frost days", SeriesIndex::FROST_DAYS},
+		{"NDVI_AVH", SeriesIndex::NDVI_AVH},
+		{"Net radtn", SeriesIndex::NET_RAD},
+		{"VPD", SeriesIndex::VPD},
+	};
+	PPPG_SERIES_PARAM seriesParams[9];
+	std::unordered_set<std::string> acquiredSeriesParams;
+	//std::unordered_map<std::string, std::unordered_map<int, std::vector<PPPG_PARAM>>> seriesParams;
+
+	bool haveTavg;
+	bool haveVPD;
+	bool haveNDVI;
+	bool haveNetRad;
+
 	GDALRasterImage* refGrid;
 	bool finishedInput = false;
 
-	bool getScalar(std::vector<std::string> value, PPPG_PARAM& param);
-	bool getGrid(std::vector<std::string> value, PPPG_PARAM& param);
-	double getValFromParam(std::string paramName, long cellIndex);
-	bool openCheckGrid(std::string path, PPPG_PARAM& param);
+	bool getScalar(std::string value, PPPG_PARAM& param);
+	bool getGrid(std::string value, PPPG_PARAM& param);
+	double getValFromInputParam(std::string paramName, long cellIndex);
+	double getValFromSeriesParam(int paramIndex, int year, int month, long cellIndex);
+	bool openCheckGrid(std::string path, GDALRasterImage*& grid);
 public:
 	DataInput();
 	~DataInput();
-	bool tryAddParam(std::string pname, std::vector<std::string> value);
+	bool tryAddInputParam(std::string pname, std::vector<std::string> value);
+	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
 	bool inputFinished(bool modelMode3PGS);
-	bool DataInput::getInputParams(long cellIndex, InputParams& params);
+	bool getInputParams(long cellIndex, InputParams& params);
+	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
+	bool haveNetRadParam();
+	GDALRasterImage* getRefGrid();
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
 
 	bool haveSeedlingMass;
