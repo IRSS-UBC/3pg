@@ -318,6 +318,7 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 
 	//add series param name to set of acquired params
 	acquiredSeriesParams.insert(name);
+	return true;
 }
 
 bool DataInput::inputFinished(bool modelMode3PGS) {

@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
     logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
 
     //unsigned int numThreads = std::thread::hardware_concurrency();
-    int nthreads = 2;
+    int nthreads = 4;
     boost::asio::thread_pool pool(nthreads);
 
     Progress progress(refGrid->nRows);

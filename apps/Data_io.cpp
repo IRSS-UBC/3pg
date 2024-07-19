@@ -388,7 +388,8 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
     yearlyOutput = true;
   }
   catch (const std::out_of_range& oor) {
-    std::cout << "No recurring year output detected." << std::endl;
+      // No recurring year output
+      yearlyOutput = false;
   }
   if (yearlyOutput == true) {
     // Look for start year
