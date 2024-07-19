@@ -22,26 +22,15 @@ Use of this software assumes agreement to this condition of use
 #include "The_3PG_Model.hpp"
 #include "util.hpp"
 #include <boost/program_options.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/post.hpp>
+#include <thread>
 #include "DataOutput.hpp"
 #include "DataInput.hpp"
 #include "ParamStructs.hpp"
 
-// Need to provide getopt on MSVC. 
-//#ifdef WIN32
-//extern "C"
-//{
-//  extern int getopt(int argc, char **argv, char *opts);
-//  extern char *optarg;
-//}
-//#endif
-
 // Maximum file path length. 
 #define MAXFILE 1000
-
-// FILE *logfp;
-// char usage[] = 
-// "-d <default parameter file> -s <site parameter file>\n";
-// char program[] = "3pg";
 
 //----------------------------------------------------------------------------------------
 std::string VERSION = "0.1";
@@ -84,13 +73,45 @@ private:
 
 //----------------------------------------------------------------------------------------
 
+class Progress {
+private:
+    int progress;
+    int lastProgress;
+    int rowsTotal;
+    int rowsDone;
+    std::mutex progressMutex;
+public:
+    Progress(int rowsTotal) {
+        this->rowsTotal = rowsTotal;
+        this->rowsDone = 0;
+        this->progress = 0;
+        this->lastProgress = -1;
+    }
+    void rowCompleted() {
+        //lock mutex
+        this->progressMutex.lock();
+
+        //increment rows
+        this->rowsDone++;
+
+        //calculate updated percentage
+        this->progress = (100 * this->rowsDone / this->rowsTotal);
+
+        //if percentage has incremented, display
+        if (this->progress > this->lastProgress) {
+            fprintf(stdout, "Completed %2u%%\r", this->progress);
+            this->lastProgress = this->progress;
+        }
+
+        //release mutex
+        this->progressMutex.unlock();
+    }
+};
+
+//----------------------------------------------------------------------------------------
+
 int main(int argc, char* argv[])
 {
-    std::string optarg;
-    //extern int optind;
-    //int c;
-    //int result;
-
     GDALRasterImage* refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
     DataOutput* dataOutput; //thread safe data output class
     bool spatial = 0;
@@ -155,30 +176,33 @@ int main(int argc, char* argv[])
     std::cout << "Points read from sample file." << std::endl;
  
     // Run the model. 
-    int cellsDone = 0;
-    int cellsTotal = (nrows) * (ncols); 
-    int lastProgress = -1; 
+    long cellsTotal = nrows * ncols;
     std::cout << "Processing..." << cellsTotal << " cells... " << std::endl;
     logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
 
+    //unsigned int numThreads = std::thread::hardware_concurrency();
+    int nthreads = 4;
+    boost::asio::thread_pool pool(nthreads);
+
+    Progress progress(refGrid->nRows);
+
     for (int i = 0; i < nrows; i++) {
-        for (int j = 0; j < ncols; j++) {
-
-            //calculate/print progress
-            int progress = (100 * cellsDone / cellsTotal);
-            if (progress > lastProgress) {
-                fprintf(stdout, "Completed %2u%%\r", progress);
+        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, ncols, dataInput, &progress] {
+            int cellIndexStart = i * ncols;
+            for (int j = 0; j < ncols; j++) {
+                int cellIndex = cellIndexStart + j;
+                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput);
             }
-            
-            int cellIndex = i * ncols + j;
-            runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput);
 
-            //increment progress
-            cellsDone++;
-            lastProgress = progress;
-        }
+            writeRowDataOutput(i);
+            progress.rowCompleted();
+        });
     }
+
+    pool.join();
+
     deleteDataOutput();
+    delete dataInput;
 
     return EXIT_SUCCESS;
 }

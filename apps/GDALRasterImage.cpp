@@ -87,7 +87,6 @@ GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid)
 
 };
 
-
 GDALRasterImage::~GDALRasterImage() {
 	// From API docs, why `GDALClose()` and not `~GDALDataset()`: 
 	// Equivalent of the C callable GDALClose(). Except that GDALClose() first decrements the reference count, and then closes only if it has dropped to zero.
@@ -106,45 +105,20 @@ void GDALRasterImage::Close() {
 
 float GDALRasterImage::GetVal(int x, int y) {
 	float pixelValue;
+	//exception thrown when this isn't locked. I *assume* that's because there's potential race conditions and GDAL is smart
+	//enough to warn us of them in debug mode.
+	this->mutex.lock();
 	if (band->RasterIO(GF_Read, x, y, 1, 1, &pixelValue, 1, 1, GDT_Float32, 0, 0) != CE_None) {
 		throw std::invalid_argument("Cannot read pixel value.");
 	}
+	this->mutex.unlock();
 	return pixelValue;
 };
 
 float GDALRasterImage::GetVal(int index) {
 	// Get the value of the pixel at the given index
 	std::tuple<int, int> xy = IndexToXY(index);
-	float pixelValue;
-
-	if (band->RasterIO(GF_Read, std::get<0>(xy), std::get<1>(xy), 1, 1, &pixelValue, 1, 1, GDT_Float32, 0, 0) != CE_None) {
-		throw std::invalid_argument("Cannot read pixel value.");
-	}
-	return pixelValue;
-};
-
-CPLErr GDALRasterImage::SetVal(int x, int y, float val) {
-	// Set the value of the pixel at the given x,y coordinates
-	return band->RasterIO(GF_Write, x, y, 1, 1, &val, 1, 1, GDT_Float32, 0, 0);
-};
-
-CPLErr GDALRasterImage::SetVal(int index, float val) {
-	// Set the value of the pixel at the given index
-	std::tuple<int, int> xy = IndexToXY(index);
-	//std::cout << "From " << index << " Setting pixel value at " << std::get<0>(xy) << ", " << std::get<1>(xy) << " to " << val << std::endl;
-	return band->RasterIO(GF_Write, std::get<0>(xy), std::get<1>(xy), 1, 1, &val, 1, 1, GDT_Float32, 0, 0);
-};
-
-std::tuple<int, int> GDALRasterImage::XYfrom(double lat, double lon) {
-	int x = static_cast<int>(floor(inverseTransform[0] + inverseTransform[1] * lon + inverseTransform[2] * lat));
-	int y = static_cast<int>(floor(inverseTransform[3] + inverseTransform[4] * lon + inverseTransform[5] * lat));
-	if ( x < 0 || x > nCols || y < 0 || y > nRows) {
-		throw std::invalid_argument("Lat/lon is outside of raster extent.");
-	}
-
-	// int32_t pixelValue;
-	// assert(GDALRasterIO(band, GF_Read, x, y, 1, 1, &pixelValue, 1, 1, GDT_Int32, 0, 0) == CE_None);
-	return std::make_tuple(x, y);
+	return GDALRasterImage::GetVal(std::get<0>(xy), std::get<1>(xy));
 };
 
 int GDALRasterImage::IndexFrom(double lat, double lon) {
@@ -264,4 +238,25 @@ bool GDALRasterImage::IsNoData(float val) {
 	 return (double)max;
  }
 
+ CPLErr GDALRasterImage::writeRow(int row, float* buffer) {
+	 //for info on how RasterIO works see:
+	 //https://gdal.org/api/gdalrasterband_cpp.html#_CPPv4N14GDALRasterBand8RasterIOE10GDALRWFlagiiiiPvii12GDALDataType8GSpacing8GSpacingP20GDALRasterIOExtraArg
 
+	 this->mutex.lock();
+	 CPLErr retval = band->RasterIO(
+		 GF_Write,		//eRWFlag: Either GF_Read or GF_Write
+		 0,				//column index
+		 row,			//row index
+		 nCols,			//number of columns we're writing (all of them)
+		 1,				//number of rows we're writing
+		 buffer,		//data buffer
+		 nCols,			//number of columns in the data buffer
+		 1,				//number of rows in the data buffer
+		 GDT_Float32,	//buffer type
+		 0,				//byte offset between scanlines in buffer. 0 automatically sets to default of eBufType * nBufXSize
+		 0				//extra arguments
+	 );
+
+	 this->mutex.unlock();
+	 return retval;
+ }

@@ -21,8 +21,9 @@ void readSampleFile(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, GDALRa
 PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo);
 
 void writeSampleFiles(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int cellIndex, int month, long calYear);
-void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, bool hitNODATA, MYDate minMY, MYDate maxMY, long cellIndex );
-int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, bool hitNODATA, long cellIndex);
+void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex );
+int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, long cellIndex);
 
 std::string getOutPathTMP(const std::string& siteParamFile);
 void deleteDataOutput();
+CPLErr writeRowDataOutput(int row);

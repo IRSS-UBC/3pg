@@ -1,5 +1,6 @@
 #include <tuple>
 #include <string>
+#include <mutex>
 #include <gdal_priv.h>
 #pragma once
 
@@ -11,6 +12,7 @@ class GDALRasterImage {
 	double datasetTransform[6];
 	double inverseTransform[6];
 	const char* crs;
+	std::mutex mutex;
 
 public:
 
@@ -31,8 +33,6 @@ public:
 	std::tuple<int, int> IndexToXY(int index);
 	float GetVal(int x, int y);
 	float GetVal(int index);
-	CPLErr SetVal(int x, int y, float val);
-	CPLErr SetVal(int index, float val);
 	bool IsNoData(float val);
 	void Create(std::string fname);
 	bool Exists(std::string fname);
@@ -42,6 +42,7 @@ public:
 	std::vector<std::pair<int, int>> getIndicesWhere(const double& value);
 	double minFromIndices(const std::vector<std::pair<int, int>>& indices);
 	double maxFromIndices(const std::vector<std::pair<int, int>>& indices);
+	CPLErr writeRow(int row, float* buffer);
 
 };
 
