@@ -1,24 +1,25 @@
 find_package(GDAL CONFIG REQUIRED)
 
 set(SOURCE_FILES
-    	3pg.cpp
 	Data_io.cpp
-    	Data_io.hpp
+    Data_io.hpp
 	DataInput.cpp
-		DataInput.hpp
+	DataInput.hpp
 	DataOutput.cpp
-		DataOutput.hpp
-	GDALRasterImage.cpp
-    	GDALRasterImage.hpp
+	DataOutput.hpp
+	GDALRasterImage.cpp 
+	GDALRasterImage.hpp
 	MYDate.cpp
-    	MYDate.h
+    MYDate.h
 	ParamStructs.hpp
 	The_3PG_model.cpp
-    	The_3PG_model.hpp
+    The_3PG_model.hpp
 	util.cpp
-    	util.hpp
+    util.hpp
 )
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
-add_library(${PROJECT_NAME}_lib STATIC ${SOURCE_FILES})
-target_link_libraries(3pg2 PRIVATE GDAL::GDAL)
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} 3pg.cpp )
+target_link_libraries(${PROJECT_NAME} PRIVATE GDAL::GDAL)
+
+add_library(3pg2Test ${SOURCE_FILES} loggerForTest.cpp)
+target_link_libraries(3pg2Test PRIVATE GDAL::GDAL)

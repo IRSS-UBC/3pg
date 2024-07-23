@@ -12,6 +12,7 @@ private:
 	string logName;
 	string logLoc;
 	ofstream log;
+	bool logging = false;
 public:
 	Logger(const string& filename);
 	~Logger();
