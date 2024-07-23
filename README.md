@@ -33,6 +33,9 @@ cd vcpkg
    - create another new user variable with variable name GDAL_DIR and set it as the path to the folder containing the GDALConfig.cmake file (within in the vcpkg\packages folder). For me this was C:\Github\vcpkg\packages\gdal_x64-windows\share\gdal.
    - navigate the the vcpkg folder from the command line, and run the command.
 ```
+./vcpkg install gtest
+```
+```
 ./vcpkg install boost
 ```
 - note: installing boost will take a while, for me it took 1.7 hours. It may be possible to only install the required packges rather than all of boost, but this hasn't been tested yet.

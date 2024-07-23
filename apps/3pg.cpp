@@ -15,8 +15,6 @@ Use of this software assumes agreement to this condition of use
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include "gdal.h"
-#include "gdal_priv.h"
 #include "GDALRasterImage.hpp"
 #include "Data_io.hpp"
 #include "The_3PG_Model.hpp"
