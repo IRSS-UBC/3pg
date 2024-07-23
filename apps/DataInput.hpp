@@ -214,7 +214,7 @@ private:
 		"SWpower0",
 		"wSx1000",
 		"MaxAge",
-		"nAge"
+		"nAge",
 		"rAge",
 		"SLA0",
 		"SLA1",
