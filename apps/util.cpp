@@ -80,6 +80,7 @@ Logger::Logger(const string& filename)
 
 void Logger::StartLog(const string& outPath)
 {
+    this->logging = true;
     logLoc = outPath;
     log.open(logLoc + logName, ios::trunc);
     string currDate = GetCurrentDate();
@@ -101,13 +102,19 @@ Logger::~Logger()
 
 void Logger::Log(const string& logMsg)
 {
+    if (!this->logging) {
+        return;
+    }
     log.open(logLoc + logName, ios::app);
     log << logMsg + "\n";
     log.close();
 }
 
 string Logger::GetCurrentDate()
-{   
+{
+    if (!this->logging) {
+        return "ERROR logger not started";
+    }
     stringstream ss;
     time_t const now_c = time(NULL);
     ss << put_time(localtime(&now_c), "%d-%m-%Y");
@@ -117,6 +124,9 @@ string Logger::GetCurrentDate()
 
 string Logger::GetCurrentTime()
 {
+    if (!this->logging) {
+        return "ERROR logger not started";
+    }
     stringstream ss;
     time_t const now_c = time(NULL);
     ss << put_time(localtime(&now_c), "%H:%M:%S");
