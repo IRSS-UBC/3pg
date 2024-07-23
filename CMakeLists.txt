@@ -12,4 +12,7 @@ project ("3pg2")
 
 # Include sub-projects.
 include_directories("include")
+include_directories("apps")
+
 add_subdirectory ("apps")
+add_subdirectory("tests")

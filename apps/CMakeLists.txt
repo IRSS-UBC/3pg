@@ -5,9 +5,9 @@ set(SOURCE_FILES
 	Data_io.cpp
     	Data_io.hpp
 	DataInput.cpp
-	DataInput.hpp
+		DataInput.hpp
 	DataOutput.cpp
-	DataOutput.hpp
+		DataOutput.hpp
 	GDALRasterImage.cpp
     	GDALRasterImage.hpp
 	MYDate.cpp
@@ -20,4 +20,5 @@ set(SOURCE_FILES
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_library(${PROJECT_NAME}_lib STATIC ${SOURCE_FILES})
 target_link_libraries(3pg2 PRIVATE GDAL::GDAL)
