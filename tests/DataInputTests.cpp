@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 #include <../apps/DataInput.hpp>
 
-// Demonstrate some basic assertions.
-TEST(DataInputTests, correctScalarInputParams) {
+TEST(DataInputTests, correctInputParamNames) {
 	DataInput *dataInput = new DataInput();
 
 	//long versions according to legacy documentations
@@ -134,3 +133,25 @@ TEST(DataInputTests, correctScalarInputParams) {
 	EXPECT_TRUE(dataInput->tryAddInputParam("NDVI_FPAR_intercept", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("NDVI_FPAR_constant", { "1" }));
 }
+
+TEST(DataInputTests, incorrectInputParamNames) {
+	DataInput* dataInput = new DataInput();
+
+	//a smattering of incorrect input params which should return false
+	EXPECT_FALSE(dataInput->tryAddInputParam("", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("	", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("1", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("3A0YUBtBlA", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Foliagestem partitioning ratio @ D=2 cm", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Foliagestem partitioning ratio @ D=20 cm", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Age at which specific leaf area = (SLA0+SLA1)2", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Powerin self-thinning rule", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Power  in self-thinning rule", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Power in selfthinning rule", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Power in self thinning rule", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Foliagestem partitioning ratio D=20 cm", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Foliagestem partitioning ratio @ D= cm", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Q", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("b", { "1" }));
+}
+
