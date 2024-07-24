@@ -2,6 +2,8 @@
 #include <../apps/DataInput.hpp>
 #include <fstream>
 
+#include <../apps/GDALRasterImage.hpp>
+
 TEST(DataInputTests, correctParamNames) {
 	DataInput* dataInput = new DataInput();
 
@@ -475,9 +477,173 @@ TEST(DataInputTests, scalarValues) {
 	ASSERT_EQ(sParams.VPD, (double)84);
 }
 
-//test run period
-
 //test grid parameters
+TEST(DataInputTests, gridValues) {
+	std::string testFile1 = "test_files/DataInputTests/test1.tif";
+	std::string testFile2 = "test_files/DataInputTests/test2.tif";
+	std::string testFile3 = "test_files/DataInputTests/test3.tif";
+	std::string frost1 = "test_files/DataInputTests/NFFD01.tif";
+	std::string frost2 = "test_files/DataInputTests/NFFD02.tif";
+	std::string frost3 = "test_files/DataInputTests/NFFD03.tif";
+	std::string frost4 = "test_files/DataInputTests/NFFD04.tif";
+	std::string frost5 = "test_files/DataInputTests/NFFD05.tif";
+	std::string frost6 = "test_files/DataInputTests/NFFD06.tif";
+	std::string frost7 = "test_files/DataInputTests/NFFD07.tif";
+	std::string frost8 = "test_files/DataInputTests/NFFD08.tif";
+	std::string frost9 = "test_files/DataInputTests/NFFD09.tif";
+	std::string frost10 = "test_files/DataInputTests/NFFD10.tif";
+	std::string frost11 = "test_files/DataInputTests/NFFD11.tif";
+	std::string frost12 = "test_files/DataInputTests/NFFD12.tif";
+
+	GDALRasterImage* testTif1 = new GDALRasterImage(testFile1);
+	GDALRasterImage* testTif2 = new GDALRasterImage(testFile2);
+	GDALRasterImage* testTif3 = new GDALRasterImage(testFile3);
+	GDALRasterImage* frostTif1 = new GDALRasterImage(frost1);
+	GDALRasterImage* frostTif2 = new GDALRasterImage(frost2);
+	GDALRasterImage* frostTif3 = new GDALRasterImage(frost3);
+	GDALRasterImage* frostTif4 = new GDALRasterImage(frost4);
+	GDALRasterImage* frostTif5 = new GDALRasterImage(frost5);
+	GDALRasterImage* frostTif6 = new GDALRasterImage(frost6);
+	GDALRasterImage* frostTif7 = new GDALRasterImage(frost7);
+	GDALRasterImage* frostTif8 = new GDALRasterImage(frost8);
+	GDALRasterImage* frostTif9 = new GDALRasterImage(frost9);
+	GDALRasterImage* frostTif10 = new GDALRasterImage(frost10);
+	GDALRasterImage* frostTif11 = new GDALRasterImage(frost11);
+	GDALRasterImage* frostTif12 = new GDALRasterImage(frost12);
+
+	DataInput* dataInput = new DataInput();
+	std::ifstream paramFp("");
+	int lineNo;
+	
+	//ensure we are able to add grids correctly
+	ASSERT_TRUE(dataInput->tryAddInputParam("growthTmin", { testFile1 })); 
+	ASSERT_TRUE(dataInput->tryAddInputParam("growthTopt", { testFile2 })); 
+	ASSERT_TRUE(dataInput->tryAddInputParam("growthTmax", { testFile3 }));
+	ASSERT_TRUE(dataInput->tryAddSeriesParam("Frost", {frost1,frost2,frost3,frost4,frost5,frost6,frost7,frost8,frost9,frost10,frost11,frost12,}, paramFp, lineNo));
+
+	//these are here because we would otherwise not be able to get the input params grids
+	dataInput->tryAddInputParam("kF", { "1" });
+	dataInput->tryAddInputParam("MaxCond", { "1" });
+	dataInput->tryAddInputParam("CoeffCond", { "1" }); 
+	dataInput->tryAddInputParam("BLcond", { "1" });
+	dataInput->tryAddInputParam("m0", { "1" }); 
+	dataInput->tryAddInputParam("fN0", { "1" });
+	dataInput->tryAddInputParam("SWconst0", { "1" }); 
+	dataInput->tryAddInputParam("SWpower0", { "1" });
+	dataInput->tryAddInputParam("SLA1", { "1" }); 
+	dataInput->tryAddInputParam("alpha", { "1" });
+	dataInput->tryAddInputParam("y", { "1" });
+	dataInput->tryAddInputParam("Lat", { "1" }); 
+	dataInput->tryAddInputParam("FRp", { "1" }); 
+	dataInput->tryAddInputParam("soilIndex", { "1" }); 
+	dataInput->tryAddInputParam("MaxASW", { "1" }); 
+	dataInput->tryAddInputParam("MinASWp", { "1" });
+	dataInput->tryAddInputParam("StartAge", { "1" }); 
+	dataInput->tryAddInputParam("EndYear", { "1" });
+	dataInput->tryAddInputParam("NDVI_FPAR_intercept", { "1" }); 
+	dataInput->tryAddInputParam("NDVI_FPAR_constant", { "1" });
+	dataInput->tryAddInputParam("Qa", { "1" }); 
+	dataInput->tryAddInputParam("Qb", { "1" });
+	dataInput->tryAddInputParam("gDM_mol", { "1" }); 
+	dataInput->tryAddInputParam("molPAR_MJ", { "1" });
+	dataInput->tryAddInputParam("LAIgcx", { "1" }); 
+	dataInput->tryAddInputParam("MaxIntcptn", { "1" });
+	dataInput->tryAddInputParam("StartMonth", { "1" });
+	dataInput->tryAddInputParam("LAImaxIntcptn", { "1" });
+	dataInput->tryAddInputParam("SeedlingMass", { "1" });
+	dataInput->tryAddSeriesParam("Tavg", { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("Rain", { "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("Solar radtn", { "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("NDVI_AVH", { "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("Net radtn", { "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("VPD", { "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84" }, paramFp, lineNo);
+
+	dataInput->inputFinished(true);
+
+	InputParams params;
+	SeriesParams sParams;
+
+	for (int i = 0; i < testTif1->nRows; i++) {
+		for (int j = 0; j < testTif1->nCols; j++) {
+			long cellIndex = (long)i * (long)testTif1->nCols + (long)j;
+			//test input parameter grids
+			if (std::isnan(testTif1->GetVal(cellIndex))) {
+				ASSERT_FALSE(dataInput->getInputParams(cellIndex, params));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 1, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 2, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 3, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 4, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 5, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 6, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 7, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 8, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 9, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 10, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 11, sParams));
+				ASSERT_FALSE(dataInput->getSeriesParams(cellIndex, 0, 12, sParams));
+				continue;
+			}
+
+			dataInput->getInputParams(cellIndex, params);
+
+			ASSERT_EQ(params.growthTmin, testTif1->GetVal(cellIndex));
+			ASSERT_EQ(params.growthTopt, testTif2->GetVal(cellIndex));
+			ASSERT_EQ(params.growthTmax, testTif3->GetVal(cellIndex));
+				
+			//test series parameter January
+			dataInput->getSeriesParams(cellIndex, 0, 1, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif1->GetVal(cellIndex));
+
+			//test series parameter February
+			dataInput->getSeriesParams(cellIndex, 0, 2, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif2->GetVal(cellIndex));
+
+			//test series parameter March
+			dataInput->getSeriesParams(cellIndex, 0, 3, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif3->GetVal(cellIndex));
+
+			//test series parameter April
+			dataInput->getSeriesParams(cellIndex, 0, 4, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif4->GetVal(cellIndex));
+
+			//test series parameter May
+			dataInput->getSeriesParams(cellIndex, 0, 5, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif5->GetVal(cellIndex));
+
+			//test series parameter June
+			dataInput->getSeriesParams(cellIndex, 0, 6, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif6->GetVal(cellIndex));
+
+			//test series parameter July
+			dataInput->getSeriesParams(cellIndex, 0, 7, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif7->GetVal(cellIndex));
+
+			//test series parameter August
+			dataInput->getSeriesParams(cellIndex, 0, 8, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif8->GetVal(cellIndex));
+
+			//test series parameter September
+			dataInput->getSeriesParams(cellIndex, 0, 9, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif9->GetVal(cellIndex));
+
+			//test series parameter October
+			dataInput->getSeriesParams(cellIndex, 0, 10, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif10->GetVal(cellIndex));
+
+			//test series parameter November
+			dataInput->getSeriesParams(cellIndex, 0, 11, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif11->GetVal(cellIndex));
+
+			//test series parameter December
+			dataInput->getSeriesParams(cellIndex, 0, 12, sParams);
+			ASSERT_EQ(sParams.FrostDays, frostTif12->GetVal(cellIndex));
+		}
+	}
+}
+
+//test bad grids
+
+//test run period
 
 //test required parameters
 
