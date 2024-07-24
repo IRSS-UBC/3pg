@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
 #include <../apps/DataInput.hpp>
+#include <fstream>
 
-TEST(DataInputTests, correctInputParamNames) {
-	DataInput *dataInput = new DataInput();
+TEST(DataInputTests, correctParamNames) {
+	DataInput* dataInput = new DataInput();
 
 	//long versions according to legacy documentations
 	EXPECT_TRUE(dataInput->tryAddInputParam("Foliage:stem partitioning ratio @ D=2 cm", { "1" }));
@@ -132,9 +133,21 @@ TEST(DataInputTests, correctInputParamNames) {
 	EXPECT_TRUE(dataInput->tryAddInputParam("MinASWTG", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("NDVI_FPAR_intercept", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("NDVI_FPAR_constant", { "1" }));
+
+	std::ifstream paramFp("");
+	int lineNo;
+	EXPECT_TRUE(dataInput->tryAddSeriesParam("Tmin", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_TRUE(dataInput->tryAddSeriesParam("Tmax", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_TRUE(dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_TRUE(dataInput->tryAddSeriesParam("Rain", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_TRUE(dataInput->tryAddSeriesParam("Solar radtn", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_TRUE(dataInput->tryAddSeriesParam("Frost", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_TRUE(dataInput->tryAddSeriesParam("Net radtn", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_TRUE(dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_TRUE(dataInput->tryAddSeriesParam("NDVI_AVH", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
 }
 
-TEST(DataInputTests, incorrectInputParamNames) {
+TEST(DataInputTests, incorrectParamNames) {
 	DataInput* dataInput = new DataInput();
 
 	//a smattering of incorrect input params which should return false
@@ -153,5 +166,20 @@ TEST(DataInputTests, incorrectInputParamNames) {
 	EXPECT_FALSE(dataInput->tryAddInputParam("Foliagestem partitioning ratio @ D= cm", { "1" }));
 	EXPECT_FALSE(dataInput->tryAddInputParam("Q", { "1" }));
 	EXPECT_FALSE(dataInput->tryAddInputParam("b", { "1" }));
-}
+	EXPECT_FALSE(dataInput->tryAddInputParam("Tmax", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("Rain", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("VPD", { "1" }));
 
+	//incorrect series param names
+	std::ifstream paramFp("");
+	int lineNo;
+	EXPECT_FALSE(dataInput->tryAddSeriesParam("min", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_FALSE(dataInput->tryAddSeriesParam("", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_FALSE(dataInput->tryAddSeriesParam("	", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_FALSE(dataInput->tryAddSeriesParam("1", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_FALSE(dataInput->tryAddSeriesParam("Solarradtn", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_FALSE(dataInput->tryAddSeriesParam("3A0YUBtBlA", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_FALSE(dataInput->tryAddSeriesParam("Foliage:stem partitioning ratio @ D=2 cm", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_FALSE(dataInput->tryAddSeriesParam("Foliage:stem partitioning ratio @ D=20 cm", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+	EXPECT_FALSE(dataInput->tryAddSeriesParam("Constant in the stem mass v. diam. relationship", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+}
