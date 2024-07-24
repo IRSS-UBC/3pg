@@ -642,6 +642,29 @@ TEST(DataInputTests, gridValues) {
 }
 
 //test bad grids
+TEST(DataInputTests, badGrids) {
+	std::string testFile = "test_files/DataInputTests/test1.tif";
+	std::string differentLocationFile = "test_files/DataInputTests/differentLocation.tif";
+	std::string differentDimensionsFile = "test_files/DataInputTests/differentDimensions.tif";
+
+	GDALRasterImage* testTif = new GDALRasterImage(testFile);
+	GDALRasterImage* difLocationTif = new GDALRasterImage(differentLocationFile);
+	GDALRasterImage* difDimensionsTif = new GDALRasterImage(differentDimensionsFile);
+
+	DataInput* dataInput = new DataInput();
+	std::ifstream paramFp("");
+	int lineNo;
+
+	ASSERT_TRUE(dataInput->tryAddInputParam("kF", { testFile }));
+	EXPECT_EXIT(dataInput->tryAddInputParam("MaxCond", { differentLocationFile }), testing::ExitedWithCode(1), "");
+	EXPECT_EXIT(dataInput->tryAddInputParam("CoeffCond", { differentDimensionsFile }), testing::ExitedWithCode(1), "");
+	EXPECT_EXIT(
+		dataInput->tryAddSeriesParam("Frost", {"1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", differentLocationFile}, paramFp, lineNo), 
+		testing::ExitedWithCode(1), "");
+	EXPECT_EXIT(
+		dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", differentDimensionsFile }, paramFp, lineNo), 
+		testing::ExitedWithCode(1), "");
+}
 
 //test run period
 
