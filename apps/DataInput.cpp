@@ -366,9 +366,9 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	bool haveTavg = this->acquiredSeriesParams.find("Tavg") != this->acquiredSeriesParams.end();
 	bool haveVPD = this->acquiredSeriesParams.find("VPD") != this->acquiredSeriesParams.end();
 	bool haveRain = this->acquiredSeriesParams.find("Rain") != this->acquiredSeriesParams.end();
-	bool haveSolarRad = this->acquiredSeriesParams.find("Solar Radtn") != this->acquiredSeriesParams.end();
+	bool haveSolarRad = this->acquiredSeriesParams.find("Solar radtn") != this->acquiredSeriesParams.end();
 	bool haveNetRad = this->acquiredSeriesParams.find("Net radtn") != this->acquiredSeriesParams.end();
-	bool haveFrost = this->acquiredSeriesParams.find("Frost days") != this->acquiredSeriesParams.end();
+	bool haveFrost = this->acquiredSeriesParams.find("Frost") != this->acquiredSeriesParams.end();
 	bool haveNDVI = this->acquiredSeriesParams.find("NDVI_AVH") != this->acquiredSeriesParams.end();
 	
 	//check tmax/tavg
@@ -408,7 +408,7 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	}
 
 	//check model mode which requires NDVI series parameters
-	if (modelMode3PGS && this->acquiredSeriesParams.find("NDVI_AVH") != this->acquiredSeriesParams.end()) {
+	if (modelMode3PGS && !haveNDVI) {
 		std::cout << "3PGS mode should have NDVI series parameters" << std::endl;
 		exit(EXIT_FAILURE);
 	}
