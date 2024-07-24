@@ -290,14 +290,14 @@ private:
 		"SLA1", "alpha",
 		"y",
 		"Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",
-		"StartAge","EndYear",
+		"StartAge","EndYear", "yearPlanted",
 		"NDVI_FPAR_intercept", "NDVI_FPAR_constant",
 		"Qa", "Qb",
 		"gDM_mol", "molPAR_MJ",
 		"LAIgcx", "MaxIntcptn",
 		"StartMonth",
 		"LAImaxIntcptn",
-	}; //TODO do we need to add yearPlanted here???
+	};
 	std::unordered_map<std::string, PPPG_PARAM> inputParams;
 
 	//maps and sets for dealing with series parameters

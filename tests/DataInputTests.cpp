@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <../apps/DataInput.hpp>
 #include <fstream>
+#include <vector>
+#include <tuple>
 
 #include <../apps/GDALRasterImage.hpp>
 
@@ -147,6 +149,8 @@ TEST(DataInputTests, correctParamNames) {
 	EXPECT_TRUE(dataInput->tryAddSeriesParam("Net radtn", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
 	EXPECT_TRUE(dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
 	EXPECT_TRUE(dataInput->tryAddSeriesParam("NDVI_AVH", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+ 
+ delete dataInput;
 }
 
 TEST(DataInputTests, incorrectParamNames) {
@@ -184,6 +188,8 @@ TEST(DataInputTests, incorrectParamNames) {
 	EXPECT_FALSE(dataInput->tryAddSeriesParam("Foliage:stem partitioning ratio @ D=2 cm", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
 	EXPECT_FALSE(dataInput->tryAddSeriesParam("Foliage:stem partitioning ratio @ D=20 cm", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
 	EXPECT_FALSE(dataInput->tryAddSeriesParam("Constant in the stem mass v. diam. relationship", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
+ 
+ delete dataInput;
 }
 
 TEST(DataInputTests, scalarValues) {
@@ -283,198 +289,200 @@ TEST(DataInputTests, scalarValues) {
 	dataInput->getInputParams(0, params);
 
 	//check the input params
-	ASSERT_EQ(params.pFS2, (double)1);
-	ASSERT_EQ(params.pFS20, (double)2);
-	ASSERT_EQ(params.StemConst, (double)3);
-	ASSERT_EQ(params.StemPower, (double)4);
-	ASSERT_EQ(params.pRx, (double)5);
-	ASSERT_EQ(params.pRn, (double)6);
-	ASSERT_EQ(params.growthTmin, (double)7);
-	ASSERT_EQ(params.growthTopt, (double)8);
-	ASSERT_EQ(params.growthTmax, (double)9);
-	ASSERT_EQ(params.kF, (double)10);
-	ASSERT_EQ(params.gammaFx, (double)11);
-	ASSERT_EQ(params.gammaF0, (double)21);
-	ASSERT_EQ(params.tgammaF, (double)13);
-	ASSERT_EQ(params.Rttover, (double)14);
-	ASSERT_EQ(params.MaxCond, (double)15);
-	ASSERT_EQ(params.CoeffCond, (double)16);
-	ASSERT_EQ(params.BLcond, (double)17);
-	ASSERT_EQ(params.m0, (double)18);
-	ASSERT_EQ(params.fN0, (double)19);
-	ASSERT_EQ(params.fNn, (double)20);
-	ASSERT_EQ(params.thinPower, (double)21);
-	ASSERT_EQ(params.mF, (double)22);
-	ASSERT_EQ(params.mR, (double)23);
-	ASSERT_EQ(params.mS, (double)24);
-	ASSERT_EQ(params.SWconst0, (double)25);
-	ASSERT_EQ(params.SWpower0, (double)26);
-	ASSERT_EQ(params.wSx1000, (double)27);
-	ASSERT_EQ(params.MaxAge, (double)28);
-	ASSERT_EQ(params.nAge, (double)29);
-	ASSERT_EQ(params.rAge, (double)30);
-	ASSERT_EQ(params.SLA0, (double)31);
-	ASSERT_EQ(params.SLA1, (double)32);
-	ASSERT_EQ(params.tSLA, (double)33);
-	ASSERT_EQ(params.k, (double)34);
-	ASSERT_EQ(params.fullCanAge, (double)35);
-	ASSERT_EQ(params.alpha, (double)36);
-	ASSERT_EQ(params.fracBB0, (double)37);
-	ASSERT_EQ(params.fracBB1, (double)38);
-	ASSERT_EQ(params.tBB, (double)39);
-	ASSERT_EQ(params.y, (double)40);
-	ASSERT_EQ(params.rhoMin, (double)41);
-	ASSERT_EQ(params.rhoMax, (double)42);
-	ASSERT_EQ(params.tRho, (double)43);
-	ASSERT_EQ(params.Qa, (double)44);
-	ASSERT_EQ(params.Qb, (double)45);
-	ASSERT_EQ(params.gDM_mol, (double)46);
-	ASSERT_EQ(params.molPAR_MJ, (double)47);
-	ASSERT_EQ(params.LAIgcx, (double)48);
-	ASSERT_EQ(params.MaxIntcptn, (double)49);
-	ASSERT_EQ(params.LAImaxIntcptn, (double)50);
-	ASSERT_EQ(params.Lat, (double)51);
-	ASSERT_EQ(params.FRp, (double)52);
-	ASSERT_EQ(params.FRstart, (double)53);
-	ASSERT_EQ(params.FRend, (double)54);
-	ASSERT_EQ(params.FRdec, (double)55);
-	ASSERT_EQ(params.soilIndex, (double)56);
-	ASSERT_EQ(params.MaxASW, (double)57);
-	ASSERT_EQ(params.MinASWp, (double)58);
-	ASSERT_EQ(params.StartAge, (double)59);
-	ASSERT_EQ(params.EndYear, (double)60);
-	ASSERT_EQ(params.StartMonth, (double)61);
-	ASSERT_EQ(params.yearPlanted, (double)62);
-	ASSERT_EQ(params.SeedlingMass, (double).0000000000001);
-	ASSERT_EQ(params.WFi, (double).00000000000001);
-	ASSERT_EQ(params.WRi, (double).000000000000001);
-	ASSERT_EQ(params.WSi, (double).0000000000000001);
-	ASSERT_EQ(params.StemNoi, (double).00000000000000001);
-	ASSERT_EQ(params.ASWi, std::numeric_limits<double>::min() + 1);
-	ASSERT_EQ(params.MinASWTG, std::numeric_limits<double>::max() - 1);
-	ASSERT_EQ(params.NDVI_FPAR_intercept, std::numeric_limits<double>::min() + .01);
-	ASSERT_EQ(params.NDVI_FPAR_constant, std::numeric_limits<double>::max() - .01);
+	EXPECT_EQ(params.pFS2, (double)1);
+	EXPECT_EQ(params.pFS20, (double)2);
+	EXPECT_EQ(params.StemConst, (double)3);
+	EXPECT_EQ(params.StemPower, (double)4);
+	EXPECT_EQ(params.pRx, (double)5);
+	EXPECT_EQ(params.pRn, (double)6);
+	EXPECT_EQ(params.growthTmin, (double)7);
+	EXPECT_EQ(params.growthTopt, (double)8);
+	EXPECT_EQ(params.growthTmax, (double)9);
+	EXPECT_EQ(params.kF, (double)10);
+	EXPECT_EQ(params.gammaFx, (double)11);
+	EXPECT_EQ(params.gammaF0, (double)21);
+	EXPECT_EQ(params.tgammaF, (double)13);
+	EXPECT_EQ(params.Rttover, (double)14);
+	EXPECT_EQ(params.MaxCond, (double)15);
+	EXPECT_EQ(params.CoeffCond, (double)16);
+	EXPECT_EQ(params.BLcond, (double)17);
+	EXPECT_EQ(params.m0, (double)18);
+	EXPECT_EQ(params.fN0, (double)19);
+	EXPECT_EQ(params.fNn, (double)20);
+	EXPECT_EQ(params.thinPower, (double)21);
+	EXPECT_EQ(params.mF, (double)22);
+	EXPECT_EQ(params.mR, (double)23);
+	EXPECT_EQ(params.mS, (double)24);
+	EXPECT_EQ(params.SWconst0, (double)25);
+	EXPECT_EQ(params.SWpower0, (double)26);
+	EXPECT_EQ(params.wSx1000, (double)27);
+	EXPECT_EQ(params.MaxAge, (double)28);
+	EXPECT_EQ(params.nAge, (double)29);
+	EXPECT_EQ(params.rAge, (double)30);
+	EXPECT_EQ(params.SLA0, (double)31);
+	EXPECT_EQ(params.SLA1, (double)32);
+	EXPECT_EQ(params.tSLA, (double)33);
+	EXPECT_EQ(params.k, (double)34);
+	EXPECT_EQ(params.fullCanAge, (double)35);
+	EXPECT_EQ(params.alpha, (double)36);
+	EXPECT_EQ(params.fracBB0, (double)37);
+	EXPECT_EQ(params.fracBB1, (double)38);
+	EXPECT_EQ(params.tBB, (double)39);
+	EXPECT_EQ(params.y, (double)40);
+	EXPECT_EQ(params.rhoMin, (double)41);
+	EXPECT_EQ(params.rhoMax, (double)42);
+	EXPECT_EQ(params.tRho, (double)43);
+	EXPECT_EQ(params.Qa, (double)44);
+	EXPECT_EQ(params.Qb, (double)45);
+	EXPECT_EQ(params.gDM_mol, (double)46);
+	EXPECT_EQ(params.molPAR_MJ, (double)47);
+	EXPECT_EQ(params.LAIgcx, (double)48);
+	EXPECT_EQ(params.MaxIntcptn, (double)49);
+	EXPECT_EQ(params.LAImaxIntcptn, (double)50);
+	EXPECT_EQ(params.Lat, (double)51);
+	EXPECT_EQ(params.FRp, (double)52);
+	EXPECT_EQ(params.FRstart, (double)53);
+	EXPECT_EQ(params.FRend, (double)54);
+	EXPECT_EQ(params.FRdec, (double)55);
+	EXPECT_EQ(params.soilIndex, (double)56);
+	EXPECT_EQ(params.MaxASW, (double)57);
+	EXPECT_EQ(params.MinASWp, (double)58);
+	EXPECT_EQ(params.StartAge, (double)59);
+	EXPECT_EQ(params.EndYear, (double)60);
+	EXPECT_EQ(params.StartMonth, (double)61);
+	EXPECT_EQ(params.yearPlanted, (double)62);
+	EXPECT_EQ(params.SeedlingMass, (double).0000000000001);
+	EXPECT_EQ(params.WFi, (double).00000000000001);
+	EXPECT_EQ(params.WRi, (double).000000000000001);
+	EXPECT_EQ(params.WSi, (double).0000000000000001);
+	EXPECT_EQ(params.StemNoi, (double).00000000000000001);
+	EXPECT_EQ(params.ASWi, std::numeric_limits<double>::min() + 1);
+	EXPECT_EQ(params.MinASWTG, std::numeric_limits<double>::max() - 1);
+	EXPECT_EQ(params.NDVI_FPAR_intercept, std::numeric_limits<double>::min() + .01);
+	EXPECT_EQ(params.NDVI_FPAR_constant, std::numeric_limits<double>::max() - .01);
 
 	SeriesParams sParams;
 	//series params January
 	dataInput->getSeriesParams(0, 0, 1, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)1);
-	ASSERT_EQ(sParams.Rain, (double)13);
-	ASSERT_EQ(sParams.SolarRad, (double)25);
-	ASSERT_EQ(sParams.FrostDays, (double)37);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)49);
-	ASSERT_EQ(sParams.NetRad, (double)61);
-	ASSERT_EQ(sParams.VPD, (double)73);
+	EXPECT_EQ(sParams.Tavg, (double)1);
+	EXPECT_EQ(sParams.Rain, (double)13);
+	EXPECT_EQ(sParams.SolarRad, (double)25);
+	EXPECT_EQ(sParams.FrostDays, (double)37);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)49);
+	EXPECT_EQ(sParams.NetRad, (double)61);
+	EXPECT_EQ(sParams.VPD, (double)73);
 
 	//series params February
 	dataInput->getSeriesParams(0, 0, 2, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)2);
-	ASSERT_EQ(sParams.Rain, (double)14);
-	ASSERT_EQ(sParams.SolarRad, (double)26);
-	ASSERT_EQ(sParams.FrostDays, (double)38);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)50);
-	ASSERT_EQ(sParams.NetRad, (double)62);
-	ASSERT_EQ(sParams.VPD, (double)74);
+	EXPECT_EQ(sParams.Tavg, (double)2);
+	EXPECT_EQ(sParams.Rain, (double)14);
+	EXPECT_EQ(sParams.SolarRad, (double)26);
+	EXPECT_EQ(sParams.FrostDays, (double)38);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)50);
+	EXPECT_EQ(sParams.NetRad, (double)62);
+	EXPECT_EQ(sParams.VPD, (double)74);
 
 	//series params March
 	dataInput->getSeriesParams(0, 0, 3, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)3);
-	ASSERT_EQ(sParams.Rain, (double)15);
-	ASSERT_EQ(sParams.SolarRad, (double)27);
-	ASSERT_EQ(sParams.FrostDays, (double)39);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)51);
-	ASSERT_EQ(sParams.NetRad, (double)63);
-	ASSERT_EQ(sParams.VPD, (double)75);
+	EXPECT_EQ(sParams.Tavg, (double)3);
+	EXPECT_EQ(sParams.Rain, (double)15);
+	EXPECT_EQ(sParams.SolarRad, (double)27);
+	EXPECT_EQ(sParams.FrostDays, (double)39);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)51);
+	EXPECT_EQ(sParams.NetRad, (double)63);
+	EXPECT_EQ(sParams.VPD, (double)75);
 
 	//series params April
 	dataInput->getSeriesParams(0, 0, 4, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)4);
-	ASSERT_EQ(sParams.Rain, (double)16);
-	ASSERT_EQ(sParams.SolarRad, (double)28);
-	ASSERT_EQ(sParams.FrostDays, (double)40);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)52);
-	ASSERT_EQ(sParams.NetRad, (double)64);
-	ASSERT_EQ(sParams.VPD, (double)76);
+	EXPECT_EQ(sParams.Tavg, (double)4);
+	EXPECT_EQ(sParams.Rain, (double)16);
+	EXPECT_EQ(sParams.SolarRad, (double)28);
+	EXPECT_EQ(sParams.FrostDays, (double)40);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)52);
+	EXPECT_EQ(sParams.NetRad, (double)64);
+	EXPECT_EQ(sParams.VPD, (double)76);
 
 	//series params May
 	dataInput->getSeriesParams(0, 0, 5, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)5);
-	ASSERT_EQ(sParams.Rain, (double)17);
-	ASSERT_EQ(sParams.SolarRad, (double)29);
-	ASSERT_EQ(sParams.FrostDays, (double)41);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)53);
-	ASSERT_EQ(sParams.NetRad, (double)65);
-	ASSERT_EQ(sParams.VPD, (double)77);
+	EXPECT_EQ(sParams.Tavg, (double)5);
+	EXPECT_EQ(sParams.Rain, (double)17);
+	EXPECT_EQ(sParams.SolarRad, (double)29);
+	EXPECT_EQ(sParams.FrostDays, (double)41);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)53);
+	EXPECT_EQ(sParams.NetRad, (double)65);
+	EXPECT_EQ(sParams.VPD, (double)77);
 
 	//series params June
 	dataInput->getSeriesParams(0, 0, 6, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)6);
-	ASSERT_EQ(sParams.Rain, (double)18);
-	ASSERT_EQ(sParams.SolarRad, (double)30);
-	ASSERT_EQ(sParams.FrostDays, (double)42);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)54);
-	ASSERT_EQ(sParams.NetRad, (double)66);
-	ASSERT_EQ(sParams.VPD, (double)78);
+	EXPECT_EQ(sParams.Tavg, (double)6);
+	EXPECT_EQ(sParams.Rain, (double)18);
+	EXPECT_EQ(sParams.SolarRad, (double)30);
+	EXPECT_EQ(sParams.FrostDays, (double)42);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)54);
+	EXPECT_EQ(sParams.NetRad, (double)66);
+	EXPECT_EQ(sParams.VPD, (double)78);
 
 	//series params July
 	dataInput->getSeriesParams(0, 0, 7, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)7);
-	ASSERT_EQ(sParams.Rain, (double)19);
-	ASSERT_EQ(sParams.SolarRad, (double)31);
-	ASSERT_EQ(sParams.FrostDays, (double)43);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)55);
-	ASSERT_EQ(sParams.NetRad, (double)67);
-	ASSERT_EQ(sParams.VPD, (double)79);
+	EXPECT_EQ(sParams.Tavg, (double)7);
+	EXPECT_EQ(sParams.Rain, (double)19);
+	EXPECT_EQ(sParams.SolarRad, (double)31);
+	EXPECT_EQ(sParams.FrostDays, (double)43);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)55);
+	EXPECT_EQ(sParams.NetRad, (double)67);
+	EXPECT_EQ(sParams.VPD, (double)79);
 
 	//series params August
 	dataInput->getSeriesParams(0, 0, 8, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)8);
-	ASSERT_EQ(sParams.Rain, (double)20);
-	ASSERT_EQ(sParams.SolarRad, (double)32);
-	ASSERT_EQ(sParams.FrostDays, (double)44);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)56);
-	ASSERT_EQ(sParams.NetRad, (double)68);
-	ASSERT_EQ(sParams.VPD, (double)80);
+	EXPECT_EQ(sParams.Tavg, (double)8);
+	EXPECT_EQ(sParams.Rain, (double)20);
+	EXPECT_EQ(sParams.SolarRad, (double)32);
+	EXPECT_EQ(sParams.FrostDays, (double)44);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)56);
+	EXPECT_EQ(sParams.NetRad, (double)68);
+	EXPECT_EQ(sParams.VPD, (double)80);
 
 	//series params September
 	dataInput->getSeriesParams(0, 0, 9, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)9);
-	ASSERT_EQ(sParams.Rain, (double)21);
-	ASSERT_EQ(sParams.SolarRad, (double)33);
-	ASSERT_EQ(sParams.FrostDays, (double)45);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)57);
-	ASSERT_EQ(sParams.NetRad, (double)69);
-	ASSERT_EQ(sParams.VPD, (double)81);
+	EXPECT_EQ(sParams.Tavg, (double)9);
+	EXPECT_EQ(sParams.Rain, (double)21);
+	EXPECT_EQ(sParams.SolarRad, (double)33);
+	EXPECT_EQ(sParams.FrostDays, (double)45);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)57);
+	EXPECT_EQ(sParams.NetRad, (double)69);
+	EXPECT_EQ(sParams.VPD, (double)81);
 
 	//series params October
 	dataInput->getSeriesParams(0, 0, 10, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)10);
-	ASSERT_EQ(sParams.Rain, (double)22);
-	ASSERT_EQ(sParams.SolarRad, (double)34);
-	ASSERT_EQ(sParams.FrostDays, (double)46);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)58);
-	ASSERT_EQ(sParams.NetRad, (double)70);
-	ASSERT_EQ(sParams.VPD, (double)82);
+	EXPECT_EQ(sParams.Tavg, (double)10);
+	EXPECT_EQ(sParams.Rain, (double)22);
+	EXPECT_EQ(sParams.SolarRad, (double)34);
+	EXPECT_EQ(sParams.FrostDays, (double)46);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)58);
+	EXPECT_EQ(sParams.NetRad, (double)70);
+	EXPECT_EQ(sParams.VPD, (double)82);
 
 	//series params November
 	dataInput->getSeriesParams(0, 0, 11, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)11);
-	ASSERT_EQ(sParams.Rain, (double)23);
-	ASSERT_EQ(sParams.SolarRad, (double)35);
-	ASSERT_EQ(sParams.FrostDays, (double)47);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)59);
-	ASSERT_EQ(sParams.NetRad, (double)71);
-	ASSERT_EQ(sParams.VPD, (double)83);
+	EXPECT_EQ(sParams.Tavg, (double)11);
+	EXPECT_EQ(sParams.Rain, (double)23);
+	EXPECT_EQ(sParams.SolarRad, (double)35);
+	EXPECT_EQ(sParams.FrostDays, (double)47);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)59);
+	EXPECT_EQ(sParams.NetRad, (double)71);
+	EXPECT_EQ(sParams.VPD, (double)83);
 
 	//series params December
 	dataInput->getSeriesParams(0, 0, 12, sParams);
-	ASSERT_EQ(sParams.Tavg, (double)12);
-	ASSERT_EQ(sParams.Rain, (double)24);
-	ASSERT_EQ(sParams.SolarRad, (double)36);
-	ASSERT_EQ(sParams.FrostDays, (double)48);
-	ASSERT_EQ(sParams.NDVI_AVH, (double)60);
-	ASSERT_EQ(sParams.NetRad, (double)72);
-	ASSERT_EQ(sParams.VPD, (double)84);
+	EXPECT_EQ(sParams.Tavg, (double)12);
+	EXPECT_EQ(sParams.Rain, (double)24);
+	EXPECT_EQ(sParams.SolarRad, (double)36);
+	EXPECT_EQ(sParams.FrostDays, (double)48);
+	EXPECT_EQ(sParams.NDVI_AVH, (double)60);
+	EXPECT_EQ(sParams.NetRad, (double)72);
+	EXPECT_EQ(sParams.VPD, (double)84);
+ 
+ delete dataInput;
 }
 
 //test grid parameters
@@ -540,6 +548,7 @@ TEST(DataInputTests, gridValues) {
 	dataInput->tryAddInputParam("MinASWp", { "1" });
 	dataInput->tryAddInputParam("StartAge", { "1" }); 
 	dataInput->tryAddInputParam("EndYear", { "1" });
+	dataInput->tryAddInputParam("yearPlanted", { "1" });
 	dataInput->tryAddInputParam("NDVI_FPAR_intercept", { "1" }); 
 	dataInput->tryAddInputParam("NDVI_FPAR_constant", { "1" });
 	dataInput->tryAddInputParam("Qa", { "1" }); 
@@ -639,6 +648,8 @@ TEST(DataInputTests, gridValues) {
 			ASSERT_EQ(sParams.FrostDays, frostTif12->GetVal(cellIndex));
 		}
 	}
+ 
+  delete dataInput;
 }
 
 //test bad grids
@@ -664,12 +675,295 @@ TEST(DataInputTests, badGrids) {
 	EXPECT_EXIT(
 		dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", differentDimensionsFile }, paramFp, lineNo), 
 		testing::ExitedWithCode(1), "");
+  delete dataInput;
+}
+
+//test required parameters
+std::vector<std::string> requiredInputParams3PG = {
+	"pFS2", 
+	"pFS20", 
+	"StemConst", 
+	"StemPower", 
+	"pRx", 
+	"pRn",
+	"growthTmin", 
+	"growthTopt", 
+	"growthTmax",
+	"kF",
+	"gammaFx", 
+	"gammaF0", 
+	"tgammaF", 
+	"Rttover",
+	"MaxCond", 
+	"CoeffCond", 
+	"BLcond",
+	"m0", 
+	"fN0", 
+	"fNn",
+	"SWconst0", 
+	"SWpower0",
+	"wSx1000",
+	"MaxAge", 
+	"nAge", 
+	"rAge",
+	"SLA0", 
+	"SLA1", 
+	"tSLA", 
+	"k", 
+	"fullCanAge",
+	"alpha", 
+	"fracBB0", 
+	"fracBB1", 
+	"tBB",
+	"y",
+	"Lat", 
+	"FRp", 
+	"soilIndex", 
+	"MaxASW", 
+	"MinASWp",
+	"StartAge", 
+	"EndYear",
+	"StemNoi", 
+	"ASWi", 
+	"yearPlanted",
+	"Qa", 
+	"Qb",
+	"gDM_mol", 
+	"molPAR_MJ",
+	"LAIgcx", 
+	"MaxIntcptn",
+	"StartMonth",
+	"LAImaxIntcptn",
+	"thinPower", 
+	"mF", 
+	"mR", 
+	"mS", };
+std::vector<std::string> requiredSeriesParams3PG = {
+	"Rain",
+	"Solar radtn", 
+	"Frost"
+};
+std::vector<std::string> requiredInputParams3PGS = {
+	"growthTmin", 
+	"growthTopt", 
+	"growthTmax",
+	"kF",
+	"MaxCond", 
+	"CoeffCond", 
+	"BLcond",
+	"m0", 
+	"fN0",
+	"SWconst0", 
+	"SWpower0",
+	"SLA1", 
+	"alpha",
+	"y",
+	"Lat", 
+	"FRp", 
+	"soilIndex",
+	"MaxASW", 
+	"MinASWp",
+	"StartAge",
+	"EndYear",
+	"yearPlanted",
+	"NDVI_FPAR_intercept", 
+	"NDVI_FPAR_constant",
+	"Qa", 
+	"Qb",
+	"gDM_mol", 
+	"molPAR_MJ",
+	"LAIgcx", 
+	"MaxIntcptn",
+	"StartMonth",
+	"LAImaxIntcptn", 
+};
+std::vector<std::string> requiredSeriesParams3PGS = {
+	"Rain",
+	"Solar radtn",
+	"Frost",
+	"NDVI_AVH"
+};
+
+TEST(DataInputTests, requiredParameters3PG) {
+	//check that we fail when missing each required 3PG input parameter
+	for (int exclude = 0; exclude < requiredInputParams3PG.size(); exclude++) {
+		DataInput* dataInput = new DataInput();
+		std::ifstream paramFp("");
+		int lineNo;
+
+		for (int i = 0; i < requiredInputParams3PG.size(); i++) {
+			if (i == exclude) {
+				continue;
+			}
+
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		}
+		dataInput->tryAddInputParam("SeedlingMass", { "1" });
+
+		for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
+			dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+		}
+		dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+		dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+
+		ASSERT_FALSE(dataInput->inputFinished(false));
+		delete dataInput;
+	}
+
+	//check that we fail when missing each required 3PG series parameter
+	for (int exclude = 0; exclude < requiredSeriesParams3PG.size(); exclude++) {
+		DataInput* dataInput = new DataInput();
+		std::ifstream paramFp("");
+		int lineNo;
+	
+		for (int i = 0; i < requiredInputParams3PG.size(); i++) {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		}
+		dataInput->tryAddInputParam("SeedlingMass", { "1" });
+	
+		for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
+			if (i == exclude) {
+				continue;
+			}
+	
+			dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+		}
+		dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+		dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	
+		ASSERT_FALSE(dataInput->inputFinished(false));
+		delete dataInput;
+	}
+
+	//check that we pass with all required params
+	DataInput* dataInput = new DataInput();
+	std::ifstream paramFp("");
+	int lineNo;
+
+	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
+		dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+	}
+	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
+		dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	}
+	dataInput->tryAddInputParam("SeedlingMass", { "1" });
+	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	ASSERT_TRUE(dataInput->inputFinished(false));
+	delete dataInput;
+}
+
+TEST(DataInputTests, requiredParameters3PGS) {
+	//check that we fail when missing each required 3PG input parameter
+	for (int exclude = 0; exclude < requiredInputParams3PGS.size(); exclude++) {
+		DataInput* dataInput = new DataInput();
+		std::ifstream paramFp("");
+		int lineNo;
+
+		for (int i = 0; i < requiredInputParams3PGS.size(); i++) {
+			if (i == exclude) {
+				continue;
+			}
+
+			dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "1" });
+		}
+		dataInput->tryAddInputParam("SeedlingMass", { "1" });
+
+		for (int i = 0; i < requiredSeriesParams3PGS.size(); i++) {
+			dataInput->tryAddSeriesParam(requiredSeriesParams3PGS[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+		}
+		dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+		dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+
+		ASSERT_FALSE(dataInput->inputFinished(true));
+		delete dataInput;
+	}
+
+	//check that we fail when missing each required 3PG series parameter
+	for (int exclude = 0; exclude < requiredSeriesParams3PGS.size(); exclude++) {
+		DataInput* dataInput = new DataInput();
+		std::ifstream paramFp("");
+		int lineNo;
+
+		for (int i = 0; i < requiredInputParams3PGS.size(); i++) {
+			dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "1" });
+		}
+		dataInput->tryAddInputParam("SeedlingMass", { "1" });
+
+		for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
+			if (i == exclude) {
+				continue;
+			}
+
+			dataInput->tryAddSeriesParam(requiredSeriesParams3PGS[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+		}
+		dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+		dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+
+		ASSERT_FALSE(dataInput->inputFinished(true));
+		delete dataInput;
+	}
+
+	//check that we pass with all required params
+	DataInput* dataInput = new DataInput();
+	std::ifstream paramFp("");
+	int lineNo;
+
+	for (int i = 0; i < requiredInputParams3PGS.size(); i++) {
+		dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "1" });
+	}
+	for (int i = 0; i < requiredSeriesParams3PGS.size(); i++) {
+		dataInput->tryAddSeriesParam(requiredSeriesParams3PGS[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	}
+	dataInput->tryAddInputParam("SeedlingMass", { "1" });
+	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	ASSERT_TRUE(dataInput->inputFinished(true));
+	delete dataInput;
+}
+
+
+TEST(DataInputTests, requiredParametersEdgeCases) {
+	//seeding mass edge case
+	DataInput* dataInput = new DataInput();
+	std::ifstream paramFp("");
+	int lineNo;
+
+	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
+		dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+	}
+	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
+		dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	}
+	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	ASSERT_FALSE(dataInput->inputFinished(false));
+
+	//must have all of WRi, WFi, and WSi if we don't have seedlingmass
+	dataInput->tryAddInputParam("WRi", { "1" });
+	dataInput->tryAddInputParam("WFi", { "1" });
+	dataInput->tryAddInputParam("WSi", { "1" });
+	ASSERT_TRUE(dataInput->inputFinished(false));
+	
+	//reset dataInput
+	delete dataInput;
+	dataInput = new DataInput();
+
+	//series param VPD and Tavg which require Tmin and Tmax
+	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
+		dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+	}
+	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
+		dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	}
+	dataInput->tryAddInputParam("SeedlingMass", { "1" });
+	ASSERT_FALSE(dataInput->inputFinished(false));
+
+	//must have both Tmin and Tmax if we don't have either VPD or Tavg
+	dataInput->tryAddSeriesParam("Tmin", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("Tmax", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 }
 
 //test run period
 
-//test required parameters
-
 //test different input method for series params
-
-//test series param calculations (using Tmin and Tmax);
