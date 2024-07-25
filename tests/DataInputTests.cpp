@@ -150,7 +150,8 @@ TEST(DataInputTests, correctParamNames) {
 	EXPECT_TRUE(dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
 	EXPECT_TRUE(dataInput->tryAddSeriesParam("NDVI_AVH", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
  
- delete dataInput;
+	//clean up
+	delete dataInput;
 }
 
 TEST(DataInputTests, incorrectParamNames) {
@@ -189,7 +190,7 @@ TEST(DataInputTests, incorrectParamNames) {
 	EXPECT_FALSE(dataInput->tryAddSeriesParam("Foliage:stem partitioning ratio @ D=20 cm", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
 	EXPECT_FALSE(dataInput->tryAddSeriesParam("Constant in the stem mass v. diam. relationship", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo));
  
- delete dataInput;
+	delete dataInput;
 }
 
 TEST(DataInputTests, scalarValues) {
@@ -482,7 +483,8 @@ TEST(DataInputTests, scalarValues) {
 	EXPECT_EQ(sParams.NetRad, (double)72);
 	EXPECT_EQ(sParams.VPD, (double)84);
  
- delete dataInput;
+	//clean up
+	delete dataInput;
 }
 
 
@@ -502,9 +504,9 @@ std::string frost12 = "test_files/DataInputTests/NFFD12.tif";
 //test grid parameters
 TEST(DataInputTests, gridValues) {
 
- std::string testFile1 = "test_files/DataInputTests/test1.tif";
- std::string testFile2 = "test_files/DataInputTests/test2.tif";
- std::string testFile3 = "test_files/DataInputTests/test3.tif";
+	std::string testFile1 = "test_files/DataInputTests/test1.tif";
+	std::string testFile2 = "test_files/DataInputTests/test2.tif";
+	std::string testFile3 = "test_files/DataInputTests/test3.tif";
  
 	GDALRasterImage* testTif1 = new GDALRasterImage(testFile1);
 	GDALRasterImage* testTif2 = new GDALRasterImage(testFile2);
@@ -652,7 +654,23 @@ TEST(DataInputTests, gridValues) {
 		}
 	}
  
-  delete dataInput;
+	//clean up
+	delete dataInput;
+	delete testTif1;
+	delete testTif2;
+	delete testTif3;
+	delete frostTif1; 
+	delete frostTif2; 
+	delete frostTif3; 
+	delete frostTif4; 
+	delete frostTif5; 
+	delete frostTif6; 
+	delete frostTif7; 
+	delete frostTif8; 
+	delete frostTif9; 
+	delete frostTif10;
+	delete frostTif11;
+	delete frostTif12;
 }
 
 //test bad grids
@@ -678,7 +696,12 @@ TEST(DataInputTests, badGrids) {
 	EXPECT_EXIT(
 		dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", differentDimensionsFile }, paramFp, lineNo), 
 		testing::ExitedWithCode(1), "");
-  delete dataInput;
+
+	//clean up
+	delete dataInput;
+	delete testTif;
+	delete difLocationTif;
+	delete difDimensionsTif;
 }
 
 //test required parameters
@@ -810,6 +833,8 @@ TEST(DataInputTests, requiredParameters3PG) {
 		dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 
 		ASSERT_FALSE(dataInput->inputFinished(false));
+
+		//clean up here because dataInput goes out of scope when for loop finishes an iteration
 		delete dataInput;
 	}
 
@@ -835,6 +860,8 @@ TEST(DataInputTests, requiredParameters3PG) {
 		dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 	
 		ASSERT_FALSE(dataInput->inputFinished(false));
+
+		//clean up here because dataInput goes out of scope when for loop finishes an iteration
 		delete dataInput;
 	}
 
@@ -853,6 +880,8 @@ TEST(DataInputTests, requiredParameters3PG) {
 	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//clean up
 	delete dataInput;
 }
 
@@ -879,6 +908,8 @@ TEST(DataInputTests, requiredParameters3PGS) {
 		dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 
 		ASSERT_FALSE(dataInput->inputFinished(true));
+
+		//clean up here because dataInput goes out of scope when for loop finishes an iteration
 		delete dataInput;
 	}
 
@@ -904,6 +935,8 @@ TEST(DataInputTests, requiredParameters3PGS) {
 		dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 
 		ASSERT_FALSE(dataInput->inputFinished(true));
+
+		//clean up here because dataInput goes out of scope when for loop finishes an iteration
 		delete dataInput;
 	}
 
@@ -922,6 +955,8 @@ TEST(DataInputTests, requiredParameters3PGS) {
 	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 	ASSERT_TRUE(dataInput->inputFinished(true));
+
+	//clean up
 	delete dataInput;
 }
 
@@ -965,6 +1000,9 @@ TEST(DataInputTests, requiredParametersEdgeCases) {
 	//must have both Tmin and Tmax if we don't have either VPD or Tavg
 	dataInput->tryAddSeriesParam("Tmin", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 	dataInput->tryAddSeriesParam("Tmax", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+
+	//clean up
+	delete dataInput;
 }
 
 //test run period
@@ -1024,6 +1062,9 @@ TEST(DataInputTests, runPeriod1) {
 	EXPECT_EQ(min.year, 1870);
 	EXPECT_EQ(max.mon, 1);
 	EXPECT_EQ(max.year, 1872);
+
+	//clean up
+	delete dataInput;
 }
 
 TEST(DataInputTests, runPeriod2) {
@@ -1050,6 +1091,9 @@ TEST(DataInputTests, runPeriod2) {
 	EXPECT_EQ(min.year, 1870);
 	EXPECT_EQ(max.mon, 1);
 	EXPECT_EQ(max.year, 1872);
+
+	//clean up
+	delete dataInput;
 }
 
 TEST(DataInputTests, runPeriod3) {
@@ -1076,6 +1120,9 @@ TEST(DataInputTests, runPeriod3) {
 	EXPECT_EQ(min.year, 1870);
 	EXPECT_EQ(max.mon, 1);
 	EXPECT_EQ(max.year, 1872);
+
+	//clean up
+	delete dataInput;
 }
 
 TEST(DataInputTests, runPeriod4) {
@@ -1102,6 +1149,9 @@ TEST(DataInputTests, runPeriod4) {
 	EXPECT_EQ(min.year, 1870);
 	EXPECT_EQ(max.mon, 1);
 	EXPECT_EQ(max.year, 1872);
+
+	//clean up
+	delete dataInput;
 }
 
 TEST(DataInputTests, runPeriod5) {
@@ -1128,6 +1178,9 @@ TEST(DataInputTests, runPeriod5) {
 	EXPECT_EQ(min.year, 1870);
 	EXPECT_EQ(max.mon, 3);
 	EXPECT_EQ(max.year, 1874);
+
+	//clean up
+	delete dataInput;
 }
 
 TEST(DataInputTests, runPeriod6) {
@@ -1154,6 +1207,9 @@ TEST(DataInputTests, runPeriod6) {
 	EXPECT_EQ(min.year, 1870);
 	EXPECT_EQ(max.mon, 1);
 	EXPECT_EQ(max.year, 1874);
+
+	//clean up
+	delete dataInput;
 }
 
 TEST(DataInputTests, runPeriod7) {
@@ -1180,6 +1236,9 @@ TEST(DataInputTests, runPeriod7) {
 	EXPECT_EQ(min.year, 1870);
 	EXPECT_EQ(max.mon, 3);
 	EXPECT_EQ(max.year, 1872);
+
+	//clean up
+	delete dataInput;
 }
 
 //test different input method for series params
@@ -1327,4 +1386,19 @@ TEST(DataInputTests, seriesParamInputFormat) {
 			}
 		}	
 	}
+
+	//clean up
+	delete dataInput;
+	delete frostTif1; 
+	delete frostTif2; 
+	delete frostTif3; 
+	delete frostTif4; 
+	delete frostTif5; 
+	delete frostTif6; 
+	delete frostTif7; 
+	delete frostTif8; 
+	delete frostTif9; 
+	delete frostTif10;
+	delete frostTif11;
+	delete frostTif12;
 }
