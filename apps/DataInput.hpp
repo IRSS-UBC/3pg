@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string.hpp>
 #include "GDALRasterImage.hpp"
 #include "ParamStructs.hpp"
 #include "MYDate.h"
@@ -110,8 +111,27 @@ typedef enum {
 
 class DataInput {
 private:
+	struct Hash {
+		size_t operator() (const std::string& str) const {
+			//convert to lower in hash
+			std::string lower = str;
+			boost::to_lower(lower);
+
+			//return same string hash function but for the lowercase equivalent
+			std::unordered_set<std::string>::hasher set;
+			return set(lower);
+		}
+	};
+
+	struct KeyEqual {
+		bool operator() (const std::string& str1, const std::string& str2) const {
+			//case insensitive check
+			return boost::iequals(str1, str2);
+		}
+	};
+
 	//maps and sets for dealing with input parameters
-	std::unordered_map<std::string, std::string> inputParamNames = {
+	std::unordered_map<std::string, std::string, Hash, KeyEqual> inputParamNames = {
 		{"Foliage:stem partitioning ratio @ D=2 cm", "pFS2"},
 		{"Foliage:stem partitioning ratio @ D=20 cm", "pFS20"},
 		{"Constant in the stem mass v. diam. relationship", "StemConst"},
@@ -185,7 +205,7 @@ private:
 		{"Age at which rho = (rhoMin+rhoMax)/2", "tRho"},
 		{"Year Planted", "yearPlanted"},
 	};
-	std::unordered_set<std::string> allInputParams = {
+	std::unordered_set<std::string, Hash, KeyEqual> allInputParams = {
 		"pFS2",
 		"pFS20",
 		"StemConst",
@@ -258,7 +278,7 @@ private:
 		"NDVI_FPAR_intercept",
 		"NDVI_FPAR_constant",
 	};
-	std::unordered_set<std::string> requiredInputParams3PG = {
+	std::unordered_set<std::string, Hash, KeyEqual> requiredInputParams3PG = {
 		"pFS2", "pFS20", "StemConst", "StemPower", "pRx", "pRn",
 		"growthTmin", "growthTopt", "growthTmax",
 		"kF",
@@ -281,7 +301,7 @@ private:
 		"LAImaxIntcptn",
 		"thinPower", "mF", "mR", "mS",
 	};
-	std::unordered_set<std::string> requiredInputParams3PGS = {
+	std::unordered_set<std::string, Hash, KeyEqual> requiredInputParams3PGS = {
 		"growthTmin", "growthTopt", "growthTmax",
 		"kF",
 		"MaxCond", "CoeffCond", "BLcond",
@@ -298,10 +318,10 @@ private:
 		"StartMonth",
 		"LAImaxIntcptn",
 	};
-	std::unordered_map<std::string, PPPG_PARAM> inputParams;
+	std::unordered_map<std::string, PPPG_PARAM, Hash, KeyEqual> inputParams;
 
 	//maps and sets for dealing with series parameters
-	std::unordered_map<std::string, SeriesIndex> seriesParamNameMap = {
+	std::unordered_map<std::string, SeriesIndex, Hash, KeyEqual> seriesParamNameMap = {
 		{"Tmax", SeriesIndex::TMAX},
 		{"Tmin", SeriesIndex::TMIN},
 		{"Tavg", SeriesIndex::TAVG},
@@ -313,7 +333,7 @@ private:
 		{"VPD", SeriesIndex::VPD},
 	};
 	PPPG_SERIES_PARAM seriesParams[9];
-	std::unordered_set<std::string> acquiredSeriesParams;
+	std::unordered_set<std::string, Hash, KeyEqual> acquiredSeriesParams;
 	//std::unordered_map<std::string, std::unordered_map<int, std::vector<PPPG_PARAM>>> seriesParams;
 
 	bool haveTavg;
