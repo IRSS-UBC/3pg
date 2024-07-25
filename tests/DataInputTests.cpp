@@ -485,24 +485,27 @@ TEST(DataInputTests, scalarValues) {
  delete dataInput;
 }
 
+
+std::string frost1 = "test_files/DataInputTests/NFFD01.tif";
+std::string frost2 = "test_files/DataInputTests/NFFD02.tif";
+std::string frost3 = "test_files/DataInputTests/NFFD03.tif";
+std::string frost4 = "test_files/DataInputTests/NFFD04.tif";
+std::string frost5 = "test_files/DataInputTests/NFFD05.tif";
+std::string frost6 = "test_files/DataInputTests/NFFD06.tif";
+std::string frost7 = "test_files/DataInputTests/NFFD07.tif";
+std::string frost8 = "test_files/DataInputTests/NFFD08.tif";
+std::string frost9 = "test_files/DataInputTests/NFFD09.tif";
+std::string frost10 = "test_files/DataInputTests/NFFD10.tif";
+std::string frost11 = "test_files/DataInputTests/NFFD11.tif";
+std::string frost12 = "test_files/DataInputTests/NFFD12.tif";
+
 //test grid parameters
 TEST(DataInputTests, gridValues) {
-	std::string testFile1 = "test_files/DataInputTests/test1.tif";
-	std::string testFile2 = "test_files/DataInputTests/test2.tif";
-	std::string testFile3 = "test_files/DataInputTests/test3.tif";
-	std::string frost1 = "test_files/DataInputTests/NFFD01.tif";
-	std::string frost2 = "test_files/DataInputTests/NFFD02.tif";
-	std::string frost3 = "test_files/DataInputTests/NFFD03.tif";
-	std::string frost4 = "test_files/DataInputTests/NFFD04.tif";
-	std::string frost5 = "test_files/DataInputTests/NFFD05.tif";
-	std::string frost6 = "test_files/DataInputTests/NFFD06.tif";
-	std::string frost7 = "test_files/DataInputTests/NFFD07.tif";
-	std::string frost8 = "test_files/DataInputTests/NFFD08.tif";
-	std::string frost9 = "test_files/DataInputTests/NFFD09.tif";
-	std::string frost10 = "test_files/DataInputTests/NFFD10.tif";
-	std::string frost11 = "test_files/DataInputTests/NFFD11.tif";
-	std::string frost12 = "test_files/DataInputTests/NFFD12.tif";
 
+ std::string testFile1 = "test_files/DataInputTests/test1.tif";
+ std::string testFile2 = "test_files/DataInputTests/test2.tif";
+ std::string testFile3 = "test_files/DataInputTests/test3.tif";
+ 
 	GDALRasterImage* testTif1 = new GDALRasterImage(testFile1);
 	GDALRasterImage* testTif2 = new GDALRasterImage(testFile2);
 	GDALRasterImage* testTif3 = new GDALRasterImage(testFile3);
@@ -1179,5 +1182,149 @@ TEST(DataInputTests, runPeriod7) {
 	EXPECT_EQ(max.year, 1872);
 }
 
-
 //test different input method for series params
+TEST(DataInputTests, seriesParamInputFormat) {
+	GDALRasterImage* frostTif1 = new GDALRasterImage(frost1);
+	GDALRasterImage* frostTif2 = new GDALRasterImage(frost2);
+	GDALRasterImage* frostTif3 = new GDALRasterImage(frost3);
+	GDALRasterImage* frostTif4 = new GDALRasterImage(frost4);
+	GDALRasterImage* frostTif5 = new GDALRasterImage(frost5);
+	GDALRasterImage* frostTif6 = new GDALRasterImage(frost6);
+	GDALRasterImage* frostTif7 = new GDALRasterImage(frost7);
+	GDALRasterImage* frostTif8 = new GDALRasterImage(frost8);
+	GDALRasterImage* frostTif9 = new GDALRasterImage(frost9);
+	GDALRasterImage* frostTif10 = new GDALRasterImage(frost10);
+	GDALRasterImage* frostTif11 = new GDALRasterImage(frost11);
+	GDALRasterImage* frostTif12 = new GDALRasterImage(frost12);
+
+	DataInput* dataInput = new DataInput();
+	std::ifstream paramFp("test_files//DataInputTests//formatTest.txt");
+	std::string line;
+	//read line containing: "Frost", 
+	std::getline(paramFp, line); 
+	int lineNo = 0;
+	//don't do anything with that line
+
+	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
+		std::string curParam = requiredInputParams3PG[i];
+		if (
+			curParam != "yearPlanted" &&
+			curParam != "StartAge" &&
+			curParam != "EndYear" &&
+			curParam != "StartMonth") {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		}
+	}
+	dataInput->tryAddInputParam("SeedlingMass", { "1" });
+	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
+		std::string curParam = requiredSeriesParams3PG[i];
+		if (curParam != "Frost") {
+			dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+		}
+	}
+	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+
+	//add parameter
+	ASSERT_TRUE(dataInput->tryAddSeriesParam("Frost", {}, paramFp, lineNo));
+
+	//add run period parameters for spcific years of test
+	dataInput->tryAddInputParam("StartAge", { "1" });
+	dataInput->tryAddInputParam("StartMonth", { "1" });
+	dataInput->tryAddInputParam("EndYear", { "1872" });
+	dataInput->tryAddInputParam("yearPlanted", { "1869" });
+
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	for (int year = 1870; year <= 1872; year++) {
+		//1872 has grid series parameter
+		if (year == 1872) {
+			for (int i = 0; i < frostTif1->nRows; i++) {
+				for (int j = 0; j < frostTif1->nCols; j++) {
+					long cellIndex = (long)i * (long)frostTif1->nCols + (long)j;
+					SeriesParams sParams;
+
+					if (std::isnan(frostTif1->GetVal(cellIndex))) {
+						//if nan, getSeriesParam should return false for all months
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 1, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 2, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 3, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 4, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 5, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 6, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 7, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 8, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 9, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 10, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 11, sParams));
+						EXPECT_FALSE(dataInput->getSeriesParams(cellIndex, year, 12, sParams));
+					}
+					else {
+						//otherwise, check values against test tif files for all months
+						//January
+						dataInput->getSeriesParams(cellIndex, year, 1, sParams);
+						EXPECT_EQ(frostTif1->GetVal(cellIndex), sParams.FrostDays);
+
+						//February
+						dataInput->getSeriesParams(cellIndex, year, 2, sParams);
+						EXPECT_EQ(frostTif2->GetVal(cellIndex), sParams.FrostDays);
+
+						//March
+						dataInput->getSeriesParams(cellIndex, year, 3, sParams);
+						EXPECT_EQ(frostTif3->GetVal(cellIndex), sParams.FrostDays);
+
+						//April
+						dataInput->getSeriesParams(cellIndex, year, 4, sParams);
+						EXPECT_EQ(frostTif4->GetVal(cellIndex), sParams.FrostDays);
+
+						//May
+						dataInput->getSeriesParams(cellIndex, year, 5, sParams);
+						EXPECT_EQ(frostTif5->GetVal(cellIndex), sParams.FrostDays);
+
+						//June
+						dataInput->getSeriesParams(cellIndex, year, 6, sParams);
+						EXPECT_EQ(frostTif6->GetVal(cellIndex), sParams.FrostDays);
+
+						//July
+						dataInput->getSeriesParams(cellIndex, year, 7, sParams);
+						EXPECT_EQ(frostTif7->GetVal(cellIndex), sParams.FrostDays);
+
+						//August
+						dataInput->getSeriesParams(cellIndex, year, 8, sParams);
+						EXPECT_EQ(frostTif8->GetVal(cellIndex), sParams.FrostDays);
+
+						//September
+						dataInput->getSeriesParams(cellIndex, year, 9, sParams);
+						EXPECT_EQ(frostTif9->GetVal(cellIndex), sParams.FrostDays);
+
+						//October
+						dataInput->getSeriesParams(cellIndex, year, 10, sParams);
+						EXPECT_EQ(frostTif10->GetVal(cellIndex), sParams.FrostDays);
+
+						//November
+						dataInput->getSeriesParams(cellIndex, year, 11, sParams);
+						EXPECT_EQ(frostTif11->GetVal(cellIndex), sParams.FrostDays);
+
+						//December
+						dataInput->getSeriesParams(cellIndex, year, 12, sParams);
+						EXPECT_EQ(frostTif12->GetVal(cellIndex), sParams.FrostDays);
+					}
+				}
+			}
+		}
+		else {
+			//non 1872 years have scalar parameters
+			for (int month = 1; month <= 12; month++) {
+				//the integer put into the test .txt file follows this pattern
+				int expectedVal = (year - 1870) * 12 + month;
+
+				//get params
+				SeriesParams sParams;
+				dataInput->getSeriesParams(0, year, month, sParams);
+
+				//test frost (the param we are using to test the different format)
+				EXPECT_EQ(expectedVal, sParams.FrostDays);
+			}
+		}	
+	}
+}
