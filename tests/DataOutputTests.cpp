@@ -129,3 +129,54 @@ TEST(DataOutputTests, nans) {
 	delete nan1Tif;
 	delete nan2Tif;
 }
+
+TEST(DataOutputTests, extremes) {
+	//get refgrid
+	GDALRasterImage* refgrid = new GDALRasterImage(refgridDir);
+
+	//get output path
+	std::filesystem::path outPath = outDir;
+
+	//delete everything in the output folder
+	//https://stackoverflow.com/questions/59077670/c-delete-all-files-and-subfolders-but-keep-the-directory-itself
+	for (const auto& entry : std::filesystem::directory_iterator(outPath)) {
+		std::filesystem::remove_all(entry.path());
+	}
+
+	//get month, year, name, and filepath
+	int month = 1;
+	int year = 1;
+	std::string name = "extremes";
+	std::filesystem::path path = outDir;
+	path /= name + std::to_string(year) + std::to_string(month) + ".tif";
+
+	float smallPos = .000001;
+	float smallNeg = -.000001;
+
+	//create dataOutput, set and write values
+	DataOutput* dataOutput = new DataOutput(refgrid, outDir);
+	dataOutput->setVal(year, month, name, 0, std::numeric_limits<float>::max());
+	dataOutput->setVal(year, month, name, 1, std::numeric_limits<float>::min());
+	dataOutput->setVal(year, month, name, 2, smallPos);
+	dataOutput->setVal(year, month, name, 3, smallNeg);
+	dataOutput->writeRow(0);
+	dataOutput->writeRow(1);
+
+	//clean up
+	delete dataOutput;
+	delete refgrid;
+
+	//ensure file exists
+	ASSERT_TRUE(std::filesystem::exists(path));
+
+	GDALRasterImage* tif = new GDALRasterImage(path.string());
+
+	//check values
+	EXPECT_EQ(tif->GetVal(0, 0), std::numeric_limits<float>::max());
+	EXPECT_EQ(tif->GetVal(1, 0), std::numeric_limits<float>::min());
+	EXPECT_EQ(tif->GetVal(0, 1), smallPos);
+	EXPECT_EQ(tif->GetVal(1, 1), smallNeg);
+
+	//clean up
+	delete tif;
+}
