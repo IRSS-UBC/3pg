@@ -214,7 +214,7 @@ private:
 		"SWpower0",
 		"wSx1000",
 		"MaxAge",
-		"nAge"
+		"nAge",
 		"rAge",
 		"SLA0",
 		"SLA1",
@@ -290,14 +290,14 @@ private:
 		"SLA1", "alpha",
 		"y",
 		"Lat", "FRp", "soilIndex", "MaxASW", "MinASWp",
-		"StartAge","EndYear",
+		"StartAge","EndYear", "yearPlanted",
 		"NDVI_FPAR_intercept", "NDVI_FPAR_constant",
 		"Qa", "Qb",
 		"gDM_mol", "molPAR_MJ",
 		"LAIgcx", "MaxIntcptn",
 		"StartMonth",
 		"LAImaxIntcptn",
-	}; //TODO do we need to add yearPlanted here???
+	};
 	std::unordered_map<std::string, PPPG_PARAM> inputParams;
 
 	//maps and sets for dealing with series parameters
@@ -306,8 +306,8 @@ private:
 		{"Tmin", SeriesIndex::TMIN},
 		{"Tavg", SeriesIndex::TAVG},
 		{"Rain", SeriesIndex::RAIN},
-		{"Solar Radtn", SeriesIndex::SOLAR_RAD},
-		{"Frost days", SeriesIndex::FROST_DAYS},
+		{"Solar radtn", SeriesIndex::SOLAR_RAD},
+		{"Frost", SeriesIndex::FROST_DAYS},
 		{"NDVI_AVH", SeriesIndex::NDVI_AVH},
 		{"Net radtn", SeriesIndex::NET_RAD},
 		{"VPD", SeriesIndex::VPD},

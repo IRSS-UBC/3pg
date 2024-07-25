@@ -327,7 +327,7 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	bool haveWRi = this->inputParams.find("WRi") != this->inputParams.end();
 	bool haveWSi = this->inputParams.find("WSi") != this->inputParams.end();
 
-	//if we don't have seedling mass, need all of WFi, WRi, and WSi
+	//we must have either seedling mass, or all of WFi, WRi, and WSi
 	if (!haveSeedlingMass && (!haveWFi || !haveWRi || !haveWSi)) {
 		std::string errstr;
 		if (!haveSeedlingMass) {
@@ -366,51 +366,45 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	bool haveTavg = this->acquiredSeriesParams.find("Tavg") != this->acquiredSeriesParams.end();
 	bool haveVPD = this->acquiredSeriesParams.find("VPD") != this->acquiredSeriesParams.end();
 	bool haveRain = this->acquiredSeriesParams.find("Rain") != this->acquiredSeriesParams.end();
-	bool haveSolarRad = this->acquiredSeriesParams.find("Solar Radtn") != this->acquiredSeriesParams.end();
+	bool haveSolarRad = this->acquiredSeriesParams.find("Solar radtn") != this->acquiredSeriesParams.end();
 	bool haveNetRad = this->acquiredSeriesParams.find("Net radtn") != this->acquiredSeriesParams.end();
-	bool haveFrost = this->acquiredSeriesParams.find("Frost days") != this->acquiredSeriesParams.end();
+	bool haveFrost = this->acquiredSeriesParams.find("Frost") != this->acquiredSeriesParams.end();
 	bool haveNDVI = this->acquiredSeriesParams.find("NDVI_AVH") != this->acquiredSeriesParams.end();
 	
-	//check tmax/tavg
-	if (!haveTmax && !haveTavg) {
-		std::cout << "must have Tmax or Tavg" << std::endl;
-		exit(EXIT_FAILURE);
+	//check Tavg
+	if (!haveTavg && (!haveTmax || !haveTmin)) {
+		std::cout << "must have both Tmax and Tmin if lacking Tavg" << std::endl;
+		return false;
 	}
 	
-	//check tmin/tavg
-	if (!haveTmin && !haveTavg) {
-		std::cout << "must have Tmin or Tavg" << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	
-	//check tavg/vpd
-	if (haveTavg && !haveVPD) {
-		std::cout << "must have VPD if using Tavg" << std::endl;
-		exit(EXIT_FAILURE);
+	//check VPD
+	if (!haveVPD && (!haveTmax || !haveTmin)) {
+		std::cout << "must have both Tmax and Tmin if lacking VPD" << std::endl;
+		return false;
 	}
 	
 	//check rain
 	if (!haveRain) {
 		std::cout << "must have Rain" << std::endl;
-		exit(EXIT_FAILURE);
+		return false;
 	}
 	
 	//check solar radation
 	if (!haveSolarRad) {
 		std::cout << "must have Solar Radiation" << std::endl;
-		exit(EXIT_FAILURE);
+		return false;
 	}
 	
 	//check frost
 	if (!haveFrost) {
 		std::cout << "must have Frost" << std::endl;
-		exit(EXIT_FAILURE);
+		return false;
 	}
 
 	//check model mode which requires NDVI series parameters
-	if (modelMode3PGS && this->acquiredSeriesParams.find("NDVI_AVH") != this->acquiredSeriesParams.end()) {
+	if (modelMode3PGS && !haveNDVI) {
 		std::cout << "3PGS mode should have NDVI series parameters" << std::endl;
-		exit(EXIT_FAILURE);
+		return false;
 	}
 
 	this->haveNDVI = haveNDVI;
