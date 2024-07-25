@@ -965,5 +965,219 @@ TEST(DataInputTests, requiredParametersEdgeCases) {
 }
 
 //test run period
+void addRequiredParamsExcludingRunPeriod(DataInput* dataInput) {
+	std::ifstream paramFp("");
+	int lineNo;
+
+	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
+		std::string curParam = requiredInputParams3PG[i];
+		if (
+			curParam != "yearPlanted" &&
+			curParam != "StartAge" &&
+			curParam != "EndYear" &&
+			curParam != "StartMonth") {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		}
+	}
+	dataInput->tryAddInputParam("SeedlingMass", { "1" });
+	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
+		dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	}
+	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	ASSERT_FALSE(dataInput->inputFinished(false));
+}
+
+std::string startAge1 = "test_files//DataInputTests//runPeriod//StartAge1.tif";
+std::string startAgeVariable = "test_files//DataInputTests//runPeriod//StartAgeVariable.tif";
+std::string startMonth1 = "test_files//DataInputTests//runPeriod//StartMonth1.tif";
+std::string startMonthVariable = "test_files//DataInputTests//runPeriod//StartMonthVariable.tif";
+std::string endYear1872 = "test_files//DataInputTests//runPeriod//EndYear1872.tif";
+std::string endYearVariable = "test_files//DataInputTests//runPeriod//EndYearVariable.tif";
+std::string yearPlanted1869 = "test_files//DataInputTests//runPeriod//yearPlanted1869.tif";
+std::string yearPlantedVariable = "test_files//DataInputTests//runPeriod//yearPlantedVariable.tif";
+
+TEST(DataInputTests, runPeriod1) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { "1" });
+	dataInput->tryAddInputParam("EndYear", { "1872" });
+	dataInput->tryAddInputParam("StartMonth", { "1" });
+	dataInput->tryAddInputParam("yearPlanted", { "1869" });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	MYDate min;
+	MYDate max;
+	dataInput->findRunPeriod(min, max);
+
+	//test run period outputs
+	EXPECT_EQ(min.mon, NULL);
+	EXPECT_EQ(min.year, 1870);
+	EXPECT_EQ(max.mon, 1);
+	EXPECT_EQ(max.year, 1872);
+}
+
+TEST(DataInputTests, runPeriod2) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAge1 });
+	dataInput->tryAddInputParam("EndYear", { "1872" });
+	dataInput->tryAddInputParam("StartMonth", { startMonth1 });
+	dataInput->tryAddInputParam("yearPlanted", { "1869" });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	MYDate min;
+	MYDate max;
+	dataInput->findRunPeriod(min, max);
+
+	//test run period outputs
+	EXPECT_EQ(min.mon, NULL);
+	EXPECT_EQ(min.year, 1870);
+	EXPECT_EQ(max.mon, 1);
+	EXPECT_EQ(max.year, 1872);
+}
+
+TEST(DataInputTests, runPeriod3) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAge1 });
+	dataInput->tryAddInputParam("EndYear", { endYear1872 });
+	dataInput->tryAddInputParam("StartMonth", { startMonth1 });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlanted1869 });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	MYDate min;
+	MYDate max;
+	dataInput->findRunPeriod(min, max);
+
+	//test run period outputs
+	EXPECT_EQ(min.mon, NULL);
+	EXPECT_EQ(min.year, 1870);
+	EXPECT_EQ(max.mon, 1);
+	EXPECT_EQ(max.year, 1872);
+}
+
+TEST(DataInputTests, runPeriod4) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { "1" });
+	dataInput->tryAddInputParam("EndYear", { endYear1872 });
+	dataInput->tryAddInputParam("StartMonth", { "1" });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlanted1869 });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	MYDate min;
+	MYDate max;
+	dataInput->findRunPeriod(min, max);
+
+	//test run period outputs
+	EXPECT_EQ(min.mon, NULL);
+	EXPECT_EQ(min.year, 1870);
+	EXPECT_EQ(max.mon, 1);
+	EXPECT_EQ(max.year, 1872);
+}
+
+TEST(DataInputTests, runPeriod5) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAgeVariable });
+	dataInput->tryAddInputParam("EndYear", { endYearVariable });
+	dataInput->tryAddInputParam("StartMonth", { startMonthVariable });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlantedVariable });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	MYDate min;
+	MYDate max;
+	dataInput->findRunPeriod(min, max);
+
+	//test run period outputs
+	EXPECT_EQ(min.mon, NULL);
+	EXPECT_EQ(min.year, 1870);
+	EXPECT_EQ(max.mon, 3);
+	EXPECT_EQ(max.year, 1874);
+}
+
+TEST(DataInputTests, runPeriod6) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAge1 });
+	dataInput->tryAddInputParam("EndYear", { endYearVariable });
+	dataInput->tryAddInputParam("StartMonth", { startMonth1 });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlantedVariable });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	MYDate min;
+	MYDate max;
+	dataInput->findRunPeriod(min, max);
+
+	//test run period outputs
+	EXPECT_EQ(min.mon, NULL);
+	EXPECT_EQ(min.year, 1870);
+	EXPECT_EQ(max.mon, 1);
+	EXPECT_EQ(max.year, 1874);
+}
+
+TEST(DataInputTests, runPeriod7) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAgeVariable });
+	dataInput->tryAddInputParam("EndYear", { endYear1872 });
+	dataInput->tryAddInputParam("StartMonth", { startMonthVariable });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlanted1869 });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	MYDate min;
+	MYDate max;
+	dataInput->findRunPeriod(min, max);
+
+	//test run period outputs
+	EXPECT_EQ(min.mon, NULL);
+	EXPECT_EQ(min.year, 1870);
+	EXPECT_EQ(max.mon, 3);
+	EXPECT_EQ(max.year, 1872);
+}
+
 
 //test different input method for series params
