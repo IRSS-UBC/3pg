@@ -444,6 +444,9 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
     vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB)); //Modified StandAge
     Density = params.rhoMax + (params.rhoMin - params.rhoMax) * exp(-ln2 * (StandAge / params.tRho));
+    gammaF = params.gammaFx * params.gammaF0 /
+        (params.gammaF0 + (params.gammaFx - params.gammaF0) *
+            exp(-12 * log(1 + params.gammaFx / params.gammaF0) * StandAge / params.tgammaF));
 
     vars.StandVol = vars.WS * (1 - vars.fracBB) / Density;
     oldVol = vars.StandVol;
@@ -777,16 +780,10 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             delWS = vars.NPP * pS;
 
             // calculate litterfall & root turnover -
-            gammaF = params.gammaFx * params.gammaF0 /
-                (params.gammaF0 + (params.gammaFx - params.gammaF0) *
-                    exp(-12 * log(1 + params.gammaFx / params.gammaF0) * StandAge / params.tgammaF));
-            
             delLitter = gammaF * vars.WF;
             delRloss = params.Rttover * vars.WR;
 
-
             // Calculate end-of-month biomass
-
             if (!modelMode3PGS) {
                 vars.WF = vars.WF + delWF - delLitter;
                 vars.WR = vars.WR + delWR - delRloss;
@@ -829,6 +826,9 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 SLA = params.SLA1 + (params.SLA0 - params.SLA1) * exp(-ln2 * pow((StandAge / params.tSLA), 2));  //Modified StandAge
                 vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB));  //Modified StandAge
                 Density = params.rhoMax + (params.rhoMin - params.rhoMax) * exp(-ln2 * (StandAge / params.tRho));
+                gammaF = params.gammaFx * params.gammaF0 /
+                    (params.gammaF0 + (params.gammaFx - params.gammaF0) *
+                        exp(-12 * log(1 + params.gammaFx / params.gammaF0) * StandAge / params.tgammaF));
 
                 //update stsand characteristics
                 vars.LAI = vars.WF * SLA * 0.1;
