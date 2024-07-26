@@ -721,8 +721,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             GPPdm = epsilon * RADint / 100;               // tDM/ha
             vars.NPP = GPPdm * params.y;                            // assumes respiratory rate is constant
 
-            // calculate canopy conductance from stomatal conductance
-            /* F1V3: ON */
+            // calculate canopy conductance
             double gC;
             if (vars.LAI <= params.LAIgcx) {
                 gC = params.MaxCond * vars.LAI / params.LAIgcx;
@@ -731,7 +730,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 gC = params.MaxCond;
             }
             CanCond = gC * vars.PhysMod;
-            /* End F1V3 */
+
             // calculate transpiration from Penman-Monteith (mm/day converted to mm/month)
             vars.Transp = CanopyTranspiration(sParams.SolarRad, sParams.VPD, dayLength, params.BLcond,
                 CanCond, sParams.NetRad, dataInput->haveNetRadParam(), params);
@@ -757,6 +756,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 monthlyIrrig = params.MinASWp - vars.ASW;
                 cumIrrig = cumIrrig + monthlyIrrig;
             }
+
             // correct for actual ET
             TranspScaleFactor = vars.EvapTransp / (vars.Transp + RainIntcptn);      
             GPPdm = TranspScaleFactor * GPPdm;
