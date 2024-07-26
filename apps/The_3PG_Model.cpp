@@ -651,7 +651,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
             if (vars.fSW == 1)
                 bool test = true;
-
+            // calculate soil nutrition
             if (params.fNn == 0)
                 vars.fNutr = 1;
             else
@@ -679,8 +679,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             CanCover = 1;
             if ((params.fullCanAge > 0) && (StandAge < params.fullCanAge))  //Modified StandAge
                 CanCover = (StandAge) / params.fullCanAge; //Modified StandAge
-            lightIntcptn = (1 - (exp(-params.k * vars.LAI)));
-
+            lightIntcptn = (1 - (exp(-params.k * vars.LAI / CanCover)));
 
             // 3PGS. 
             // Calculate FPAR_AVH and LAI from NDVI data. 
