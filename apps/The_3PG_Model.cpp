@@ -135,8 +135,8 @@ double CanopyTranspiration(double Q, double VPD, double h,
         netRad = params.Qa + params.Qb * (Q * pow(10, 6)) / h;                // Q in MJ/m2/day --> W/m2
 
     defTerm = rhoAir * lambda * (VPDconv * VPD) * gBL;
-    div = (1 + e20 + gBL / gC);
-    Etransp = (e20 * netRad + defTerm) / div;           // in J/m2/s
+    div = gC * (1 + e20) + gBL;
+    Etransp = gC * (e20 * netRad + defTerm) / div;           // in J/m2/s
     CT = Etransp / lambda * h;         // converted to kg/m2/day
 
     return CT;
