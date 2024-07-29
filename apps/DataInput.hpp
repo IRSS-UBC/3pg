@@ -84,6 +84,9 @@ struct InputParams {
 	double MinASWTG;
 	double NDVI_FPAR_intercept;
 	double NDVI_FPAR_constant;
+	double CO2;
+	double fCalpha700;
+	double fCg700;
 };
 
 struct SeriesParams {
@@ -182,7 +185,10 @@ private:
 		{"minimum basic density - for young trees", "rhomin"},
 		{"maximum basic density - for older trees", "rhomax"},
 		{"age at which rho = (rhomin+rhomax)/2", "trho"},
-		{"year Planted", "yearlanted"},
+		{"year Planted", "yearplanted"},
+		{"atmospheric co2", "co2"},
+		{"assimialtion enhancement factor at 700 ppm", "fcalpha700"},
+		{"canopy conductance enhancement factor at 700 ppm", "fcg700"},
 	};
 	std::unordered_set<std::string> allInputParams = {
 		"pfs2",
@@ -256,6 +262,9 @@ private:
 		"minaswtg",
 		"ndvi_fpar_intercept",
 		"ndvi_fpar_constant",
+		"co2",
+		"fcalpha700",
+		"fcg700"
 	};
 	std::unordered_set<std::string> requiredInputParams3PG = {
 		"pfs2", "pfs20", "stemconst", "stempower", "prx", "prn",
@@ -279,6 +288,7 @@ private:
 		"startmonth",
 		"laimaxintcptn",
 		"thinpower", "mf", "mr", "ms",
+		"co2", "fcalpha700", "fcg700"
 	};
 	std::unordered_set<std::string> requiredInputParams3PGS = {
 		"growthtmin", "growthtopt", "growthtmax",
@@ -337,6 +347,7 @@ public:
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
 	bool haveNetRadParam();
+	std::vector<std::string> missingParams(bool modelMode3PGS);
 	GDALRasterImage* getRefGrid();
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
 
