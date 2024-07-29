@@ -18,7 +18,9 @@ TEST(DataOutputTests, filenames) {
 	//delete everything in the output folder
 	//https://stackoverflow.com/questions/59077670/c-delete-all-files-and-subfolders-but-keep-the-directory-itself
 	for (const auto& entry : std::filesystem::directory_iterator(outPath)) {
-		std::filesystem::remove_all(entry.path());
+		if (entry.path().string().find(".gitignore") == std::string::npos) {
+			std::filesystem::remove_all(entry.path());
+		}
 	}
 
 	//get month, year, name, and filepath
@@ -70,7 +72,9 @@ TEST(DataOutputTests, nans) {
 	//delete everything in the output folder
 	//https://stackoverflow.com/questions/59077670/c-delete-all-files-and-subfolders-but-keep-the-directory-itself
 	for (const auto& entry : std::filesystem::directory_iterator(outPath)) {
-		std::filesystem::remove_all(entry.path());
+		if (entry.path().string().find(".gitignore") == std::string::npos) {
+			std::filesystem::remove_all(entry.path());
+		}
 	}
 
 	//get month, year, name, and filepath
@@ -140,7 +144,9 @@ TEST(DataOutputTests, extremes) {
 	//delete everything in the output folder
 	//https://stackoverflow.com/questions/59077670/c-delete-all-files-and-subfolders-but-keep-the-directory-itself
 	for (const auto& entry : std::filesystem::directory_iterator(outPath)) {
-		std::filesystem::remove_all(entry.path());
+		if (entry.path().string().find(".gitignore") == std::string::npos) {
+			std::filesystem::remove_all(entry.path());
+		}
 	}
 
 	//get month, year, name, and filepath

@@ -960,7 +960,6 @@ TEST(DataInputTests, requiredParameters3PGS) {
 	delete dataInput;
 }
 
-
 TEST(DataInputTests, requiredParametersEdgeCases) {
 	//seeding mass edge case
 	DataInput* dataInput = new DataInput();
