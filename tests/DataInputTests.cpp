@@ -9,19 +9,19 @@
 TEST(DataInputTests, correctParamNames) {
 	DataInput* dataInput = new DataInput();
 
-	//long versions according to legacy documentations
+	//long versions according to legacy documentations (some lowercase)
 	EXPECT_TRUE(dataInput->tryAddInputParam("Foliage:stem partitioning ratio @ D=2 cm", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("Foliage:stem partitioning ratio @ D=20 cm", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("foliage:stem partitioning ratio @ d=20 cm", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Constant in the stem mass v. diam. relationship", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("Power in the stem mass v. diam. relationship", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("power in the stem mass v. diam. relationship", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Maximum fraction of NPP to roots", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("Minimum fraction of NPP to roots", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("minimum fraction of npp to roots", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Minimum temperature for growth", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("Optimum temperature for growth", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("optimum temperature for growth", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Maximum temperature for growth", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("Days production lost per frost day", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("days production lost per frost day", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Moisture ratio deficit for fq = 0.5", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("Power of moisture ratio deficit", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("power of moisture ratio deficit", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Value of 'm' when FR = 0", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Value of 'fNutr' when FR = 0", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Power of (1-FR) in 'fNutr'", { "1" }));
@@ -65,29 +65,29 @@ TEST(DataInputTests, correctParamNames) {
 	delete dataInput;
 	dataInput = new DataInput();
 
-	//short versions
-	EXPECT_TRUE(dataInput->tryAddInputParam("pFS2", { "1" }));
+	//short versions (some lowercase)
+	EXPECT_TRUE(dataInput->tryAddInputParam("pfs2", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("pFS20", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("StemConst", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("stemconst", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("StemPower", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("pRx", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("prx", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("pRn", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("growthTmin", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("growthtmin", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("growthTopt", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("growthTmax", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("growthtmax", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("kF", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("gammaFx", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("gammafx", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("gammaF0", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("tgammaF", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("tgammaf", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Rttover", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("MaxCond", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("maxcond", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("CoeffCond", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("BLcond", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("blcond", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("m0", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("fN0", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("fNn", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("thinPower", { "1" }));
-	EXPECT_TRUE(dataInput->tryAddInputParam("mF", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("mf", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("mR", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("mS", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("SWconst0", { "1" }));
@@ -959,7 +959,6 @@ TEST(DataInputTests, requiredParameters3PGS) {
 	//clean up
 	delete dataInput;
 }
-
 
 TEST(DataInputTests, requiredParametersEdgeCases) {
 	//seeding mass edge case
