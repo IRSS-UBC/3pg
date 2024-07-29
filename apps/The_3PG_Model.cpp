@@ -41,9 +41,6 @@ int nMinAvailSW;                         // size of MinAvailSW array
 int nIrrigation;                         // size of irrigation array
 double Irrig;                            // current annual irrigation (ML/y)
 
-extern bool samplePointsMonthly;
-extern bool samplePointsYearly;
-
 //-----------------------------------------------------------------------------
 
 double getDayLength(double Lat, int dayOfYear)
@@ -475,17 +472,11 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
     copyVars(vars, opVars);
     writeMonthlyOutputGrids(opVars, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
 
-    // Monthly sample point output
-    if (samplePointsMonthly)
-        writeSampleFiles(opVars, cellIndex, calMonth, calYear);
-
     //Start processing loop
     for (cy = spMinMY.year; cy <= spMaxMY.year; cy++) {
         runYear = cy;
         calYear = cy;
         calMonth = (int)params.StartMonth;
-
-        year = cy - (int)params.yearPlanted;   // seem to still need year for point mode output. 
 
         // Initialise cumulative variables
         vars.cLitter = 0;
@@ -891,11 +882,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 copyVars(vars, opVars);
                 writeMonthlyOutputGrids(opVars, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
             }
-
-            // Monthly sample point output
-            if (samplePointsMonthly)
-                writeSampleFiles(opVars, cellIndex, calMonth, calYear);
-            // if (showDetailedResults) writeMonthlySummary(lastMonthFile, monthCounter, year)
         }
 
         if (yrPreStart || yrPstEnd)
@@ -939,12 +925,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
         // ANL if (showDetailedResults) writeAnnualResults(year);
         // ANL if (showStandSummary) writeStandSummary(year);if(calMonth == 1)
-
-      
-        // ANL - Annual sample point output. 
-        if (samplePointsYearly) {
-            writeSampleFiles(opVars, cellIndex, 12, calYear);
-        }
 
         // Restore LAI
         vars.LAI = vars.WF * SLA * 0.1;

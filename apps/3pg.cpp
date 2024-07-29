@@ -171,9 +171,6 @@ int main(int argc, char* argv[])
     // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
     std::cout << "Finding run period..." << std::endl;
     dataInput->findRunPeriod(spMinMY, spMaxMY);
-
-    readSampleFile(opVars, refGrid); 
-    std::cout << "Points read from sample file." << std::endl;
  
     // Run the model. 
     long cellsTotal = nrows * ncols;
