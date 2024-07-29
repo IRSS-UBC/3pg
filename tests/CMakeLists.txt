@@ -24,4 +24,9 @@ add_executable( DataInputTests DataInputTests.cpp )
 target_link_libraries( DataInputTests GTest::gtest_main GDAL::GDAL "${PROJECT_SOURCE_DIR}/build/apps/Debug/3pg2Test.lib")
 add_test( NAME DataInputTests COMMAND DataInputTests WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests)
 
+#DataOutput tests
+add_executable( DataOutputTests DataOutputTests.cpp )
+target_link_libraries( DataOutputTests GTest::gtest_main GDAL::GDAL "${PROJECT_SOURCE_DIR}/build/apps/Debug/3pg2Test.lib")
+add_test( NAME DataOutputTests COMMAND DataOutputTests WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests)
+
 include(GoogleTest)

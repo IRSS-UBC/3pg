@@ -34,7 +34,6 @@
 # Data files
 *.flt
 *.hdr
-*.tif
 
 # CMake Things
 CMakeLists.txt.user
