@@ -135,11 +135,19 @@ double CanopyTranspiration(double Q, double VPD, double h,
         netRad = params.Qa + params.Qb * (Q * pow(10, 6)) / h;                // Q in MJ/m2/day --> W/m2
 
     defTerm = rhoAir * lambda * (VPDconv * VPD) * gBL;
-    div = (1 + e20 + gBL / gC);
-    Etransp = (e20 * netRad + defTerm) / div;           // in J/m2/s
+    div = gC * (1 + e20) + gBL;
+    Etransp = gC * (e20 * netRad + defTerm) / div;           // in J/m2/s
     CT = Etransp / lambda * h;         // converted to kg/m2/day
 
     return CT;
+}
+
+double getGammaFoliage(InputParams& params, double& StandAge) {
+    double gf;
+    gf = params.gammaFx* params.gammaF0 /
+        (params.gammaF0 + (params.gammaFx - params.gammaF0) *
+            exp(-12 * log(1 + params.gammaFx / params.gammaF0) * StandAge / params.tgammaF));
+    return gf;
 }
 
 //-----------------------------------------------------------------------------
@@ -295,7 +303,13 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
     double cumTransp;
     double GPPmolc;
     double LAIi;
+
+    double TranspScaleFactor;
+    double RunOff;
     double monthlyIrrig;
+    double poolFractn = 0;
+    double excessSW;
+    double pooledSW = 0;
     double RainIntcptn = 0;
 
     //before start or after end indication
@@ -438,6 +452,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
     vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB)); //Modified StandAge
     Density = params.rhoMax + (params.rhoMin - params.rhoMax) * exp(-ln2 * (StandAge / params.tRho));
+    gammaF = getGammaFoliage(params, StandAge);
 
     vars.StandVol = vars.WS * (1 - vars.fracBB) / Density;
     oldVol = vars.StandVol;
@@ -468,6 +483,9 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
     if (sParams.FrostDays > 30) {
         sParams.FrostDays = 30;
     }
+
+    // init pool fraction
+    poolFractn = std::max(0.0, std::min(1.0, poolFractn));
 
     vars.FR = params.FRp;
 
@@ -639,7 +657,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
             if (vars.fSW == 1)
                 bool test = true;
-
+            // calculate soil nutrition
             if (params.fNn == 0)
                 vars.fNutr = 1;
             else
@@ -667,8 +685,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             CanCover = 1;
             if ((params.fullCanAge > 0) && (StandAge < params.fullCanAge))  //Modified StandAge
                 CanCover = (StandAge) / params.fullCanAge; //Modified StandAge
-            lightIntcptn = (1 - (exp(-params.k * vars.LAI)));
-
+            lightIntcptn = (1 - (exp(-params.k * vars.LAI / CanCover)));
 
             // 3PGS. 
             // Calculate FPAR_AVH and LAI from NDVI data. 
@@ -710,9 +727,51 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             GPPdm = epsilon * RADint / 100;               // tDM/ha
             vars.NPP = GPPdm * params.y;                            // assumes respiratory rate is constant
 
-            // Determine biomass increments and losses
+            // calculate canopy conductance
+            double gC;
+            if (vars.LAI <= params.LAIgcx) {
+                gC = params.MaxCond * vars.LAI / params.LAIgcx;
+            }
+            else {
+                gC = params.MaxCond;
+            }
+            CanCond = gC * vars.PhysMod;
 
-             // calculate partitioning coefficients
+            // calculate transpiration from Penman-Monteith (mm/day converted to mm/month)
+            vars.Transp = CanopyTranspiration(sParams.SolarRad, sParams.VPD, dayLength, params.BLcond,
+                CanCond, sParams.NetRad, dataInput->haveNetRadParam(), params);
+            vars.Transp = DaysInMonth[calMonth] * vars.Transp;
+
+            // rainfall interception
+            if (params.LAImaxIntcptn <= 0)
+                Interception = params.MaxIntcptn;
+            else
+                Interception = params.MaxIntcptn * std::min(1.0, vars.LAI / params.LAImaxIntcptn);
+            RainIntcptn = sParams.Rain * Interception;
+            
+            // water balance
+            monthlyIrrig = 0;
+            RunOff = 0;
+            vars.ASW = vars.ASW + sParams.Rain + (100 * Irrig / 12) + pooledSW;        //Irrig is Ml/ha/year
+            vars.EvapTransp = std::min(vars.ASW, vars.Transp + RainIntcptn);
+            excessSW = std::max(vars.ASW - vars.EvapTransp - params.MaxASW, 0.0);
+            vars.ASW = vars.ASW - vars.EvapTransp - excessSW;
+            pooledSW = poolFractn * excessSW;
+            RunOff = (1 - poolFractn) * excessSW;
+            if (vars.ASW < params.MinASWp) {
+                monthlyIrrig = params.MinASWp - vars.ASW;
+                cumIrrig = cumIrrig + monthlyIrrig;
+            }
+
+            // correct for actual ET
+            TranspScaleFactor = vars.EvapTransp / (vars.Transp + RainIntcptn);      
+            GPPdm = TranspScaleFactor * GPPdm;
+            vars.NPP = TranspScaleFactor * vars.NPP;
+            if (vars.EvapTransp != 0) {
+                vars.WUE = 100 * vars.NPP / vars.EvapTransp;
+            }
+                   
+            // calculate partitioning coefficients
             m = params.m0 + (1 - params.m0) * vars.FR;
             pFS = pfsConst * pow(vars.avDBH, pfsPower);
             if (fabs(vars.APAR) < 0.000001) vars.APAR = 0.000001;
@@ -726,16 +785,10 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             delWS = vars.NPP * pS;
 
             // calculate litterfall & root turnover -
-            gammaF = params.gammaFx * params.gammaF0 /
-                (params.gammaF0 + (params.gammaFx - params.gammaF0) *
-                    exp(-12 * log(1 + params.gammaFx / params.gammaF0) * StandAge / params.tgammaF));
-            
             delLitter = gammaF * vars.WF;
             delRloss = params.Rttover * vars.WR;
 
-
             // Calculate end-of-month biomass
-
             if (!modelMode3PGS) {
                 vars.WF = vars.WF + delWF - delLitter;
                 vars.WR = vars.WR + delWR - delRloss;
@@ -743,42 +796,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 vars.TotalW = vars.WF + vars.WR + vars.WS;
                 vars.TotalLitter = vars.TotalLitter + delLitter;
             }
-
-            // Now do the water balance ...
-            // calculate canopy conductance from stomatal conductance
-            CanCond = params.MaxCond * vars.PhysMod * std::min(1.0, vars.LAI / params.LAIgcx);
-
-            //if (fabs(0 - CanCond) < eps)
-            if (CanCond == 0)
-                CanCond = 0.0001;
-
-            //transpiration from Penman-Monteith (mm/day converted to mm/month)
-            vars.Transp = CanopyTranspiration(sParams.SolarRad, sParams.VPD, dayLength, params.BLcond,
-                CanCond, sParams.NetRad, dataInput->haveNetRadParam(), params);
-            vars.Transp = DaysInMonth[calMonth] * vars.Transp;
-
-            // do soil water balance
-
-            if (params.LAImaxIntcptn <= 0)
-                Interception = params.MaxIntcptn;
-            else
-                Interception = params.MaxIntcptn * std::min(1.0, vars.LAI / params.LAImaxIntcptn);
-
-            vars.EvapTransp = vars.Transp + Interception * sParams.Rain;
-            vars.ASW = vars.ASW + sParams.Rain + (100 * Irrig / 12) - vars.EvapTransp;        //Irrig is Ml/ha/year
-            monthlyIrrig = 0;
-            if (vars.ASW < MinASW) {
-                if (MinASW > 0) {               // make up deficit with irrigation
-                    monthlyIrrig = MinASW - vars.ASW;
-                    cumIrrig = cumIrrig + monthlyIrrig;
-                }
-                vars.ASW = MinASW;
-            }
-            else if (vars.ASW > params.MaxASW) {
-                vars.ASW = params.MaxASW;
-            }
-
-            vars.WUE = 100 * vars.NPP / vars.EvapTransp;
 
             //StandAge = (cy - yearPlanted) + (cm - StartMonth + 1) / 12.0; //OG position
             StandAge = StandAge + 1.0 / 12.0;
@@ -814,6 +831,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 SLA = params.SLA1 + (params.SLA0 - params.SLA1) * exp(-ln2 * pow((StandAge / params.tSLA), 2));  //Modified StandAge
                 vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB));  //Modified StandAge
                 Density = params.rhoMax + (params.rhoMin - params.rhoMax) * exp(-ln2 * (StandAge / params.tRho));
+                gammaF = getGammaFoliage(params, StandAge);
 
                 //update stsand characteristics
                 vars.LAI = vars.WF * SLA * 0.1;
