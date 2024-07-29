@@ -1003,6 +1003,11 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
             continue;
         }
 
+        // skip output variable if it is not at the recur interval
+        if (((calYear - opV.recurStart) % opV.recurYear) != 0) {
+            continue;
+        }
+
         //mx is no longer used to index an array, but is useful (for now) for checking
         //whether we've gone above or below the max or min allowed year/month combo.
         int mx = (calYear - minMY.year) * 12 + (calMonth - 1);
