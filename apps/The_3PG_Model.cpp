@@ -142,6 +142,14 @@ double CanopyTranspiration(double Q, double VPD, double h,
     return CT;
 }
 
+double getGammaFoliage(InputParams& params, double& StandAge) {
+    double gf;
+    gf = params.gammaFx* params.gammaF0 /
+        (params.gammaF0 + (params.gammaFx - params.gammaF0) *
+            exp(-12 * log(1 + params.gammaFx / params.gammaF0) * StandAge / params.tgammaF));
+    return gf;
+}
+
 //-----------------------------------------------------------------------------
 
 //Standage function translated from March beta of Excel 3-PG
@@ -444,9 +452,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
     vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB)); //Modified StandAge
     Density = params.rhoMax + (params.rhoMin - params.rhoMax) * exp(-ln2 * (StandAge / params.tRho));
-    gammaF = params.gammaFx * params.gammaF0 /
-        (params.gammaF0 + (params.gammaFx - params.gammaF0) *
-            exp(-12 * log(1 + params.gammaFx / params.gammaF0) * StandAge / params.tgammaF));
+    gammaF = getGammaFoliage(params, StandAge);
 
     vars.StandVol = vars.WS * (1 - vars.fracBB) / Density;
     oldVol = vars.StandVol;
@@ -825,9 +831,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 SLA = params.SLA1 + (params.SLA0 - params.SLA1) * exp(-ln2 * pow((StandAge / params.tSLA), 2));  //Modified StandAge
                 vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB));  //Modified StandAge
                 Density = params.rhoMax + (params.rhoMin - params.rhoMax) * exp(-ln2 * (StandAge / params.tRho));
-                gammaF = params.gammaFx * params.gammaF0 /
-                    (params.gammaF0 + (params.gammaFx - params.gammaF0) *
-                        exp(-12 * log(1 + params.gammaFx / params.gammaF0) * StandAge / params.tgammaF));
+                gammaF = getGammaFoliage(params, StandAge);
 
                 //update stsand characteristics
                 vars.LAI = vars.WF * SLA * 0.1;
