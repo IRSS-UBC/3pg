@@ -60,6 +60,9 @@ TEST(DataInputTests, correctParamNames) {
 	EXPECT_TRUE(dataInput->tryAddInputParam("Slope of net v. solar radiation relationship", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Molecular weight of dry matter", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("Conversion of solar radiation to PAR", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("atmospheric co2", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("assimialtion enhancement factor at 700 ppm", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("canopy conductance enhancement factor at 700 ppm", { "1" }));
 
 	//reset DataInput
 	delete dataInput;
@@ -137,6 +140,9 @@ TEST(DataInputTests, correctParamNames) {
 	EXPECT_TRUE(dataInput->tryAddInputParam("MinASWTG", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("NDVI_FPAR_intercept", { "1" }));
 	EXPECT_TRUE(dataInput->tryAddInputParam("NDVI_FPAR_constant", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("CO2", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("fCalpha700", { "1" }));
+	EXPECT_TRUE(dataInput->tryAddInputParam("fCg700", { "1" }));
 
 	std::ifstream paramFp("");
 	int lineNo;
@@ -176,6 +182,7 @@ TEST(DataInputTests, incorrectParamNames) {
 	EXPECT_FALSE(dataInput->tryAddInputParam("Tmax", { "1" }));
 	EXPECT_FALSE(dataInput->tryAddInputParam("Rain", { "1" }));
 	EXPECT_FALSE(dataInput->tryAddInputParam("VPD", { "1" }));
+	EXPECT_FALSE(dataInput->tryAddInputParam("C02", { "1" }));
 
 	//incorrect series param names
 	std::ifstream paramFp("");
@@ -259,6 +266,9 @@ TEST(DataInputTests, scalarValues) {
 	dataInput->tryAddInputParam("EndYear", { "60" });
 	dataInput->tryAddInputParam("StartMonth", { "61" });
 	dataInput->tryAddInputParam("yearPlanted", { "62" });
+	dataInput->tryAddInputParam("CO2", { "63" });
+	dataInput->tryAddInputParam("fCalpha700", { "64" });
+	dataInput->tryAddInputParam("fCg700", { "65" });
 
 	//and ensure doubles are fully handled
 	dataInput->tryAddInputParam("SeedlingMass", { ".0000000000001"});
@@ -352,6 +362,9 @@ TEST(DataInputTests, scalarValues) {
 	EXPECT_EQ(params.EndYear, (double)60);
 	EXPECT_EQ(params.StartMonth, (double)61);
 	EXPECT_EQ(params.yearPlanted, (double)62);
+	EXPECT_EQ(params.CO2, (double)63);
+	EXPECT_EQ(params.fCalpha700, (double)64);
+	EXPECT_EQ(params.fCg700, (double)65);
 	EXPECT_EQ(params.SeedlingMass, (double).0000000000001);
 	EXPECT_EQ(params.WFi, (double).00000000000001);
 	EXPECT_EQ(params.WRi, (double).000000000000001);
@@ -565,6 +578,9 @@ TEST(DataInputTests, gridValues) {
 	dataInput->tryAddInputParam("StartMonth", { "1" });
 	dataInput->tryAddInputParam("LAImaxIntcptn", { "1" });
 	dataInput->tryAddInputParam("SeedlingMass", { "1" });
+	dataInput->tryAddInputParam("CO2", { "1" });
+	dataInput->tryAddInputParam("fCalpha700", { "1" });
+	dataInput->tryAddInputParam("fCg700", { "1" });
 	dataInput->tryAddSeriesParam("Tavg", { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" }, paramFp, lineNo);
 	dataInput->tryAddSeriesParam("Rain", { "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24" }, paramFp, lineNo);
 	dataInput->tryAddSeriesParam("Solar radtn", { "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36" }, paramFp, lineNo);
@@ -763,7 +779,11 @@ std::vector<std::string> requiredInputParams3PG = {
 	"thinPower", 
 	"mF", 
 	"mR", 
-	"mS", };
+	"mS", 
+	"CO2",
+	"fCalpha700",
+	"fCg700",
+};
 std::vector<std::string> requiredSeriesParams3PG = {
 	"Rain",
 	"Solar radtn", 
@@ -1283,7 +1303,7 @@ TEST(DataInputTests, seriesParamInputFormat) {
 	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
 
-	//add parameter
+	// add parameter
 	ASSERT_TRUE(dataInput->tryAddSeriesParam("Frost", {}, paramFp, lineNo));
 
 	//add run period parameters for spcific years of test
