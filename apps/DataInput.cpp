@@ -645,7 +645,6 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 		throw std::exception("should NOT be able to call findRunPeriod() if input failed!");
 	}
 
-	//get required parameters from parameter map
 	PPPG_PARAM yearPlantedParam = this->inputParams.at("yearplanted");
 	PPPG_PARAM startAgeParam = this->inputParams.at("startage");
 	PPPG_PARAM endYearParam = this->inputParams.at("endyear");

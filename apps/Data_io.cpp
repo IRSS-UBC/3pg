@@ -62,7 +62,6 @@ extern int nIrrigation;                         // size of irrigation array
 //extern MANAGE_TABLE Irrigation[1000];           // time-variant irrigation (ML/y)
 extern double Irrig;                            // current annual irrigation (ML/y)
 
-bool samplePointsYearly = false, samplePointsMonthly = false;
 std::string outPath = "./";
 
 //----------------------------------------------------------------------------------
@@ -124,20 +123,6 @@ PPPG_MT_PARAM IrrigMT[PPPG_MAX_SERIES_YEARS+1];
 PPPG_MT_PARAM MinAswMT[PPPG_MAX_SERIES_YEARS+1];
 
 //----------------------------------------------------------------------------------
-
-// Sample points. 
-#define MAX_SAMPLE_POINTS 50
-std::string sampleIpFile;
-
-FILE *sampleIpFp; 
-struct {
-  std::string id = "-1";
-  FILE *fp; 
-  double lat; 
-  double lon; 
-  int cellIndex;
-} samplePoints[MAX_SAMPLE_POINTS + 1];
-
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
@@ -264,76 +249,6 @@ double lookupManageTable( int year, int table, double def, int k )
 }
 
 //----------------------------------------------------------------------------------
-
-void readSampleFile(std::unordered_map<std::string, PPPG_OP_VAR> &opVars, GDALRasterImage *refGrid)
-{
-  // Read a text file of sample points, one per line, in the format idstring, 
-  // xcoord, ycoord; find the index number of the cell the points fall in. 
-  char *line, *fname;
-  char *id, *xstr, *ystr, *cp;
-  int ind=0;
-  int opn;
-  double lat, lon;
-  int cellIndex;
-  std::string errstr;
-
-  if (!samplePointsMonthly && !samplePointsYearly)
-    return;
-
-    if ((sampleIpFp = fopen(sampleIpFile.c_str(), "r")) == NULL) {
-        std::string ipStr = sampleIpFile;
-        errstr = "Could not open sample point file " + ipStr;
-        std::cout << errstr << std::endl;
-        logger.Log(errstr);
-        exit(EXIT_FAILURE);
-    }
-  while (fgets(line, MAXLINE-1, sampleIpFp) != NULL) {
-    if (sscanf(line, "%s %s %s", id, xstr, ystr) != 3)
-      return;
-    // Change 'D' to 'e'.  Arcinfo ungenerate dats exponents with D, 
-    // atof and scanf only read e or E. 
-    // TODO: Need to enforce sample points use e/E 
-    // for (cp = xstr; *cp != '\0'; cp++)
-    //   if (*cp == 'D')
-    //     *cp = 'e';
-    // for (cp = ystr; *cp != '\0'; cp++)
-    //   if (*cp == 'D')
-    //     *cp = 'e';
-    
-    // Read coordinates.
-    // TODO: convert id to string
-    samplePoints[ind].id = id;
-    lat = atof(xstr);
-    lon = atof(ystr);
-    // TODO: Need to create a function that gets cell index from x/y with GDAL
-    cellIndex = refGrid->IndexFrom(lat, lon);
-    samplePoints[ind].lat = lat;
-    samplePoints[ind].lon = lon;
-    samplePoints[ind].cellIndex = cellIndex;
-
-    // Open output file for this point. Make sure its in outPath. 
-    // sprintf(fname, "%s3pg.%s.txt", outPath, id);
-    if ((samplePoints[ind].fp = fopen(fname, "w")) == NULL)
-    {
-        string nameStr = fname;
-        errstr = "Error opening output sample file " + nameStr;
-        std::cout << errstr << std::endl;
-        logger.Log(errstr);
-        exit(EXIT_FAILURE);
-    }
-
-    // Write header line for each sample file. 
-    // For each output sample file
-    fprintf(samplePoints[ind].fp, "year, month, id, ");
-    for (auto& [key, oV] : opVars) {
-      fprintf(samplePoints[ind].fp, "%s, ", oV.id.c_str());
-    };
-    ind++;
-  }
-  // Make sure end of sample is marked. 
-  samplePoints[ind].id[0] = 0;
-}
-
 //----------------------------------------------------------------------------------
 
 PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo)
@@ -619,45 +534,6 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
       return true;
     }
     
-  }
-  // Look for sample points file.
-  // if pName matched but pValue is empty, bail.
-  // If the parameter is present it must have a value. 
-  // Allow optional "monthly" keyword following file name. Delimeted by space.
-  else if (namesMatch("sample points file", pName)) {
-    if (pValue.empty()) {
-      std::cout << "No sample points file specified." << std::endl;
-      logger.Log("No sample points file specified.");
-      exit(EXIT_FAILURE);
-    }
-    else if (pValue.size() > 2) {
-      std::cout << "More than two value elements detected in sample points file specification." << std::endl;
-      logger.Log("More than two value elements detected in sample points file specification.");
-      exit(EXIT_FAILURE);
-    }
-    
-    // Set first token to sampleIpFile
-    sampleIpFile = pValue.front();
-    // If there is a second token, check if it is 'monthly' and set samplePointsMonthly to true
-    // otherwise set samplePointsYearly to true
-    if (pValue.size() == 2) {
-      cp = pValue.at(1);
-      if (cp == "monthly") {
-        samplePointsMonthly = true;
-      }
-      else if (cp == "yearly") {
-        samplePointsYearly = true;
-      }
-      else {
-        std::cout << "Unrecognised keyword \"" << cp << "\" in sample points file specification." << std::endl;
-        logger.Log("Unrecognised keyword '" + cp + "' in sample points file specification.");
-        exit(EXIT_FAILURE);
-      }
-    }
-    else {
-      samplePointsYearly = true;
-    }
-    return true;
   }
   // Model mode (Standard 3PG or 3PGS)
   else if (namesMatch("Model mode", pName)) {
@@ -1003,6 +879,11 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
             continue;
         }
 
+        // skip output variable if it is not at the recur interval
+        if (((calYear - opV.recurStart) % opV.recurYear) != 0) {
+            continue;
+        }
+
         //mx is no longer used to index an array, but is useful (for now) for checking
         //whether we've gone above or below the max or min allowed year/month combo.
         int mx = (calYear - minMY.year) * 12 + (calMonth - 1);
@@ -1040,57 +921,4 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
         name = name.substr(0, name.find_last_of("."));
         dataOutput->setVal(calYear, calMonth, name, cellIndex, val);
     }
-}
-
-//----------------------------------------------------------------------------------
-
-void writeSampleFiles(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int cellIndex, int month, long calYear)
-{
-    int opn, sInd, i;
-    static bool firstTime = true;
-
-    // Do we want to sample this point? 
-    sInd = -1;
-    for (i = 0; samplePoints[i].id[0] != 0; i++)
-        if (samplePoints[i].cellIndex == cellIndex) {
-            sInd = i;
-            break;
-        }
-    if (sInd == -1)
-        return;
-
-    fprintf(samplePoints[sInd].fp, "%d, %d, %s, ", calYear,
-        month, samplePoints[sInd].id.c_str());
-    // For each variable
-    for (auto& [pN, opV] : opVars) {
-        fprintf(samplePoints[sInd].fp, "%f, ", (opV.v));
-    }
-    fprintf(samplePoints[sInd].fp, "\n");
-}
-
-
-//----------------------------------------------------------------------------------
-
-void writeSampleFiles(std::unordered_map<std::string, PPPG_OP_VAR> opVars, int cellIndex, int month, long calYear)
-{
-  int opn, sInd, i;
-  static bool firstTime = true;
-
-  // Do we want to sample this point? 
-  sInd = -1;
-  for (i = 0; samplePoints[i].id[0] != 0; i++) 
-    if (samplePoints[i].cellIndex == cellIndex) {
-      sInd = i;
-      break;
-    }
-  if (sInd == -1)
-    return;
-
-  fprintf(samplePoints[sInd].fp, "%d, %d, %s, ", calYear, 
-    month, samplePoints[sInd].id.c_str());
-  // For each variable
-  for (auto& [pN, opV] : opVars) {
-      fprintf(samplePoints[sInd].fp, "%f, ", (opV.v));
-  }
-  fprintf(samplePoints[sInd].fp, "\n");
 }
