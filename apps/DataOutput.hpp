@@ -19,28 +19,23 @@ private:
 	class ImageBuffer {
 	private:
 		std::shared_ptr<GDALRasterImage> image;
-		std::vector<std::vector<float>*> rows;
+		std::vector<std::unique_ptr<std::vector<float>>> rows;
 	public:
 		ImageBuffer(std::string filename, std::shared_ptr<GDALRasterImage> refGrid);
-		~ImageBuffer();
 
 		void setVal(int index, float val);
 		CPLErr writeRow(int row);
-		void close();
 	};
 
 	//map for storing GDALRasterImage wrappers:
 	//	we need a lock since our usage of unordered_map (potential synchronous writes) 
 	//	could cause race conditions and unordered_map does not guarantee thread safety.
-	std::unordered_map<std::string, std::unordered_map<int, ImageBuffer*>*> imageBuffers;
+	typedef std::unordered_map<int, std::unique_ptr<ImageBuffer>> varMap;
+	std::unordered_map<std::string, std::unique_ptr<varMap>> imageBuffers;
 	std::mutex imageBuffersMutex;
 
-	//check the images map. Return the image wrapper associated with the filename key if it exists.
-	//Otherwise, create a new GDALRasterImage at that filepath and return the image wrapper. 
-	ImageBuffer* getImageBuffer(std::string filename, int year, int month);
 public:
 	DataOutput(std::shared_ptr<GDALRasterImage> refGrid, std::string outpath);
-	~DataOutput();
 
 	//determine the filepath of the output given year, month, name.
 	//call getImageBuffer() to get the associated wrapper.
