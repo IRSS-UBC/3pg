@@ -46,6 +46,6 @@ public:
 	//call getImageBuffer() to get the associated wrapper.
 	//write the correct val at the correct index using index, val, and hitNODATA.
 	void setVal(int year, int month, std::string name, int index, float val);
-	CPLErr DataOutput::writeRow(int row);
+	CPLErr writeRow(int row);
 };
 
