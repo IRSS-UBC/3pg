@@ -376,7 +376,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
     double dayLength;
 
     // year and month counters, etc
-    int year, calYear, calMonth, runYear, cm, cy;
+    int calYear, calMonth, runYear, cm, cy;
 
     int thinEventNo, defoltnEventNo;
 
