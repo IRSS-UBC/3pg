@@ -83,7 +83,9 @@ public:
         this->rowsTotal = rowsTotal;
         this->rowsDone = 0;
         this->progress = 0;
-        this->lastProgress = -1;
+        this->lastProgress = 0;
+
+        std::cout << "Completed 0%\r";
     }
     void rowCompleted() {
         //lock mutex
@@ -97,7 +99,7 @@ public:
 
         //if percentage has incremented, display
         if (this->progress > this->lastProgress) {
-            fprintf(stdout, "Completed %2u%%\r", this->progress);
+            std::cout << std::format("Completed {}%\r", this->progress);
             this->lastProgress = this->progress;
         }
 

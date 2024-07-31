@@ -131,17 +131,14 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 	PPPG_PARAM param;
 
 	//if the string isn't the exact parameter name, see if it is in the parameter name map
-	if (this->allInputParams.find(name) == this->allInputParams.end()) {
-		//search for the actual (shortened) param name
-		auto search = this->inputParamNames.find(name);
-
+	if (!this->allInputParams.contains(name)) {
 		//if the string passed isn't an input param return false
-		if (search == this->inputParamNames.end()) {
+		if (!this->inputParamNames.contains(name)) {
 			return false;
 		}
 
 		//the string passed is the long version of the input param: set the id accordingly
-		param.id = search->second;
+		param.id = this->inputParamNames.at(name);
 	}
 	else {
 		//if the string is the exact parameter name, set the id accordingly
@@ -198,13 +195,15 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 	boost::algorithm::to_lower(name);
 
 	//if the name does not have a corrosponding series param, return
-	auto search = this->seriesParamNameMap.find(name);
-	if (search == this->seriesParamNameMap.end()) {
+	if (!this->seriesParamNameMap.contains(name)) {
 		return false;
 	}
+
+	//get the index of the series param
+	SeriesIndex index = this->seriesParamNameMap.at(name);
 	
 	//get the array index from seriesParamNameMap to get the according PPPG_SERIES_PARAM
-	PPPG_SERIES_PARAM* param = &this->seriesParams[search->second];
+	PPPG_SERIES_PARAM* param = &this->seriesParams[index];
 
 	if (!values.empty()) {
 		/*
@@ -328,10 +327,10 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 }
 
 bool DataInput::inputFinished(bool modelMode3PGS) {
-	bool haveSeedlingMass = this->inputParams.find("seedlingmass") != this->inputParams.end();
-	bool haveWFi = this->inputParams.find("wfi") != this->inputParams.end();
-	bool haveWRi = this->inputParams.find("wri") != this->inputParams.end();
-	bool haveWSi = this->inputParams.find("wsi") != this->inputParams.end();
+	bool haveSeedlingMass = this->inputParams.contains("seedlingmass");
+	bool haveWFi = this->inputParams.contains("wfi");
+	bool haveWRi = this->inputParams.contains("wri");
+	bool haveWSi = this->inputParams.contains("wsi");
 
 	//we must have either seedling mass, or all of WFi, WRi, and WSi
 	if (!haveSeedlingMass && (!haveWFi || !haveWRi || !haveWSi)) {
@@ -348,11 +347,11 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	}
 
 	this->haveSeedlingMass = haveSeedlingMass;
-	this->haveMinASWTG = this->inputParams.find("minaswtg") != this->inputParams.end();
+	this->haveMinASWTG = this->inputParams.contains("minaswtg");
 	this->haveAgeDepFert = (
-		this->inputParams.find("frstart") != this->inputParams.end() &&
-		this->inputParams.find("frend") != this->inputParams.end() &&
-		this->inputParams.find("frdec") != this->inputParams.end()
+		this->inputParams.contains("frstart") &&
+		this->inputParams.contains("frend") &&
+		this->inputParams.contains("frdec")
 	);
 
 
@@ -367,15 +366,15 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	}
 
 	//series parameters
-	bool haveTmax = this->acquiredSeriesParams.find("tmax") != this->acquiredSeriesParams.end();
-	bool haveTmin = this->acquiredSeriesParams.find("tmin") != this->acquiredSeriesParams.end();
-	bool haveTavg = this->acquiredSeriesParams.find("tavg") != this->acquiredSeriesParams.end();
-	bool haveVPD = this->acquiredSeriesParams.find("vpd") != this->acquiredSeriesParams.end();
-	bool haveRain = this->acquiredSeriesParams.find("rain") != this->acquiredSeriesParams.end();
-	bool haveSolarRad = this->acquiredSeriesParams.find("solar radtn") != this->acquiredSeriesParams.end();
-	bool haveNetRad = this->acquiredSeriesParams.find("net radtn") != this->acquiredSeriesParams.end();
-	bool haveFrost = this->acquiredSeriesParams.find("frost") != this->acquiredSeriesParams.end();
-	bool haveNDVI = this->acquiredSeriesParams.find("ndvi_avh") != this->acquiredSeriesParams.end();
+	bool haveTmax = this->acquiredSeriesParams.contains("tmax");
+	bool haveTmin = this->acquiredSeriesParams.contains("tmin");
+	bool haveTavg = this->acquiredSeriesParams.contains("tavg");
+	bool haveVPD = this->acquiredSeriesParams.contains("vpd");
+	bool haveRain = this->acquiredSeriesParams.contains("rain");
+	bool haveSolarRad = this->acquiredSeriesParams.contains("solar radtn");
+	bool haveNetRad = this->acquiredSeriesParams.contains("net radtn");
+	bool haveFrost = this->acquiredSeriesParams.contains("frost");
+	bool haveNDVI = this->acquiredSeriesParams.contains("ndvi_avh");
 	
 	//check Tavg
 	if (!haveTavg && (!haveTmax || !haveTmin)) {
@@ -529,10 +528,8 @@ bool DataInput::getInputParams(long cellIndex, InputParams& params) {
 }
 
 double DataInput::getValFromInputParam(std::string paramName, long cellIndex) {
-	auto search = this->inputParams.find(paramName);
-
 	//if the param doesn't exist, set to -1
-	if (search == this->inputParams.end()) {
+	if (!this->inputParams.contains(paramName)) {
 		//use predefined default parameters for Lat, rhoMax, rhoMin, and tRho if not set by user
 		if (paramName == "Lat") { return 1000; }
 		else if (paramName == "rhomax") { return 0.5; }
@@ -544,14 +541,16 @@ double DataInput::getValFromInputParam(std::string paramName, long cellIndex) {
 		}
 	}
 
+	PPPG_PARAM param = this->inputParams.at(paramName);
+
 	//if the param is scalar, return it's value
-	if (search->second.spType == pScalar) {
-		return search->second.val;
+	if (param.spType == pScalar) {
+		return param.val;
 	}
 
 	//if the param is a grid, return the value at the row and column specified
-	if (search->second.spType == pTif) {
-		double val = search->second.g->GetVal(cellIndex);
+	if (param.spType == pTif) {
+		double val = param.g->GetVal(cellIndex);
 		if (isnan(val)) {
 			throw std::runtime_error("nan");
 		}
@@ -649,11 +648,10 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 		throw std::exception("should NOT be able to call findRunPeriod() if input failed!");
 	}
 
-	//get required parameters from parameter map
-	PPPG_PARAM yearPlantedParam = this->inputParams.find("yearplanted")->second;
-	PPPG_PARAM startAgeParam = this->inputParams.find("startage")->second;
-	PPPG_PARAM endYearParam = this->inputParams.find("endyear")->second;
-	PPPG_PARAM startMonthParam = this->inputParams.find("startmonth")->second;
+	PPPG_PARAM yearPlantedParam = this->inputParams.at("yearplanted");
+	PPPG_PARAM startAgeParam = this->inputParams.at("startage");
+	PPPG_PARAM endYearParam = this->inputParams.at("endyear");
+	PPPG_PARAM startMonthParam = this->inputParams.at("startmonth");
 
 	//get maxes and mins depending on whether they're scalar or grid parameters
 	int yearPlantedMin = (yearPlantedParam.spType == pScalar) ? yearPlantedParam.val : yearPlantedParam.g->GetMin();

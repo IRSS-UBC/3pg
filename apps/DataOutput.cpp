@@ -95,12 +95,9 @@ DataOutput::ImageBuffer* DataOutput::getImageBuffer(std::string var, int year, i
 	ImageBuffer* retval = nullptr;
 	std::unordered_map<int, ImageBuffer*>* varImages;
 
-	//search through first layer of map (variable name)
-	auto searchOne = this->imageBuffers.find(var);
-
-	if (searchOne != this->imageBuffers.end()) {
+	if (this->imageBuffers.contains(var)) {
 		//set varImages if we've found an entry
-		varImages = searchOne->second;
+		varImages = this->imageBuffers.at(var);
 	}
 	else {
 		//acquire mutex since we may be writing to map
@@ -108,11 +105,9 @@ DataOutput::ImageBuffer* DataOutput::getImageBuffer(std::string var, int year, i
 
 		//search again, since another thread may have got the mutex first and already created
 		//the new entry in the map
-		searchOne = this->imageBuffers.find(var);
-
-		if (searchOne != this->imageBuffers.end()) {
+		if (this->imageBuffers.contains(var)) {
 			//set varImages if we've found an entry
-			varImages = searchOne->second;
+			varImages = this->imageBuffers.at(var);
 		}
 		else {
 			//create a varImages map if it doesn't exist
@@ -128,11 +123,10 @@ DataOutput::ImageBuffer* DataOutput::getImageBuffer(std::string var, int year, i
 	//month will never be larger than 4 bits, so left shift year and add month.
 	//searchInt will be unique (unless year is astronomically learge)
 	int searchInt = (year << 4) + month;
-	auto searchTwo = varImages->find(searchInt);
 
-	if (searchTwo != varImages->end()) {
+	if (varImages->contains(searchInt)) {
 		//set Images if we've found an entry
-		retval = searchTwo->second;
+		retval = varImages->at(searchInt);
 	}
 	else {
 		//acquire lock since we may be writing to map
@@ -140,11 +134,9 @@ DataOutput::ImageBuffer* DataOutput::getImageBuffer(std::string var, int year, i
 
 		//search again, since another thread may have got the mutex first and already created
 		//the new entry in the map
-		searchTwo = varImages->find(searchInt);
-
-		if (searchTwo != varImages->end()) {
+		if (varImages->contains(searchInt)) {
 			//set Images if we've found an entry
-			retval = searchTwo->second;
+			retval = varImages->at(searchInt);
 		}
 		else {
 			//create a new ImageBuffer if it doesn't exist
