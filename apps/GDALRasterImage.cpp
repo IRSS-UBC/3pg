@@ -53,7 +53,7 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 
 };
 
-GDALRasterImage::GDALRasterImage(std::string filename, GDALRasterImage* refGrid) {
+GDALRasterImage::GDALRasterImage(std::string filename, std::shared_ptr<GDALRasterImage> refGrid) {
 	// Create a new GDALRasterImage dataset with one band with the same extent, transform, and crs as refGrid
 	GDALAllRegister();
 	CPLPushErrorHandler(CPLQuietErrorHandler); // suppress error messages that Exists() throws for non-existent files

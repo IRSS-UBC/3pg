@@ -132,7 +132,7 @@ PPPG_MT_PARAM MinAswMT[PPPG_MAX_SERIES_YEARS+1];
 //I imagine this is not the best way of going about this. This will likely need to be
 //changes as we refactor the way Data_io works.
 DataOutput* dataOutput;
-void initDataOutput(GDALRasterImage* refGrid) {
+void initDataOutput(std::shared_ptr<GDALRasterImage> refGrid) {
     dataOutput = new DataOutput(refGrid, outPath);
 }
 void deleteDataOutput() {

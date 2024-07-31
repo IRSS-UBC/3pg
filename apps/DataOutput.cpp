@@ -1,8 +1,8 @@
 #include "DataOutput.hpp"
 
-DataOutput::ImageBuffer::ImageBuffer(std::string filepath, GDALRasterImage* refGrid) {
+DataOutput::ImageBuffer::ImageBuffer(std::string filepath, std::shared_ptr<GDALRasterImage> refGrid) {
 	//no synchronization required for the constructor
-	this->image = new GDALRasterImage(filepath, refGrid);
+	this->image = std::make_shared<GDALRasterImage>(filepath, refGrid);
 
 	//for every row index, add an empty std::vector<float> to the rows vector
 	for (int i = 0; i < this->image->nRows; i++) {
@@ -58,13 +58,7 @@ CPLErr DataOutput::ImageBuffer::writeRow(int row) {
 	return retval;
 }
 
-void DataOutput::ImageBuffer::close() {
-	//close and delete image
-	if (this->image != nullptr) {
-		delete this->image;
-		this->image = nullptr;
-	}
-	
+void DataOutput::ImageBuffer::close() {	
 	//remove all dynamically allocated vectors
 	for (int i = 0; i < this->rows.size(); i++) {
 		if (this->rows[i] != nullptr) {
@@ -74,7 +68,7 @@ void DataOutput::ImageBuffer::close() {
 	}
 }
 
-DataOutput::DataOutput(GDALRasterImage* refGrid, std::string outpath) {
+DataOutput::DataOutput(std::shared_ptr<GDALRasterImage> refGrid, std::string outpath) {
 	this->refGrid = refGrid;
 	this->outpath = outpath;
 }

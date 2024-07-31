@@ -9,7 +9,7 @@
 //of pixel values to GDALRasterImage output files.
 class DataOutput {
 private:
-	GDALRasterImage* refGrid;
+	std::shared_ptr<GDALRasterImage> refGrid;
 	std::string outpath;
 
 	//thread safe wrapper of GDALRasterImage which can:
@@ -18,10 +18,10 @@ private:
 	// - close the GDALRasterImage
 	class ImageBuffer {
 	private:
-		GDALRasterImage* image;
+		std::shared_ptr<GDALRasterImage> image;
 		std::vector<std::vector<float>*> rows;
 	public:
-		ImageBuffer(std::string filename, GDALRasterImage* refGrid);
+		ImageBuffer(std::string filename, std::shared_ptr<GDALRasterImage> refGrid);
 		~ImageBuffer();
 
 		void setVal(int index, float val);
@@ -39,7 +39,7 @@ private:
 	//Otherwise, create a new GDALRasterImage at that filepath and return the image wrapper. 
 	ImageBuffer* getImageBuffer(std::string filename, int year, int month);
 public:
-	DataOutput(GDALRasterImage* refGrid, std::string outpath);
+	DataOutput(std::shared_ptr<GDALRasterImage> refGrid, std::string outpath);
 	~DataOutput();
 
 	//determine the filepath of the output given year, month, name.

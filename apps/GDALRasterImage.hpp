@@ -26,7 +26,7 @@ public:
 	double yMax { 0 };
 
 	GDALRasterImage(std::string filename);
-	GDALRasterImage(std::string filename, GDALRasterImage* refGrid);
+	GDALRasterImage(std::string filename, std::shared_ptr<GDALRasterImage> refGrid);
 	~GDALRasterImage();
 	std::tuple<int, int> XYfrom(double lat, double lon);
 	int IndexFrom(double lat, double lon);

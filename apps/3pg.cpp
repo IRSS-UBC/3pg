@@ -112,7 +112,7 @@ public:
 
 int main(int argc, char* argv[])
 {
-    GDALRasterImage* refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
+    std::shared_ptr<GDALRasterImage> refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
     DataOutput* dataOutput; //thread safe data output class
     bool spatial = 0;
     long nrows, ncols;

@@ -3,23 +3,6 @@
 
 extern Logger logger;
 
-DataInput::DataInput() {
-	this->refGrid = nullptr;
-}
-
-DataInput::~DataInput() {
-	//check each parameter
-	for (auto iterator = this->inputParams.begin(); iterator != this->inputParams.end(); iterator++) {
-		PPPG_PARAM param = iterator->second;
-
-		//if it's a grid parameter, we have to clean up it's corrosponding GDALRasterImage
-		if (param.spType == pTif && param.g != nullptr) {
-			delete param.g;
-			param.g = nullptr;
-		}
-	}
-}
-
 bool DataInput::getScalar(std::string value, PPPG_PARAM& param) {
 	try {
 		//get the value from the array
@@ -87,10 +70,10 @@ bool DataInput::getGrid(std::string value, PPPG_PARAM& param) {
 	}
 }
 
-bool DataInput::openCheckGrid(std::string path, GDALRasterImage*& grid) {
+bool DataInput::openCheckGrid(std::string path, std::shared_ptr<GDALRasterImage>& grid) {
 	//ensure we can open and read from the file as a GDALRasterImage
 	try {
-		grid = new GDALRasterImage(path);
+		grid = std::make_unique<GDALRasterImage>(path);
 	}
 	catch (const std::exception& e) {
 		std::string errstr = "failed to open " + path + "\n" + e.what();
@@ -101,8 +84,8 @@ bool DataInput::openCheckGrid(std::string path, GDALRasterImage*& grid) {
 
 	//if the refgrid is null, this is grid becomes the refgrid
 	//otherwise, check grid dimensions
-	if (this->refGrid == nullptr) {
-		this->refGrid = grid;
+	if (!this->refGrid) {
+		this->refGrid = std::make_shared<GDALRasterImage>(path);
 	}
 	else {
 		if (
@@ -728,7 +711,7 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	logger.Log(runPeriodStr);
 }
 
-GDALRasterImage* DataInput::getRefGrid() {
+std::shared_ptr<GDALRasterImage> DataInput::getRefGrid() {
 	return this->refGrid;
 }
 

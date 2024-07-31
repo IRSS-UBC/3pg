@@ -25,7 +25,7 @@ typedef struct PPPG_PARAM {
 	double val;
 	
 	//grid reference
-	GDALRasterImage* g;
+	std::shared_ptr<GDALRasterImage> g;
 } PPPG_PARAM;
 
 // 3PG output variables. In spatial mode output variables may be written 

@@ -10,7 +10,7 @@ std::string outDir = "test_files/DataOutputTests/outputs/";
 
 TEST(DataOutputTests, filenames) {
 	//get refgrid
-	GDALRasterImage* refgrid = new GDALRasterImage(refgridDir);
+	std::shared_ptr<GDALRasterImage> refgrid = std::make_shared<GDALRasterImage>(refgridDir);
 
 	//get output path
 	std::filesystem::path outPath = outDir;
@@ -54,7 +54,6 @@ TEST(DataOutputTests, filenames) {
 
 	//clean up
 	delete dataOutput;
-	delete refgrid;
 
 	//check the filenames exist that should
 	EXPECT_TRUE(std::filesystem::exists(testOutput1));
@@ -64,7 +63,7 @@ TEST(DataOutputTests, filenames) {
 
 TEST(DataOutputTests, nans) {
 	//get refgrid
-	GDALRasterImage* refgrid = new GDALRasterImage(refgridDir);
+	std::shared_ptr<GDALRasterImage> refgrid = std::make_shared<GDALRasterImage>(refgridDir);
 
 	//get output path
 	std::filesystem::path outPath = outDir;
@@ -107,14 +106,13 @@ TEST(DataOutputTests, nans) {
 
 	//clean up
 	delete dataOutput;
-	delete refgrid;
 
 	//ensure files exist
 	ASSERT_TRUE(std::filesystem::exists(nan1path));
 	ASSERT_TRUE(std::filesystem::exists(nan2path));
 
-	GDALRasterImage* nan1Tif = new GDALRasterImage(nan1path.string());
-	GDALRasterImage* nan2Tif = new GDALRasterImage(nan2path.string());
+	std::shared_ptr<GDALRasterImage> nan1Tif = std::make_shared<GDALRasterImage>(nan1path.string());
+	std::shared_ptr<GDALRasterImage> nan2Tif = std::make_shared<GDALRasterImage>(nan2path.string());
 
 	//note in the GetVal function, x is the first parameter (which is the column selector)
 	//check nan tif 1
@@ -128,15 +126,11 @@ TEST(DataOutputTests, nans) {
 	EXPECT_TRUE(std::isnan(nan2Tif->GetVal(1, 0)));		//[0,1] = nan
 	EXPECT_EQ(nan2Tif->GetVal(0, 1), 1);				//[1,0] = 1
 	EXPECT_EQ(nan2Tif->GetVal(1, 1), 1);				//[1,1] = 1
-
-	//clean up
-	delete nan1Tif;
-	delete nan2Tif;
 }
 
 TEST(DataOutputTests, extremes) {
 	//get refgrid
-	GDALRasterImage* refgrid = new GDALRasterImage(refgridDir);
+	std::shared_ptr<GDALRasterImage> refgrid = std::make_shared<GDALRasterImage>(refgridDir);
 
 	//get output path
 	std::filesystem::path outPath = outDir;
@@ -170,19 +164,15 @@ TEST(DataOutputTests, extremes) {
 
 	//clean up
 	delete dataOutput;
-	delete refgrid;
 
 	//ensure file exists
 	ASSERT_TRUE(std::filesystem::exists(path));
 
-	GDALRasterImage* tif = new GDALRasterImage(path.string());
+	std::shared_ptr<GDALRasterImage> tif = std::make_shared<GDALRasterImage>(path.string());
 
 	//check values
 	EXPECT_EQ(tif->GetVal(0, 0), std::numeric_limits<float>::max());
 	EXPECT_EQ(tif->GetVal(1, 0), std::numeric_limits<float>::min());
 	EXPECT_EQ(tif->GetVal(0, 1), smallPos);
 	EXPECT_EQ(tif->GetVal(1, 1), smallNeg);
-
-	//clean up
-	delete tif;
 }

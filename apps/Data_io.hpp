@@ -11,7 +11,7 @@
 #define MT_IRRIGATION 3
 
 GDALRasterImage* openInputGrids();
-void initDataOutput(GDALRasterImage* refGrid);
+void initDataOutput(std::shared_ptr<GDALRasterImage> refGrid);
 
 double lookupManageTable( int year, int table, double def, int cellIndex ); 
 
