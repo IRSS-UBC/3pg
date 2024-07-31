@@ -19,7 +19,7 @@ bool DataInput::getScalar(std::string value, PPPG_PARAM& param) {
 
 		return true;
 	}
-	catch (std::invalid_argument const& e) {
+	catch (const std::invalid_argument&) {
 		//if we threw an error, it's not a double value so return false
 		return false;
 	}
@@ -255,7 +255,7 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 			try {
 				year = std::stoi(sTokens.front());
 			}
-			catch (const std::out_of_range& oor) {
+			catch (const std::out_of_range&) {
 				std::string errstr = "Year could not be converted to integer on line " + std::to_string(lineNo);
 				std::cout << errstr << std::endl;
 				logger.Log(errstr);
@@ -634,10 +634,10 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	PPPG_PARAM startMonthParam = this->inputParams.at("startmonth");
 
 	//get maxes and mins depending on whether they're scalar or grid parameters
-	int yearPlantedMin = (yearPlantedParam.spType == pScalar) ? yearPlantedParam.val : yearPlantedParam.g->GetMin();
-	int startAgeMin = (startAgeParam.spType == pScalar) ? startAgeParam.val : startAgeParam.g->GetMin();
-	int endYearMax = (endYearParam.spType == pScalar) ? endYearParam.val : endYearParam.g->GetMax();
-	int startMonthMax = (startMonthParam.spType == pScalar) ? startMonthParam.val : startMonthParam.g->GetMax();
+	int yearPlantedMin = (yearPlantedParam.spType == pScalar) ? static_cast<int>(yearPlantedParam.val) : static_cast<int>(yearPlantedParam.g->GetMin());
+	int startAgeMin = (startAgeParam.spType == pScalar) ? static_cast<int>(startAgeParam.val) : static_cast<int>(startAgeParam.g->GetMin());
+	int endYearMax = (endYearParam.spType == pScalar) ? static_cast<int>(endYearParam.val) : static_cast<int>(endYearParam.g->GetMax());
+	int startMonthMax = (startMonthParam.spType == pScalar) ? static_cast<int>(startMonthParam.val) : static_cast<int>(startMonthParam.g->GetMax());
 
 	/* 
 	determine minMY values 
@@ -657,7 +657,7 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 			}
 		}
 
-		minMY.year = overallMin;
+		minMY.year = static_cast<int>(overallMin);
 	}
 	else {
 		//otherwise, just add the mins together
@@ -671,7 +671,7 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	*/
 	if (endYearParam.spType != pScalar && startMonthParam.spType != pScalar) {
 		//find the maximum month considering only pixels that are the maximum year
-		maxMY.mon = startMonthParam.g->maxFromIndices(endYearParam.g->getIndicesWhere(endYearMax));
+		maxMY.mon = static_cast<int>(startMonthParam.g->maxFromIndices(endYearParam.g->getIndicesWhere(endYearMax)));
 	}
 	else {
 		//otherwise, just use the start month max

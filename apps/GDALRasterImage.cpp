@@ -134,8 +134,8 @@ int GDALRasterImage::IndexFrom(double lat, double lon) {
 
 std::tuple<int,int> GDALRasterImage::IndexToXY(int index) {
 	// Get the x,y coordinates of the pixel at the given index
-	int x = index % nCols;
-	int y = index / nCols;
+	int x = static_cast<int>(index % nCols);
+	int y = static_cast<int>(index / nCols);
 	return std::make_tuple(x, y);
 };
 
@@ -149,7 +149,7 @@ bool GDALRasterImage::Exists(std::string fname) {
 			return true;
 		}
 	}
-	catch (std::exception& e) {
+	catch (std::exception&) {
 		return false;
 	}
 	return false;

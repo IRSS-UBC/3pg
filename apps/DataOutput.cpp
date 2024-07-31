@@ -17,7 +17,7 @@ void DataOutput::ImageBuffer::setVal(int index, float val) {
 
 	//initialize the row to the correct size, with nodata
 	if (!this->rows[y]) {
-		this->rows[y] = std::make_unique<std::vector<float>>(this->image->nCols, this->image->noData);
+		this->rows[y] = std::make_unique<std::vector<float>>(this->image->nCols, static_cast<float>(this->image->noData));
 	}
 
 	//write new value to row 
@@ -35,7 +35,7 @@ CPLErr DataOutput::ImageBuffer::writeRow(int row) {
 		// need to be written as nodata despite never being set.
 		
 		//generate a nodata row with std::vector
-		std::vector<float> noDataRow(this->image->nCols, this->image->noData);
+		std::vector<float> noDataRow(this->image->nCols, static_cast<float>(this->image->noData));
 
 		//write the row (memory will be cleaned up automatically with std::vector)
 		retval = this->image->writeRow(row, noDataRow.data());

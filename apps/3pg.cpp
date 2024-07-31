@@ -11,6 +11,10 @@ Use of this software assumes agreement to this condition of use
 */
 
 // static char rcsid[] = "$Id: 3pg.cpp,v 1.10 2001/08/02 06:34:10 lou026 Exp $";
+//
+// 
+// target Windows 7 and above
+#define _WIN32_WINNT 0x0601
 
 #include <cstdlib>
 #include <cstring>
@@ -26,9 +30,6 @@ Use of this software assumes agreement to this condition of use
 #include "DataOutput.hpp"
 #include "DataInput.hpp"
 #include "ParamStructs.hpp"
-
-// Maximum file path length. 
-#define MAXFILE 1000
 
 //----------------------------------------------------------------------------------------
 std::string VERSION = "0.1";
