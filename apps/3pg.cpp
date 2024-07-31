@@ -169,13 +169,12 @@ int main(int argc, char* argv[])
 
     // Find the over all start year and end year. 
     // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
-    std::cout << "Finding run period..." << std::endl;
+    std::cout << "  Complete" << std::endl;
     dataInput->findRunPeriod(spMinMY, spMaxMY);
+
  
     // Run the model. 
     long cellsTotal = nrows * ncols;
-    std::cout << "Processing..." << cellsTotal << " cells... " << std::endl;
-    logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
 
     //unsigned int numThreads = std::thread::hardware_concurrency();
     int nthreads = 4;
