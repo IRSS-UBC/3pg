@@ -18,7 +18,7 @@ Use of this software assumes agreement to this condition of use
 #include <iostream>
 #include <fstream>
 #include <chrono>
-#include <ctime>
+#include <format>
 #include <iomanip>
 #include <sstream> 
 #include <boost/algorithm/string/trim.hpp>
@@ -115,11 +115,9 @@ string Logger::GetCurrentDate()
     if (!this->logging) {
         return "ERROR logger not started";
     }
-    stringstream ss;
-    time_t const now_c = time(NULL);
-    ss << put_time(localtime(&now_c), "%d-%m-%Y");
-    string currDate = ss.str();
-    return currDate;
+    auto now = std::chrono::system_clock::now();
+    auto local_time = std::chrono::current_zone()->to_local(now);
+    return std::format("{:%d-%m-%Y}", local_time);
 }
 
 string Logger::GetCurrentTime()
@@ -127,11 +125,9 @@ string Logger::GetCurrentTime()
     if (!this->logging) {
         return "ERROR logger not started";
     }
-    stringstream ss;
-    time_t const now_c = time(NULL);
-    ss << put_time(localtime(&now_c), "%H:%M:%S");
-    string currTime = ss.str();
-    return currTime;
+    auto now = std::chrono::system_clock::now();
+    auto local_time = std::chrono::current_zone()->to_local(now);
+    return std::format("{:%H:%M:%S}", local_time);
 }
 //--------------------------------------------------------------------------
 

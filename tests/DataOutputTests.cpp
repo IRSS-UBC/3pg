@@ -156,8 +156,8 @@ TEST(DataOutputTests, extremes) {
 	std::filesystem::path path = outDir;
 	path /= name + std::to_string(year) + std::to_string(month) + ".tif";
 
-	float smallPos = .000001;
-	float smallNeg = -.000001;
+	float smallPos = static_cast<float>(.000001);
+	float smallNeg = static_cast<float>(-.000001);
 
 	//create dataOutput, set and write values
 	DataOutput* dataOutput = new DataOutput(refgrid, outDir);

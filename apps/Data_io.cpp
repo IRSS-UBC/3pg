@@ -156,7 +156,7 @@ bool openGrid(PPPG_VVAL& vval)
             std::cout << succesReadString << std::endl;
             logger.Log(openString + succesReadString);
         }
-        catch (const std::exception& e) {
+        catch (const std::exception&) {
             std::cout << failReadString << std::endl;
             logger.Log(openString + failReadString);
             exit(EXIT_FAILURE);
@@ -209,7 +209,7 @@ double lookupManageTable( int year, int table, double def, int k )
   PPPG_MT_PARAM *mt;  
   GDALRasterImage *fg;
   int i;
-  float val; 
+  double val; 
 
   if ( table == MT_FERTILITY ) 
     mt = FertMT; 
@@ -256,7 +256,6 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
   // For a parameter name pName and a parameter value, pValue, both as strings, read 
   // the value into an appropriate variable. The parameter name can be either the 
   // same as the variable name, or it can be a long descriptive name.  
-   int pInd, pInd1, pInd2;
   std::string cp;
   std::string outstr;
   bool yearlyOutput = false;
@@ -302,7 +301,7 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
     cp = pValue.at(1);
     yearlyOutput = true;
   }
-  catch (const std::out_of_range& oor) {
+  catch (const std::out_of_range&) {
       // No recurring year output
       yearlyOutput = false;
   }
@@ -311,7 +310,7 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
     try {
       opVar.recurStart = std::stoi(cp);
     }
-    catch (std::invalid_argument const& e) {
+    catch (std::invalid_argument const&) {
       outstr = "Expected an integer start year in recuring output specification on line " +  to_string(lineNo);
       std::cout << outstr << std::endl;
       logger.Log(outstr);
@@ -331,14 +330,14 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
         }
         opVar.recurYear = interval;
       }
-      catch (std::invalid_argument const& e) {
+      catch (std::invalid_argument const&) {
           outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
           std::cout << outstr << std::endl;
           logger.Log(outstr);
           exit(EXIT_FAILURE);
       }
     }
-    catch (const std::out_of_range& oor) {
+    catch (const std::out_of_range&) {
         outstr = "Found start year but no interval in recuring output specification on line " + to_string(lineNo);
         std::cout << outstr << std::endl;
         logger.Log(outstr);
@@ -364,14 +363,14 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
                 exit(EXIT_FAILURE);
             }
           }
-          catch (std::invalid_argument const& e) {
+          catch (std::invalid_argument const&) {
               outstr = "Expected an integer month in recuring output specification on line " + to_string(lineNo);
               std::cout << outstr << std::endl;
               logger.Log(outstr);
               exit(EXIT_FAILURE);
           }
         }
-        catch (const std::out_of_range& oor) {
+        catch (const std::out_of_range&) {
             outstr = "Found 'month' keyword but no month in recuring output specification on line " + to_string(lineNo);
             std::cout << outstr << std::endl;
             logger.Log(outstr);
@@ -385,7 +384,7 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
           exit(EXIT_FAILURE);
       }
     }
-    catch (const std::out_of_range& oor) {
+    catch (const std::out_of_range&) {
         
         outstr = "Found start year and interval but no keyword in recuring output specification on line " + to_string(lineNo);
         std::cout << outstr << std::endl;
@@ -567,7 +566,6 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
 bool readParam( PPPG_VVAL &vval, std::string pValue )
 {
   std::string cp;
-  double dv; 
 
    cp = pValue;
   try {
@@ -575,7 +573,7 @@ bool readParam( PPPG_VVAL &vval, std::string pValue )
     vval.spType = pScalar;
     return true;
   }
-  catch (std::invalid_argument const& inv) {
+  catch (std::invalid_argument const&) {
     // If not, then try a grid name
     cp = pValue;
     const std::filesystem::path filePath = cp;
@@ -655,7 +653,7 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
     try {
       tab[i].year = std::stoi(tTokens.front());
     }
-    catch (std::invalid_argument const& inv) {
+    catch (std::invalid_argument const&) {
       std::cout << "Expected an integer year in management table at line " << lineNo << std::endl;
       logger.Log("Expected an interger year in management table at line " + to_string(lineNo));
       exit(EXIT_FAILURE);
@@ -686,12 +684,10 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
 //----------------------------------------------------------------------------------
 
 void readSpeciesParamFile(const std::string& speciesFile, DataInput *dataInput) {
-    FILE* paramFp;
     std::string line, pName;
     std::string pValue;
     std::string cp;
     int lineNo = 0;
-    int len;
 
     auto isDoubleQuote = [](char c) { return c == '\"'; };
     std::ifstream inFile(speciesFile);
@@ -734,12 +730,10 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
   // will be ignored.  Missing data on a parameter line will cause a
   // warning.  Lines which are not comments and cannot be identified
   // as parameters will cause the program to exit.  
-  FILE *paramFp;
   std::string line, pName;
   std::string pValue;
   std::string cp;
   int lineNo=0;
-  int len;
   std::unordered_map<std::string, PPPG_OP_VAR> opVars;
 
   auto isDoubleQuote = [](char c) { return c == '\"'; };
@@ -800,9 +794,8 @@ GDALRasterImage* openInputGrids( )
   // Open any grids in the params array, the climate and NDVI series arrays, and 
   // the management tables. 
   // Copy the grid parameters of the first grid opened to refGrid. 
-  int pn, j; 
+  int j; 
   bool spatial = false, first = true;
-  PPPG_SERIES_PARAM *ser; 
   GDALRasterImage *refGrid;
 
   std::cout << "Opening input rasters..." << std::endl;

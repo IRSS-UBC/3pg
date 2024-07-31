@@ -22,7 +22,7 @@ void DataOutput::ImageBuffer::setVal(int index, float val) {
 
 	//initialize the row to the correct size, with nodata
 	if (row == nullptr) {
-		row = new std::vector<float>(this->image->nCols, this->image->noData);
+		row = new std::vector<float>(this->image->nCols, static_cast<float>(this->image->noData));
 		this->rows[y] = row;
 	}
 
@@ -49,7 +49,7 @@ CPLErr DataOutput::ImageBuffer::writeRow(int row) {
 	}
 	else {
 		//generate a nodata row with std::vector
-		std::vector<float> noDataRow(this->image->nCols, this->image->noData);
+		std::vector<float> noDataRow(this->image->nCols, static_cast<float>(this->image->noData));
 
 		//write the row (memory will be cleaned up automatically with std::vector)
 		retval = this->image->writeRow(row, noDataRow.data());
