@@ -79,15 +79,22 @@ private:
     int rowsTotal;
     int rowsDone;
     std::mutex progressMutex;
-public:
-    Progress(int rowsTotal) {
-        this->rowsTotal = rowsTotal;
-        this->rowsDone = 0;
-        this->progress = 0;
-        this->lastProgress = 0;
+    std::string prefix;
+    const int outputWidth;
 
-        std::cout << "Completed 0%\r";
+    void printProgress() {
+        std::cout << '\r' << std::string(outputWidth, ' ') << '\r';
+        std::cout << prefix << ' ' << std::setw(3) << progress << "% complete" << std::flush;
     }
+
+public:
+    Progress(int rowsTotal, const std::string& prefix = "Running 3PG model...")
+        : rowsTotal(rowsTotal), rowsDone(0), progress(0), lastProgress(0),
+        prefix(prefix), outputWidth(prefix.length() + 25)
+    {  
+        printProgress();
+    }
+
     void rowCompleted() {
         //lock mutex
         this->progressMutex.lock();
@@ -100,7 +107,7 @@ public:
 
         //if percentage has incremented, display
         if (this->progress > this->lastProgress) {
-            std::cout << std::format("Completed {}%\r", this->progress);
+            printProgress();
             this->lastProgress = this->progress;
         }
 
@@ -149,6 +156,7 @@ int main(int argc, char* argv[])
     logger.Log(COPYMSG);
 
     // Load the parameters
+    std::cout << "Loading and validating parameters...";
     readSpeciesParamFile(defParamFile, dataInput);
     opVars = readSiteParamFile(siteParamFile, dataInput);
 
