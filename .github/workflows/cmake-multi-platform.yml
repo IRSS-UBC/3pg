@@ -61,6 +61,7 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        echo "proj-build-dir=${{ github.workspace }}/external/PROJ/build" >> "$GITHUB_OUTPUT"
         echo "gdal-build-dir=${{ github.workspace }}/external/gdal/build" >> "$GITHUB_OUTPUT"
 
     - name: Cache PROJ
