@@ -1,3 +1,6 @@
 [submodule "external/gdal"]
 	path = external/gdal
 	url = https://github.com/OSGeo/gdal.git
+[submodule "external/PROJ"]
+	path = external/PROJ
+	url = https://github.com/OSGeo/PROJ.git
