@@ -114,7 +114,6 @@ public:
 int main(int argc, char* argv[])
 {
     std::shared_ptr<GDALRasterImage> refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
-    DataOutput* dataOutput; //thread safe data output class
     bool spatial = 0;
     long nrows, ncols;
     MYDate spMinMY, spMaxMY;
@@ -143,7 +142,7 @@ int main(int argc, char* argv[])
 
     std::string outPath = getOutPathTMP(siteParamFile);
     logger.StartLog(outPath);
-    DataInput *dataInput = new DataInput();
+    DataInput dataInput;
 
     /* Copyright */
     std::cout << COPYMSG << std::endl;
@@ -154,24 +153,23 @@ int main(int argc, char* argv[])
     opVars = readSiteParamFile(siteParamFile, dataInput);
 
     //check that we have all the correct parameters
-    if (!dataInput->inputFinished(modelMode3PGS)) {
+    if (!dataInput.inputFinished(modelMode3PGS)) {
         exit(EXIT_FAILURE);
     }
 
     // Check for a spatial run, if so open input grids and define refGrid. 
     openInputGrids();
-    refGrid = dataInput->getRefGrid();
+    refGrid = dataInput.getRefGrid();
 
     nrows = refGrid->nRows;
     ncols = refGrid->nCols;
 
-    //initialize dataOutput class
-    initDataOutput(refGrid);
+    DataOutput dataOutput(refGrid, outPath);
 
     // Find the over all start year and end year. 
     // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
     std::cout << "Finding run period..." << std::endl;
-    dataInput->findRunPeriod(spMinMY, spMaxMY);
+    dataInput.findRunPeriod(spMinMY, spMaxMY);
  
     // Run the model. 
     long cellsTotal = nrows * ncols;
@@ -179,28 +177,25 @@ int main(int argc, char* argv[])
     logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
 
     //unsigned int numThreads = std::thread::hardware_concurrency();
-    int nthreads = 4;
+    int nthreads = 1;
     boost::asio::thread_pool pool(nthreads);
 
     Progress progress(refGrid->nRows);
 
     for (int i = 0; i < nrows; i++) {
-        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, ncols, dataInput, &progress] {
+        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, ncols, &dataInput, &dataOutput, &progress] {
             int cellIndexStart = i * ncols;
             for (int j = 0; j < ncols; j++) {
                 int cellIndex = cellIndexStart + j;
-                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput);
+                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput, dataOutput);
             }
 
-            writeRowDataOutput(i);
+            dataOutput.writeRow(i);
             progress.rowCompleted();
         });
     }
 
     pool.join();
-
-    deleteDataOutput();
-    delete dataInput;
 
     return EXIT_SUCCESS;
 }

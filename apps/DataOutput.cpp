@@ -73,8 +73,8 @@ void DataOutput::setVal(int year, int month, std::string name, int index, float 
 		this->imageBuffersMutex.unlock();
 	}
 
-	//move unique pointer so we don't have to bog down performance with map accesses
-	std::unique_ptr<varMap> varImages = std::move(this->imageBuffers.at(name));
+	//get varImages map
+	varMap* varImages = this->imageBuffers.at(name).get();
 
 	//search through second layer of map (integer representing year and month)
 	//month will never be larger than 4 bits, so left shift year and add month.
@@ -105,9 +105,6 @@ void DataOutput::setVal(int year, int month, std::string name, int index, float 
 
 	//set image buffer value
 	varImages->at(searchInt)->setVal(index, val);
-
-	//move unique pointer back
-	this->imageBuffers.at(name) = std::move(varImages);
 }
 
 CPLErr DataOutput::writeRow(int row) {

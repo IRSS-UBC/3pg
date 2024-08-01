@@ -123,25 +123,6 @@ PPPG_MT_PARAM IrrigMT[PPPG_MAX_SERIES_YEARS+1];
 PPPG_MT_PARAM MinAswMT[PPPG_MAX_SERIES_YEARS+1];
 
 //----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
-
-//Define and provide initialization/deletion functions for data output:
-// 
-//I imagine this is not the best way of going about this. This will likely need to be
-//changes as we refactor the way Data_io works.
-DataOutput* dataOutput;
-void initDataOutput(std::shared_ptr<GDALRasterImage> refGrid) {
-    dataOutput = new DataOutput(refGrid, outPath);
-}
-void deleteDataOutput() {
-    delete dataOutput;
-    dataOutput = nullptr;
-}
-CPLErr writeRowDataOutput(int row) {
-    return dataOutput->writeRow(row);
-}
 
 bool openGrid(PPPG_VVAL& vval)
 {
@@ -683,7 +664,7 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
 
 //----------------------------------------------------------------------------------
 
-void readSpeciesParamFile(const std::string& speciesFile, DataInput *dataInput) {
+void readSpeciesParamFile(const std::string& speciesFile, DataInput& dataInput) {
     std::string line, pName;
     std::string pValue;
     std::string cp;
@@ -709,7 +690,7 @@ void readSpeciesParamFile(const std::string& speciesFile, DataInput *dataInput) 
         boost::trim_if(pName, boost::is_any_of("\""));
         std::vector<std::string> pValues;
         boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
-        if (dataInput->tryAddInputParam(pName, pValues)) {
+        if (dataInput.tryAddInputParam(pName, pValues)) {
             continue; 
         }
         else {
@@ -720,7 +701,7 @@ void readSpeciesParamFile(const std::string& speciesFile, DataInput *dataInput) 
     }
 }
 
-std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile, DataInput *dataInput)
+std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile, DataInput& dataInput)
 {
   // Read a text file containing 3PG parameters.  Comments are allowed
   // and must begin with C++ style '//'.  Comments can begin at any
@@ -771,12 +752,12 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
         boost::split(pValues, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
     }
 
-    if (dataInput->tryAddInputParam(pName, pValues)) { continue; }
+    if (dataInput.tryAddInputParam(pName, pValues)) { continue; }
     if (output_var_names.find(pName) != output_var_names.end()) {
         opVars.emplace(pName, readOutputParam(pName, pValues, lineNo));
     }
     else if (readOtherParam(pName, pValues)) { continue; }
-    else if (dataInput->tryAddSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
+    else if (dataInput.tryAddSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
     else if (readInputManageParam(pName, inFile, lineNo)) { continue; }
     else {
         std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
@@ -841,7 +822,7 @@ GDALRasterImage* openInputGrids( )
 
 //----------------------------------------------------------------------------------
 
-int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, long cellIndex) {
+int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, DataOutput& dataOutput, long cellIndex) {
     //for each possible output variable
     for (auto& [pN, opV] : opVars) {
         //if it has been marked to be written
@@ -850,7 +831,7 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
             float val = (float)(opV.v);
             std::string name = opV.gridName;
             name = name.substr(0, name.find_last_of("."));
-            dataOutput->setVal(-1, -1, name, cellIndex, val);
+            dataOutput.setVal(-1, -1, name, cellIndex, val);
         }
     }
     return EXIT_SUCCESS;
@@ -858,7 +839,7 @@ int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars,
 
 //----------------------------------------------------------------------------------
 
-void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex) {
+void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, DataOutput& dataOutput, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex) {
     //for each possible output variable
     for (auto& [pN, opV] : opVars) {
 
@@ -912,6 +893,6 @@ void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>&
         float val = (float)(opV.v);
         std::string name = opV.gridName;
         name = name.substr(0, name.find_last_of("."));
-        dataOutput->setVal(calYear, calMonth, name, cellIndex, val);
+        dataOutput.setVal(calYear, calMonth, name, cellIndex, val);
     }
 }
