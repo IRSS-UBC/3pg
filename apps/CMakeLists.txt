@@ -12,8 +12,8 @@ set(SOURCE_FILES
 	MYDate.cpp
     MYDate.h
 	ParamStructs.hpp
-	The_3PG_model.cpp
-    The_3PG_model.hpp
+	The_3PG_Model.cpp
+    The_3PG_Model.hpp
 	util.cpp
     util.hpp
 )
