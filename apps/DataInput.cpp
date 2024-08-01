@@ -1,6 +1,6 @@
 #include "DataInput.hpp"
 #include "util.hpp"
-#include <exception> 
+#include <stdexcept>
 
 extern Logger logger;
 
@@ -91,7 +91,7 @@ bool DataInput::openCheckGrid(std::string path, GDALRasterImage*& grid) {
 	try {
 		grid = new GDALRasterImage(path);
 	}
-	catch (const std::exception& e) {
+	catch (const std::runtime_error& e) {
 		std::string errstr = "failed to open " + path + "\n" + e.what();
 		std::cout << errstr << std::endl;
 		logger.Log(errstr);
@@ -423,7 +423,7 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 bool DataInput::getInputParams(long cellIndex, InputParams& params) {
 	//error checking
 	if (!finishedInput) {
-		throw std::exception("should NOT be able to call getInputParams() if input failed!");
+		throw std::runtime_error("should NOT be able to call getInputParams() if input failed!");
 	}
 
 	//declare, copy values into, then return an instance of InputParams
@@ -555,13 +555,13 @@ double DataInput::getValFromInputParam(std::string paramName, long cellIndex) {
 		}
 	}
 
-	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
+	throw std::runtime_error("a parameter has been set incorrectly as neither a scalar or a grid.");
 }
 
 bool DataInput::getSeriesParams(long cellIndex, int year, int month, SeriesParams& params) {
 	//error checking
 	if (!finishedInput) {
-		throw std::exception("should NOT be able to call getInputParams() if input failed!");
+		throw std::runtime_error("should NOT be able to call getInputParams() if input failed!");
 	}
 
 	//if one of the calls to getValFromSeriesParams() throws an std::runtime_error
@@ -635,13 +635,13 @@ double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, lon
 		}
 	}
 
-	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
+	throw std::runtime_error("a parameter has been set incorrectly as neither a scalar or a grid.");
 }
 
 void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	//error checking
 	if (!finishedInput) {
-		throw std::exception("should NOT be able to call findRunPeriod() if input failed!");
+		throw std::runtime_error("should NOT be able to call findRunPeriod() if input failed!");
 	}
 
 	PPPG_PARAM yearPlantedParam = this->inputParams.at("yearplanted");
