@@ -14,7 +14,6 @@ bool DataInput::getScalar(std::string value, PPPG_PARAM& param) {
 
 		//log input param acquired
 		std::string output = "    " + param.id + "        constant: " + std::to_string(param.val);
-		std::cout << output << std::endl;
 		logger.Log(output);
 
 		return true;
@@ -56,7 +55,6 @@ bool DataInput::getGrid(std::string value, PPPG_PARAM& param) {
 
 		//log input param
 		std::string output = "    " + param.id + "        raster: " + param.g->name;
-		std::cout << output << std::endl;
 		logger.Log(output);
 		return true;
 	}
@@ -707,7 +705,6 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 
 	//valid run period successfully determined
 	string runPeriodStr = "first run year = " + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
-	std::cout << runPeriodStr << std::endl;
 	logger.Log(runPeriodStr);
 }
 

@@ -130,15 +130,12 @@ bool openGrid(PPPG_VVAL& vval)
         string openString = "   opening raster from " + vval.gridName + "...";
         string succesReadString = "read raster";
         string failReadString = "failed";
-        std::cout << openString;
 
         try {
             vval.g = new GDALRasterImage(vval.gridName);
-            std::cout << succesReadString << std::endl;
             logger.Log(openString + succesReadString);
         }
         catch (const std::exception&) {
-            std::cout << failReadString << std::endl;
             logger.Log(openString + failReadString);
             exit(EXIT_FAILURE);
         }
@@ -375,24 +372,19 @@ PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::str
   }
   // Mark the variable for later writing
     opVar.write = true;
-    std::cout << "   variable: " << opVar.id << "   grid: " << opVar.gridName << std::endl;
     logger.Log("   variable: " + opVar.id + "   grid: " + opVar.gridName);
     if (opVar.recurStart)
     {
         string outputGridString = "      starting in " + to_string(opVar.recurStart) + ", writing every " + to_string(opVar.recurYear) + " years";
-        std::cout << outputGridString << " years";
         if (opVar.recurMonthly)
         {
-            std::cout << ", with monthly values";
             outputGridString = outputGridString + ", with monthly values";
         }
         else if (opVar.recurMonth != 0)
         {
-            std::cout << ", on the " << opVar.recurMonth << " month";
             outputGridString = outputGridString + ", on the " + to_string(opVar.recurMonth) + " month";
 
         }
-        std::cout << std::endl;
         logger.Log(outputGridString);
     }
   return opVar;
@@ -672,7 +664,6 @@ void readSpeciesParamFile(const std::string& speciesFile, DataInput& dataInput) 
 
     auto isDoubleQuote = [](char c) { return c == '\"'; };
     std::ifstream inFile(speciesFile);
-    std::cout << "Reading species parameter from file '" << speciesFile << "'..." << std::endl;
     logger.Log("Reading  species parameter from file '" + speciesFile + "'...");
     while (std::getline(inFile, line)) {
         lineNo++;
@@ -719,7 +710,6 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
 
   auto isDoubleQuote = [](char c) { return c == '\"'; };
   std::ifstream inFile(paramFile);
-  std::cout << "Reading input parameters from file '" << paramFile << "'..." << std::endl;
   logger.Log("Reading input parameters from file '" + paramFile + "'...");
   while (std::getline(inFile, line)) {
       lineNo++;
@@ -779,7 +769,6 @@ GDALRasterImage* openInputGrids( )
   bool spatial = false, first = true;
   GDALRasterImage *refGrid;
 
-  std::cout << "Opening input rasters..." << std::endl;
   logger.Log("Opening input rasters...");
 
   // Open all management table grids. 
