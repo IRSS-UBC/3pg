@@ -36,11 +36,11 @@ jobs:
             c_compiler: cl
             cpp_compiler: cl
           - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
+            c_compiler: gcc-11
+            cpp_compiler: g++-11
           - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+            c_compiler: clang-12
+            cpp_compiler: clang++-12
         exclude:
           - os: windows-latest
             c_compiler: gcc
