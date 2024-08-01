@@ -1,5 +1,6 @@
 #include "DataInput.hpp"
 #include "util.hpp"
+#include <exception> 
 
 extern Logger logger;
 
