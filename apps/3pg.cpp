@@ -90,7 +90,7 @@ private:
 public:
     Progress(int rowsTotal, const std::string& prefix = "Running 3PG model...")
         : rowsTotal(rowsTotal), rowsDone(0), progress(0), lastProgress(0),
-        prefix(prefix), outputWidth(prefix.length() + 25)
+        prefix(prefix), outputWidth(static_cast<int>(prefix.length()) + 25)
     {  
         printProgress();
     }
@@ -121,7 +121,6 @@ public:
 int main(int argc, char* argv[])
 {
     bool spatial = 0;
-    long nrows, ncols;
     MYDate spMinMY, spMaxMY;
     std::string defParamFile;
     std::string siteParamFile;
