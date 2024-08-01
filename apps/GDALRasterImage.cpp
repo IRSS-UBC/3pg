@@ -53,7 +53,7 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 
 };
 
-GDALRasterImage::GDALRasterImage(std::string filename, std::shared_ptr<GDALRasterImage> refGrid) {
+GDALRasterImage::GDALRasterImage(std::string filename, RefGridProperties& refGrid) {
 	// Create a new GDALRasterImage dataset with one band with the same extent, transform, and crs as refGrid
 	GDALAllRegister();
 	CPLPushErrorHandler(CPLQuietErrorHandler); // suppress error messages that Exists() throws for non-existent files
@@ -61,12 +61,12 @@ GDALRasterImage::GDALRasterImage(std::string filename, std::shared_ptr<GDALRaste
 		throw std::invalid_argument("File already exists.");
 	};
 	GDALDriver* driver = GetGDALDriverManager()->GetDriverByName("GTiff");
-	dataset = driver->Create(filename.c_str(), refGrid->nCols, refGrid->nRows, 1, GDT_Float32, NULL);
+	dataset = driver->Create(filename.c_str(), refGrid.nCols, refGrid.nRows, 1, GDT_Float32, NULL);
 	name = filename;
-	dataset->SetGeoTransform(refGrid->datasetTransform);
-	dataset->SetProjection(refGrid->crs);
+	dataset->SetGeoTransform(refGrid.datasetTransform);
+	dataset->SetProjection(refGrid.crs);
 	band = dataset->GetRasterBand(1);
-	band->SetNoDataValue(refGrid->noData);
+	band->SetNoDataValue(refGrid.noData);
 
 	noData = band->GetNoDataValue();
 	nRows = band->GetYSize();
@@ -258,5 +258,29 @@ bool GDALRasterImage::IsNoData(float val) {
 	 );
 
 	 this->mutex.unlock();
+	 return retval;
+ }
+
+ RefGridProperties GDALRasterImage::getRefGrid() {
+	 RefGridProperties retval;
+
+	 retval.name = this->name;
+	 retval.nRows = this->nRows;
+	 retval.nCols = this->nCols;
+	 retval.xMin = this->xMin;
+	 retval.xMax = this->xMax;
+	 retval.yMin = this->yMin;
+	 retval.yMax = this->yMax;
+	 retval.noData = this->noData;
+	 retval.crs = this->crs;
+	 retval.name = this->name;
+
+	 retval.datasetTransform[0] = this->datasetTransform[0];
+	 retval.datasetTransform[1] = this->datasetTransform[1];
+	 retval.datasetTransform[2] = this->datasetTransform[2];
+	 retval.datasetTransform[3] = this->datasetTransform[3];
+	 retval.datasetTransform[4] = this->datasetTransform[4];
+	 retval.datasetTransform[5] = this->datasetTransform[5];
+
 	 return retval;
  }

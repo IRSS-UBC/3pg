@@ -25,7 +25,7 @@ typedef struct PPPG_PARAM {
 	double val;
 	
 	//grid reference
-	std::shared_ptr<GDALRasterImage> g;
+	std::unique_ptr<GDALRasterImage> g;
 } PPPG_PARAM;
 
 // 3PG output variables. In spatial mode output variables may be written 
@@ -56,7 +56,7 @@ typedef struct PPPG_SERIES_PARAM {
 	int lastYear = 0;
 
 	//vector containing monthl params
-	std::vector<PPPG_PARAM> monthlyParams;
+	std::vector<std::unique_ptr<PPPG_PARAM>> monthlyParams;
 } PPPG_SERIES_PARAM;
 
 // 3PG 'management table' parameters.  Only one value per year is allowed.  

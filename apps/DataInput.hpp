@@ -297,7 +297,7 @@ private:
 		"startmonth",
 		"laimaxintcptn",
 	};
-	std::unordered_map<std::string, PPPG_PARAM> inputParams;
+	std::unordered_map<std::string, std::unique_ptr<PPPG_PARAM>> inputParams;
 
 	//maps and sets for dealing with series parameters
 	std::unordered_map<std::string, SeriesIndex> seriesParamNameMap = {
@@ -320,14 +320,14 @@ private:
 	bool haveNDVI = false;
 	bool haveNetRad = false;
 
-	std::shared_ptr<GDALRasterImage> refGrid;
+	RefGridProperties refGrid;
 	bool finishedInput = false;
 
-	bool getScalar(std::string value, PPPG_PARAM& param);
-	bool getGrid(std::string value, PPPG_PARAM& param);
+	bool getScalar(std::string value, PPPG_PARAM* param);
+	bool getGrid(std::string value, PPPG_PARAM* param);
 	double getValFromInputParam(std::string paramName, long cellIndex);
 	double getValFromSeriesParam(int paramIndex, int year, int month, long cellIndex);
-	bool openCheckGrid(std::string path, std::shared_ptr<GDALRasterImage>& grid);
+	bool openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>& grid);
 public:
 	bool tryAddInputParam(std::string pname, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
@@ -335,7 +335,7 @@ public:
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
 	bool haveNetRadParam();
-	std::shared_ptr<GDALRasterImage> getRefGrid();
+	RefGridProperties getRefGrid();
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
 
 	bool haveSeedlingMass;

@@ -120,7 +120,6 @@ public:
 
 int main(int argc, char* argv[])
 {
-    std::shared_ptr<GDALRasterImage> refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
     bool spatial = 0;
     long nrows, ncols;
     MYDate spMinMY, spMaxMY;
@@ -167,11 +166,7 @@ int main(int argc, char* argv[])
 
     // Check for a spatial run, if so open input grids and define refGrid. 
     openInputGrids();
-    refGrid = dataInput.getRefGrid();
-
-    nrows = refGrid->nRows;
-    ncols = refGrid->nCols;
-
+    RefGridProperties refGrid = dataInput.getRefGrid();
     DataOutput dataOutput(refGrid, outPath);
 
     // Find the over all start year and end year. 
@@ -180,18 +175,18 @@ int main(int argc, char* argv[])
     dataInput.findRunPeriod(spMinMY, spMaxMY);
  
     // Run the model. 
-    long cellsTotal = nrows * ncols;
+    long cellsTotal = refGrid.nRows * refGrid.nCols;
 
     //unsigned int numThreads = std::thread::hardware_concurrency();
     int nthreads = 4;
     boost::asio::thread_pool pool(nthreads);
 
-    Progress progress(refGrid->nRows);
+    Progress progress(refGrid.nRows);
 
-    for (int i = 0; i < nrows; i++) {
-        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, ncols, &dataInput, &dataOutput, &progress] {
-            int cellIndexStart = i * ncols;
-            for (int j = 0; j < ncols; j++) {
+    for (int i = 0; i < refGrid.nRows; i++) {
+        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, refGrid, &dataInput, &dataOutput, &progress] {
+            int cellIndexStart = i * refGrid.nCols;
+            for (int j = 0; j < refGrid.nCols; j++) {
                 int cellIndex = cellIndexStart + j;
                 runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput, dataOutput);
             }
