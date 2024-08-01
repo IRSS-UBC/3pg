@@ -1,10 +1,16 @@
 {
-	"name": "3pg",
-  	"version-string": "latest",
+	"name": "3pg2",
+  "version-string": "latest",
   "dependencies": [
     {
       "name": "gdal",
-      "features": []
+      "default-features": false
+    },
+    {
+      "name": "boost-algorithm"
+    },
+    {
+      "name" : "boost-asio"
     }
 
   ]

@@ -11,7 +11,7 @@ endif()
 project ("3pg2")
 
 # Include sub-projects.
-include_directories("include")
+# include_directories("include")
 add_subdirectory ("apps")
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")

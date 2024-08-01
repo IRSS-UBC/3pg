@@ -60,3 +60,7 @@ build/*
 
 #user should install themselves
 include/boost/*
+/vcpkg
+/builds
+vcpkg_installed/*
+.DS_Store

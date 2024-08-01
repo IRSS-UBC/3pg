@@ -19,7 +19,7 @@ set(SOURCE_FILES
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} 3pg.cpp )
-target_link_libraries(${PROJECT_NAME} PRIVATE GDAL::GDAL)
+target_link_libraries(${PROJECT_NAME} PRIVATE GDAL::GDAL Boost::algorithm Boost::asio)
 
 add_library(3pg2Test ${SOURCE_FILES} loggerForTest.cpp)
-target_link_libraries(3pg2Test PRIVATE GDAL::GDAL)
+target_link_libraries(3pg2Test PRIVATE GDAL::GDAL Boost::algorithm Boost::asio)
