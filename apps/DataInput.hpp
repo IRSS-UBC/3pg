@@ -182,7 +182,7 @@ private:
 		{"minimum basic density - for young trees", "rhomin"},
 		{"maximum basic density - for older trees", "rhomax"},
 		{"age at which rho = (rhomin+rhomax)/2", "trho"},
-		{"year Planted", "yearlanted"},
+		{"year planted", "yearplanted"},
 	};
 	std::unordered_set<std::string> allInputParams = {
 		"pfs2",
@@ -307,6 +307,7 @@ private:
 		{"rain", SeriesIndex::RAIN},
 		{"solar radtn", SeriesIndex::SOLAR_RAD},
 		{"frost", SeriesIndex::FROST_DAYS},
+		{"frost days", SeriesIndex::FROST_DAYS},
 		{"ndvi_avh", SeriesIndex::NDVI_AVH},
 		{"net radtn", SeriesIndex::NET_RAD},
 		{"vpd", SeriesIndex::VPD},

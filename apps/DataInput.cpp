@@ -359,7 +359,7 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	bool haveRain = this->acquiredSeriesParams.contains("rain");
 	bool haveSolarRad = this->acquiredSeriesParams.contains("solar radtn");
 	bool haveNetRad = this->acquiredSeriesParams.contains("net radtn");
-	bool haveFrost = this->acquiredSeriesParams.contains("frost");
+	bool haveFrost = this->acquiredSeriesParams.contains("frost") || this->acquiredSeriesParams.contains("frost days");
 	bool haveNDVI = this->acquiredSeriesParams.contains("ndvi_avh");
 	
 	//check Tavg
