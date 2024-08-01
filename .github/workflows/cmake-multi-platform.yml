@@ -50,23 +50,20 @@ jobs:
             c_compiler: cl
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-          submodules: true
+        - uses: actions/checkout@v4
+          with:
+              submodules: true
 
-    - uses: lukka/get-cmake@latest
+        - uses: lukka/get-cmake@latest
 
-    - name: Restore from cache and setup vcpkg executable and data files.
-      uses: lukka/run-vcpkg@v11
-      with:
-           vcpkgJsonGlob: 'vcpkg.json'
+        - name: Restore from cache and setup vcpkg executable and data files.
+          uses: lukka/run-vcpkg@v11
+          with:
+               vcpkgJsonGlob: 'vcpkg.json'
 
-    - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-
-    - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest -C Debug --build-config ${{ matrix.build_type }}
+        - name: Run CMake+vcpkg+Ninja+CTest to build packages and generate/build/test the code.
+          uses: lukka/run-cmake@v10
+          with:
+            configurePreset: 'ninja-multi-vcpkg'
+            buildPreset: 'ninja-vcpkg-release'
+            testPreset: 'test-release'
