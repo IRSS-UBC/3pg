@@ -77,7 +77,7 @@ jobs:
       if: steps.cache-proj.outputs.cache-hit != 'true'
       run: |
         cmake -B ${{ steps.strings.outputs.proj-build-dir }} -S ${{ github.workspace }}/external/PROJ -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        cmake --build ${{ steps.strings.outputs.proj-build-dir }} --config ${{ matrix.build_type }}
+        cmake --build ${{ steps.strings.outputs.proj-build-dir }} --config ${{ matrix.build_type }} -DENABLE_CURL=OFF
     
     - name: Cache GDAL
       uses: actions/cache@v3
