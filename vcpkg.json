@@ -1,7 +1,11 @@
 {
 	"name": "3pg",
   	"version-string": "latest",
-    	"dependencies": [
-	        "gdal"
-    	]
+  "dependencies": [
+    {
+      "name": "gdal",
+      "features": []
+    }
+
+  ]
 }
