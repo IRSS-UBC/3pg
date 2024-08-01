@@ -62,6 +62,21 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
         echo "gdal-build-dir=${{ github.workspace }}/external/gdal/build" >> "$GITHUB_OUTPUT"
+
+    - name: Cache PROJ
+      id: cache-proj
+      uses: actions/cache@v3
+      with:
+        path: external/PROJ
+        key: ${{ runner.os }}-proj-${{ hashFiles('external/PROJ/**') }}
+        restore-keys: |
+          ${{ runner.os }}-proj-
+
+    - name: Build PROJ
+      if: steps.cache-proj.outputs.cache-hit != 'true'
+      run: |
+        cmake -B ${{ steps.strings.outputs.proj-build-dir }} -S ${{ github.workspace }}/external/PROJ -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        cmake --build ${{ steps.strings.outputs.proj-build-dir }} --config ${{ matrix.build_type }}
     
     - name: Cache GDAL
       uses: actions/cache@v3
