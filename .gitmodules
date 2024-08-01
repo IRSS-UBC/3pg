@@ -4,6 +4,3 @@
 [submodule "external/PROJ"]
 	path = external/PROJ
 	url = https://github.com/OSGeo/PROJ.git
-[submodule "external/curl"]
-	path = external/curl
-	url = https://github.com/curl/curl.git
