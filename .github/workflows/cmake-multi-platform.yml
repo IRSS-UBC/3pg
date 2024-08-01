@@ -92,7 +92,12 @@ jobs:
     - name: Build PROJ
       if: steps.cache-proj.outputs.cache-hit != 'true'
       run: |
-        cmake -B ${{ steps.strings.outputs.proj-build-dir }} -S ${{ github.workspace }}/external/PROJ -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        cmake -B ${{ steps.strings.outputs.proj-build-dir }} \
+          -S ${{ github.workspace }}/external/PROJ \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCURL_INCLUDE_DIR=${{ github.workspace }}/curl-install/include \
+          -DCURL_LIBRARY=${{ github.workspace }}/curl-install/lib/libcurl.a \
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/curl-install
         cmake --build ${{ steps.strings.outputs.proj-build-dir }} --config ${{ matrix.build_type }} 
     
     - name: Cache GDAL
