@@ -1,4 +1,5 @@
 find_package(GDAL CONFIG REQUIRED)
+find_package(Boost REQUIRED algorithm asio)
 
 set(SOURCE_FILES
 	Data_io.cpp
