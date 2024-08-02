@@ -11,6 +11,9 @@
     },
     {
       "name" : "boost-asio"
+    },
+    {
+	    "name": "boost-program-options"
     }
 
   ]
