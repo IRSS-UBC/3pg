@@ -32,16 +32,36 @@ Use of this software assumes agreement to this condition of use
 #include "ParamStructs.hpp"
 
 //----------------------------------------------------------------------------------------
-std::string VERSION = "0.1";
-std::string COPYMSG = "This version of 3-PG has been revised by:\n"
-                        //"Nicholas Coops [Nicholas.Coops@csiro.au],\n"
-                        //"Anders Siggins [Anders.Siggins@csiro.au],\n"
-                        //"and Andrew Loughhead.\n"
-                        "Sarah (Vaughan) and Joe\n"
-                        "Version: " + VERSION + "\n"
-                        "Revisions based on Siggins' 2.53 version\n\n"
-                        "Better message TBD. Enjoy!\n"
-                        "--------------------------------------\n";
+std::string VERSION = "4.0";
+std::string COPYMSG = "3-PG: A Forest Growth Model for Natural Climate Solutions\n"
+"Developed for use by BP\n\n"
+"For more information, please see:\n"
+"Website:\n"
+"Repository:\n"
+"----------------------------------------------------------------------------\n"
+"This version of 3-PG has been developed by:\n"
+"Integrated Remote Sensing Studio (IRSS),\n"
+"Faculty of Forestry, University of British Columbia\n"
+"2424 Main Mall, Vancouver, BC, Canada, V6T 1Z4\n"
+"Developers : Nicholas Coops, Fracois du Toit, Sarah Zwiep, and Joe Meyer\n"
+"Contact : nicholas.coops@ubc.ca\n\n"
+
+"Revision : " + VERSION + "\n"
+"Date : AUGUST 2024\n\n"
+"3-PG is based on work by Ander Siggins and CSIRO Australia\n"
+"----------------------------------------------------------------------------\n"
+"\"DISCLAIMER\"\n"
+"IRSS accepts no responsibility for the use of 3PG(S) or of the model 3-PG in\n"
+"the form supplied or as subsequently modified by third parties. IRSS disclaims\n"
+"liability for all losses, damages and costs incurred by any person as a result\n"
+"of relying on this software. Use of this software assumes agreement to this\n"
+"condition of use.\n\n"
+
+"Removal of this statement violates the spirit in which 3-PG was released by\n"
+"IRSS and CSIRO Australia\n\n"
+
+"Licensed under CC BY 4.0\n"
+"----------------------------------------------------------------------------\n\n";
 
 extern bool modelMode3PGS;
 
@@ -128,10 +148,14 @@ int main(int argc, char* argv[])
     std::string siteParamFile;
     std::unordered_map<std::string, PPPG_OP_VAR> opVars;
 
+    /* Copyright */
+    std::cout << COPYMSG << std::endl;
+
     /* Parse command line args */
     InputParser input(argc, argv);
     if (!input.cmdOptionExists("-d")) {
-        std::cout << "Missing species definition file. Pass path with -d flag." << std::endl;
+        std::cout << "Missing species definition file. Pass path with -d flag" << std::endl;
+        exit(EXIT_FAILURE);
     }
     defParamFile = input.getCmdOption("-d");
     if (defParamFile.empty()) {
@@ -139,7 +163,8 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
     if (!input.cmdOptionExists("-s")) {
-        std::cout << "Missing site parameter file. Pass path with -s flag." << std::endl;
+        std::cout << "Missing site parameter file. Pass path with -s flag" << std::endl;
+        exit(EXIT_FAILURE);
     }
     siteParamFile = input.getCmdOption("-s");
     if (siteParamFile.empty()) {
@@ -149,11 +174,8 @@ int main(int argc, char* argv[])
 
     std::string outPath = getOutPathTMP(siteParamFile);
     logger.StartLog(outPath);
-    DataInput *dataInput = new DataInput();
-
-    /* Copyright */
-    std::cout << COPYMSG << std::endl;
     logger.Log(COPYMSG);
+    DataInput *dataInput = new DataInput();
 
     // Load the parameters
     std::cout << "Loading and validating parameters...";
