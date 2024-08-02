@@ -90,7 +90,7 @@ private:
 public:
     Progress(int rowsTotal, const std::string& prefix = "Running 3PG model...")
         : rowsTotal(rowsTotal), rowsDone(0), progress(0), lastProgress(0),
-        prefix(prefix), outputWidth(prefix.length() + 25)
+        prefix(prefix), outputWidth(static_cast<int>(prefix.length()) + 25)
     {  
         printProgress();
     }
@@ -120,9 +120,7 @@ public:
 
 int main(int argc, char* argv[])
 {
-    GDALRasterImage* refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
     bool spatial = 0;
-    long nrows, ncols;
     MYDate spMinMY, spMaxMY;
     std::string defParamFile;
     std::string siteParamFile;
@@ -149,7 +147,7 @@ int main(int argc, char* argv[])
 
     std::string outPath = getOutPathTMP(siteParamFile);
     logger.StartLog(outPath);
-    DataInput *dataInput = new DataInput();
+    DataInput dataInput;
 
     /* Copyright */
     std::cout << COPYMSG << std::endl;
@@ -161,52 +159,43 @@ int main(int argc, char* argv[])
     opVars = readSiteParamFile(siteParamFile, dataInput);
 
     //check that we have all the correct parameters
-    if (!dataInput->inputFinished(modelMode3PGS)) {
+    if (!dataInput.inputFinished(modelMode3PGS)) {
         exit(EXIT_FAILURE);
     }
 
     // Check for a spatial run, if so open input grids and define refGrid. 
     openInputGrids();
-    refGrid = dataInput->getRefGrid();
-
-    nrows = refGrid->nRows;
-    ncols = refGrid->nCols;
-
-    //initialize dataOutput class
-    initDataOutput(refGrid);
+    RefGridProperties refGrid = dataInput.getRefGrid();
+    DataOutput dataOutput(refGrid, outPath);
 
     // Find the over all start year and end year. 
     // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
     std::cout << "  Complete" << std::endl;
-    dataInput->findRunPeriod(spMinMY, spMaxMY);
-
+    dataInput.findRunPeriod(spMinMY, spMaxMY);
  
     // Run the model. 
-    long cellsTotal = nrows * ncols;
+    long cellsTotal = refGrid.nRows * refGrid.nCols;
 
     //unsigned int numThreads = std::thread::hardware_concurrency();
     int nthreads = 4;
     boost::asio::thread_pool pool(nthreads);
 
-    Progress progress(refGrid->nRows);
+    Progress progress(refGrid.nRows);
 
-    for (int i = 0; i < nrows; i++) {
-        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, ncols, dataInput, &progress] {
-            int cellIndexStart = i * ncols;
-            for (int j = 0; j < ncols; j++) {
+    for (int i = 0; i < refGrid.nRows; i++) {
+        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, refGrid, &dataInput, &dataOutput, &progress] {
+            int cellIndexStart = i * refGrid.nCols;
+            for (int j = 0; j < refGrid.nCols; j++) {
                 int cellIndex = cellIndexStart + j;
-                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput);
+                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput, dataOutput);
             }
 
-            writeRowDataOutput(i);
+            dataOutput.writeRow(i);
             progress.rowCompleted();
         });
     }
 
     pool.join();
-
-    deleteDataOutput();
-    delete dataInput;
 
     return EXIT_SUCCESS;
 }

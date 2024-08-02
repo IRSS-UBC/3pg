@@ -263,13 +263,13 @@ void copyVars(Vars vars, std::unordered_map<std::string, PPPG_OP_VAR>& opVars) {
 }
 
 // This is the main routine for the 3PG model
-void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput *dataInput)
+void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
 {
     Vars vars;
 
     // ANL - Load the parameter values.  On NODATA return, because all pixels are initialized to nodata
     InputParams params;
-    if (!dataInput->getInputParams(cellIndex, params)) {
+    if (!dataInput.getInputParams(cellIndex, params)) {
         return;
     }
 
@@ -395,7 +395,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
         mDayLength[mn] = 86400 * getDayLength(params.Lat, dayofyr);
     }
 
-    useMinASWTG = dataInput->haveMinASWTG;
+    useMinASWTG = dataInput.haveMinASWTG;
 
     // Assign the SWconst and SWpower parameters for this soil class
     if (params.soilIndex != 0) {
@@ -424,7 +424,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
     vars.StemNo = params.StemNoi;
     //StartMonth++; //Synchronise with vb version 20-01-02
 
-    if (dataInput->haveSeedlingMass)
+    if (dataInput.haveSeedlingMass)
     {
         params.WFi = (0.5 * params.StemNoi * params.SeedlingMass) / pow(10, 6);
         params.WRi = (0.25 * params.StemNoi * params.SeedlingMass) / pow(10, 6);
@@ -473,7 +473,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
     //Find out if there is supposed to be any data here in the first place...
 
     SeriesParams sParams;
-    if (!dataInput->getSeriesParams(cellIndex, calYear, calMonth, sParams)) {
+    if (!dataInput.getSeriesParams(cellIndex, calYear, calMonth, sParams)) {
         return;
     }
 
@@ -488,7 +488,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
     //write initial state of output variables
     copyVars(vars, opVars);
-    writeMonthlyOutputGrids(opVars, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
+    writeMonthlyOutputGrids(opVars, dataOutput, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
 
     //Start processing loop
     for (cy = spMinMY.year; cy <= spMaxMY.year; cy++) {
@@ -521,7 +521,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
         // Get management-related options for current year and cell. 
         // First load param file values, then possibly override them with management table values. 
-        if (!dataInput->haveAgeDepFert)
+        if (!dataInput.haveAgeDepFert)
             vars.FR = params.FRp;
         if (nFertility > 0)
             vars.FR = lookupManageTable(runYear, MT_FERTILITY, params.FRp, cellIndex);
@@ -597,7 +597,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             if (yrPreStart || yrPstEnd)
                 goto skipMonthCalcs;
 
-            if (!dataInput->getSeriesParams(cellIndex, calYear, calMonth, sParams)) {
+            if (!dataInput.getSeriesParams(cellIndex, calYear, calMonth, sParams)) {
                 return;
             }
 
@@ -612,7 +612,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             }
             else {
                 //If we are in a period where we wish FR to decay, make it so.
-                if (dataInput->haveAgeDepFert && (params.FRstart <= StandAge) && (params.FRend > StandAge)) {
+                if (dataInput.haveAgeDepFert && (params.FRstart <= StandAge) && (params.FRend > StandAge)) {
                     vars.FR = vars.FR - vars.FR * params.FRdec;
                 }
             }
@@ -730,7 +730,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
             // calculate transpiration from Penman-Monteith (mm/day converted to mm/month)
             vars.Transp = CanopyTranspiration(sParams.SolarRad, sParams.VPD, dayLength, params.BLcond,
-                CanCond, sParams.NetRad, dataInput->haveNetRadParam(), params);
+                CanCond, sParams.NetRad, dataInput.haveNetRadParam(), params);
             vars.Transp = DaysInMonth[calMonth] * vars.Transp;
 
             // rainfall interception
@@ -898,7 +898,7 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
                 //the !(calYear == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
                 //output, but rather skip it and the values are eventually written via writeOutputGrids().
                 copyVars(vars, opVars);
-                writeMonthlyOutputGrids(opVars, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
+                writeMonthlyOutputGrids(opVars, dataOutput, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
             }
         }
 
@@ -949,5 +949,5 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
 
     }
     copyVars(vars, opVars);
-    writeOutputGrids(opVars, cellIndex);
+    writeOutputGrids(opVars, dataOutput, cellIndex);
 }

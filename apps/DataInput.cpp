@@ -3,34 +3,17 @@
 
 extern Logger logger;
 
-DataInput::DataInput() {
-	this->refGrid = nullptr;
-}
-
-DataInput::~DataInput() {
-	//check each parameter
-	for (auto iterator = this->inputParams.begin(); iterator != this->inputParams.end(); iterator++) {
-		PPPG_PARAM param = iterator->second;
-
-		//if it's a grid parameter, we have to clean up it's corrosponding GDALRasterImage
-		if (param.spType == pTif && param.g != nullptr) {
-			delete param.g;
-			param.g = nullptr;
-		}
-	}
-}
-
-bool DataInput::getScalar(std::string value, PPPG_PARAM& param) {
+bool DataInput::getScalar(std::string value, PPPG_PARAM* param) {
 	try {
 		//get the value from the array
 		double val = std::stod(value);
-		param.val = val;
+		param->val = val;
 
 		//mark the data as scalar
-		param.spType = pScalar;
+		param->spType = pScalar;
 
 		//log input param acquired
-		std::string output = "    " + param.id + "        constant: " + std::to_string(param.val);
+		std::string output = "    " + param->id + "        constant: " + std::to_string(param->val);
 		logger.Log(output);
 
 		return true;
@@ -41,7 +24,7 @@ bool DataInput::getScalar(std::string value, PPPG_PARAM& param) {
 	}
 }
 
-bool DataInput::getGrid(std::string value, PPPG_PARAM& param) {
+bool DataInput::getGrid(std::string value, PPPG_PARAM* param) {
 	try {
 		//get the file path
 		std::filesystem::path filePath = value;
@@ -63,15 +46,15 @@ bool DataInput::getGrid(std::string value, PPPG_PARAM& param) {
 		}
 
 		//set data type
-		param.spType = pTif;
+		param->spType = pTif;
 
 		//try opening the grid and compare to the refgrid (or create the refgrid)
-		if (!openCheckGrid(filePath.string(), param.g)) {
+		if (!openCheckGrid(filePath.string(), param->g)) {
 			return false;
 		}
 
 		//log input param
-		std::string output = "    " + param.id + "        raster: " + param.g->name;
+		std::string output = "    " + param->id + "        raster: " + param->g->name;
 		logger.Log(output);
 		return true;
 	}
@@ -85,10 +68,10 @@ bool DataInput::getGrid(std::string value, PPPG_PARAM& param) {
 	}
 }
 
-bool DataInput::openCheckGrid(std::string path, GDALRasterImage*& grid) {
+bool DataInput::openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>& grid) {
 	//ensure we can open and read from the file as a GDALRasterImage
 	try {
-		grid = new GDALRasterImage(path);
+		grid = std::make_unique<GDALRasterImage>(path);
 	}
 	catch (const std::exception& e) {
 		std::string errstr = "failed to open " + path + "\n" + e.what();
@@ -99,19 +82,19 @@ bool DataInput::openCheckGrid(std::string path, GDALRasterImage*& grid) {
 
 	//if the refgrid is null, this is grid becomes the refgrid
 	//otherwise, check grid dimensions
-	if (this->refGrid == nullptr) {
-		this->refGrid = grid;
+	if (this->refGrid.name == "empty") {
+		this->refGrid = grid->getRefGrid();
 	}
 	else {
 		if (
-			(fabs(this->refGrid->xMin - grid->xMin) > 0.0001) ||	//check xMin
-			(fabs(this->refGrid->yMin - grid->yMin) > 0.0001) ||	//check yMin
-			(fabs(this->refGrid->xMax - grid->xMax) > 0.0001) ||	//check xMax
-			(fabs(this->refGrid->yMax - grid->yMax) > 0.0001) ||	//check yMax
-			(this->refGrid->nRows != grid->nRows) ||				//check nRows
-			(this->refGrid->nCols != grid->nCols)					//check nCols
+			(fabs(this->refGrid.xMin - grid->xMin) > 0.0001) ||	//check xMin
+			(fabs(this->refGrid.yMin - grid->yMin) > 0.0001) ||	//check yMin
+			(fabs(this->refGrid.xMax - grid->xMax) > 0.0001) ||	//check xMax
+			(fabs(this->refGrid.yMax - grid->yMax) > 0.0001) ||	//check yMax
+			(this->refGrid.nRows != grid->nRows) ||				//check nRows
+			(this->refGrid.nCols != grid->nCols)					//check nCols
 			) {
-			std::string errstr = "Grid dimensions of " + path + " differs from " + this->refGrid->name;
+			std::string errstr = "Grid dimensions of " + path + " differs from " + this->refGrid.name;
 			std::cout << errstr << std::endl;
 			logger.Log(errstr);
 			return false;
@@ -126,7 +109,7 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 	boost::algorithm::to_lower(name);
 
 	//TODO: actual 3pg doesn't care about case (I don't think), make sure that is reflected here
-	PPPG_PARAM param;
+	std::unique_ptr<PPPG_PARAM> param = std::make_unique<PPPG_PARAM>();
 
 	//if the string isn't the exact parameter name, see if it is in the parameter name map
 	if (!this->allInputParams.contains(name)) {
@@ -136,15 +119,15 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 		}
 
 		//the string passed is the long version of the input param: set the id accordingly
-		param.id = this->inputParamNames.at(name);
+		param->id = this->inputParamNames.at(name);
 	}
 	else {
 		//if the string is the exact parameter name, set the id accordingly
-		param.id = name;
+		param->id = name;
 	}
 
 	//soilIndex special case
-	if (param.id == "soilindex") {
+	if (param->id == "soilindex") {
 		if ("S" == value.front()) {
 			value[0] = "1";
 		}
@@ -160,25 +143,24 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 	}
 
 	//try to get the value as a scalar
-	if (DataInput::getScalar(value.front(), param)) {
-		//if gotten, add to inputParams map
-		this->inputParams.emplace(param.id, param);
-
+	if (DataInput::getScalar(value.front(), param.get())) {
 		//remove from required params set
-		this->requiredInputParams3PGS.erase(param.id);
-		this->requiredInputParams3PG.erase(param.id);
+		this->requiredInputParams3PGS.erase(param->id);
+		this->requiredInputParams3PG.erase(param->id);
 
+		//if gotten, add to inputParams map
+		this->inputParams.emplace(param->id, std::move(param));
 		return true;
 	}
 	
 	//try to get the value as a grid
-	if (DataInput::getGrid(value.front(), param)) {
-		//if gotten, add to inputParams map and return
-		this->inputParams.emplace(param.id, param);
-
+	if (DataInput::getGrid(value.front(), param.get())) {
 		//remove from required params set
-		this->requiredInputParams3PGS.erase(param.id);
-		this->requiredInputParams3PG.erase(param.id);
+		this->requiredInputParams3PGS.erase(param->id);
+		this->requiredInputParams3PG.erase(param->id);
+
+		//if gotten, add to inputParams map and return
+		this->inputParams.emplace(param->id, std::move(param));
 
 		return true;
 	}
@@ -225,15 +207,18 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 		param->monthlyParams.shrink_to_fit();
 
 		for (int i = 0; i < 12; i++) {
-			param->monthlyParams[i].id = name + " month " + std::to_string(i);
+			std::unique_ptr<PPPG_PARAM> monthlyParam = std::make_unique<PPPG_PARAM>();
+			monthlyParam->id = name + " month " + std::to_string(i);
 
 			//try to add as a scalar param
-			if (DataInput::getScalar(values[i], param->monthlyParams[i])) {
+			if (DataInput::getScalar(values[i], monthlyParam.get())) {
+				param->monthlyParams[i] = std::move(monthlyParam);
 				continue;
 			}
 
 			//try to add as a grid param
-			if (DataInput::getGrid(values[i], param->monthlyParams[i])) {
+			if (DataInput::getGrid(values[i], monthlyParam.get())) {
+				param->monthlyParams[i] = std::move(monthlyParam);
 				continue;
 			}
 
@@ -301,15 +286,18 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 
 			for (int i = 0; i < 12; i++) {
 				int paramIndex = (param->lastYear - param->firstYear) * 12 + i;
-				param->monthlyParams[paramIndex].id = name + " year " + sTokens.front() + " month " + std::to_string(i);
+				std::unique_ptr<PPPG_PARAM> monthlyParam = std::make_unique<PPPG_PARAM>();
+				monthlyParam->id = name + " year " + sTokens.front() + " month " + std::to_string(i);
 
 				//try to add as a scalar param
-				if (DataInput::getScalar(sTokens[i + 1], param->monthlyParams[paramIndex])) {
+				if (DataInput::getScalar(sTokens[i + 1], monthlyParam.get())) {
+					param->monthlyParams[paramIndex] = std::move(monthlyParam);
 					continue;
 				}
 
 				//try to add as a grid param
-				if (DataInput::getGrid(sTokens[i + 1], param->monthlyParams[paramIndex])) {
+				if (DataInput::getGrid(sTokens[i + 1], monthlyParam.get())) {
+					param->monthlyParams[paramIndex] = std::move(monthlyParam);
 					continue;
 				}
 
@@ -536,16 +524,16 @@ double DataInput::getValFromInputParam(std::string paramName, long cellIndex) {
 		}
 	}
 
-	PPPG_PARAM param = this->inputParams.at(paramName);
+	PPPG_PARAM* param = this->inputParams.at(paramName).get();
 
 	//if the param is scalar, return it's value
-	if (param.spType == pScalar) {
-		return param.val;
+	if (param->spType == pScalar) {
+		return param->val;
 	}
 
 	//if the param is a grid, return the value at the row and column specified
-	if (param.spType == pTif) {
-		double val = param.g->GetVal(cellIndex);
+	if (param->spType == pTif) {
+		double val = param->g->GetVal(cellIndex);
 		if (isnan(val)) {
 			throw std::runtime_error("nan");
 		}
@@ -617,15 +605,15 @@ double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, lon
 	int monthIndex = (param->firstYear == -1) ? (month - 1) : (year - param->firstYear) * 12 + (month - 1);
 	
 	//get the monthly parameter
-	PPPG_PARAM monthParam = param->monthlyParams[monthIndex];
+	PPPG_PARAM* monthParam = param->monthlyParams[monthIndex].get();
 
-	if (monthParam.spType == pScalar) {
-		return monthParam.val;
+	if (monthParam->spType == pScalar) {
+		return monthParam->val;
 	}
 
 	//get parameter value depending on whether it is scalar or grid
-	if (monthParam.spType == pTif) {
-		double val = monthParam.g->GetVal(cellIndex);
+	if (monthParam->spType == pTif) {
+		double val = monthParam->g->GetVal(cellIndex);
 		if (isnan(val)) {
 			throw std::runtime_error("nan");
 		}
@@ -643,29 +631,29 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 		throw std::exception("should NOT be able to call findRunPeriod() if input failed!");
 	}
 
-	PPPG_PARAM yearPlantedParam = this->inputParams.at("yearplanted");
-	PPPG_PARAM startAgeParam = this->inputParams.at("startage");
-	PPPG_PARAM endYearParam = this->inputParams.at("endyear");
-	PPPG_PARAM startMonthParam = this->inputParams.at("startmonth");
+	PPPG_PARAM* yearPlantedParam = this->inputParams.at("yearplanted").get();
+	PPPG_PARAM* startAgeParam = this->inputParams.at("startage").get();
+	PPPG_PARAM* endYearParam = this->inputParams.at("endyear").get();
+	PPPG_PARAM* startMonthParam = this->inputParams.at("startmonth").get();
 
 	//get maxes and mins depending on whether they're scalar or grid parameters
-	int yearPlantedMin = (yearPlantedParam.spType == pScalar) ? static_cast<int>(yearPlantedParam.val) : static_cast<int>(yearPlantedParam.g->GetMin());
-	int startAgeMin = (startAgeParam.spType == pScalar) ? static_cast<int>(startAgeParam.val) : static_cast<int>(startAgeParam.g->GetMin());
-	int endYearMax = (endYearParam.spType == pScalar) ? static_cast<int>(endYearParam.val) : static_cast<int>(endYearParam.g->GetMax());
-	int startMonthMax = (startMonthParam.spType == pScalar) ? static_cast<int>(startMonthParam.val) : static_cast<int>(startMonthParam.g->GetMax());
+	int yearPlantedMin = (yearPlantedParam->spType == pScalar) ? static_cast<int>(yearPlantedParam->val) : static_cast<int>(yearPlantedParam->g->GetMin());
+	int startAgeMin = (startAgeParam->spType == pScalar) ? static_cast<int>(startAgeParam->val) : static_cast<int>(startAgeParam->g->GetMin());
+	int endYearMax = (endYearParam->spType == pScalar) ? static_cast<int>(endYearParam->val) : static_cast<int>(endYearParam->g->GetMax());
+	int startMonthMax = (startMonthParam->spType == pScalar) ? static_cast<int>(startMonthParam->val) : static_cast<int>(startMonthParam->g->GetMax());
 
 	/* 
 	determine minMY values 
 	*/
-	if (startAgeParam.spType != pScalar && yearPlantedParam.spType != pScalar) {
+	if (startAgeParam->spType != pScalar && yearPlantedParam->spType != pScalar) {
 		//if both are raster, find smallest sum of yearPlanted and startAge pixels.
 		//we do this because the minimum sum (which is the year we should start on)
 		//does not have to be at any of the pixels where yearPlanted or startAge are smallest
 		double overallMin = std::numeric_limits<double>::max();
-		for (int row = 0; row < yearPlantedParam.g->nRows; row++) {
-			for (int col = 0; col < yearPlantedParam.g->nCols; col++) {
+		for (int row = 0; row < yearPlantedParam->g->nRows; row++) {
+			for (int col = 0; col < yearPlantedParam->g->nCols; col++) {
 				//convert gotten values to double first so we don't have any overflow of floats as we add them
-				double curMin = (double)yearPlantedParam.g->GetVal(row, col) + (double)startAgeParam.g->GetVal(row, col);
+				double curMin = (double)yearPlantedParam->g->GetVal(row, col) + (double)startAgeParam->g->GetVal(row, col);
 				
 				//set the overall minimum accordingly
 				overallMin = (curMin < overallMin) ? curMin : overallMin;
@@ -684,9 +672,9 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	/* 
 	determine maxMY values
 	*/
-	if (endYearParam.spType != pScalar && startMonthParam.spType != pScalar) {
+	if (endYearParam->spType != pScalar && startMonthParam->spType != pScalar) {
 		//find the maximum month considering only pixels that are the maximum year
-		maxMY.mon = static_cast<int>(startMonthParam.g->maxFromIndices(endYearParam.g->getIndicesWhere(endYearMax)));
+		maxMY.mon = static_cast<int>(startMonthParam->g->maxFromIndices(endYearParam->g->getIndicesWhere(endYearMax)));
 	}
 	else {
 		//otherwise, just use the start month max
@@ -725,7 +713,7 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	logger.Log(runPeriodStr);
 }
 
-GDALRasterImage* DataInput::getRefGrid() {
+RefGridProperties DataInput::getRefGrid() {
 	return this->refGrid;
 }
 

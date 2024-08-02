@@ -5,13 +5,13 @@
 #include <../apps/GDALRasterImage.hpp>
 #include <../apps/DataOutput.hpp>
 
-std::string refgridDir = "test_files/DataOutputTests/refgrid.tif";
+std::string refGridDir = "test_files/DataOutputTests/refgrid.tif";
 std::string outDir = "test_files/DataOutputTests/outputs/";
 
-TEST(DataOutputTests, filenames) {
-	//get refgrid
-	GDALRasterImage* refgrid = new GDALRasterImage(refgridDir);
+GDALRasterImage img(refGridDir);
+RefGridProperties refGrid = img.getRefGrid();
 
+TEST(DataOutputTests, filenames) {
 	//get output path
 	std::filesystem::path outPath = outDir;
 
@@ -45,16 +45,12 @@ TEST(DataOutputTests, filenames) {
 	testOutput3 /= name3 + std::to_string(year3) + std::to_string(month3) + ".tif";
 
 	//create dataOutput, set and write values
-	DataOutput* dataOutput = new DataOutput(refgrid, outDir);
-	dataOutput->setVal(year1, month1, name1, 0, 0);
-	dataOutput->setVal(year2, month2, name2, 0, 0);
-	dataOutput->setVal(year3, month3, name3, 0, 0);
-	dataOutput->writeRow(0);
-	dataOutput->writeRow(1);
-
-	//clean up
-	delete dataOutput;
-	delete refgrid;
+	DataOutput dataOutput(refGrid, outDir);
+	dataOutput.setVal(year1, month1, name1, 0, 0);
+	dataOutput.setVal(year2, month2, name2, 0, 0);
+	dataOutput.setVal(year3, month3, name3, 0, 0);
+	dataOutput.writeRow(0);
+	dataOutput.writeRow(1);
 
 	//check the filenames exist that should
 	EXPECT_TRUE(std::filesystem::exists(testOutput1));
@@ -63,9 +59,6 @@ TEST(DataOutputTests, filenames) {
 }
 
 TEST(DataOutputTests, nans) {
-	//get refgrid
-	GDALRasterImage* refgrid = new GDALRasterImage(refgridDir);
-
 	//get output path
 	std::filesystem::path outPath = outDir;
 
@@ -91,7 +84,7 @@ TEST(DataOutputTests, nans) {
 	std::filesystem::path nan2path = outDir;
 	nan2path /= nan2Name + std::to_string(nan2Year) + std::to_string(nan2Month) + ".tif";
 
-	DataOutput* dataOutput = new DataOutput(refgrid, outDir);
+	std::unique_ptr<DataOutput> dataOutput = std::make_unique<DataOutput>(refGrid, outDir);
 	//only set nan1 values in vertical pattern:
 	dataOutput->setVal(nan1Year, nan1Month, nan1Name, 0, 1); //row 0 column 0 = 1
 	dataOutput->setVal(nan1Year, nan1Month, nan1Name, 2, 1); //row 1 column 0 = 1
@@ -105,39 +98,31 @@ TEST(DataOutputTests, nans) {
 	dataOutput->writeRow(0);
 	dataOutput->writeRow(1);
 
-	//clean up
-	delete dataOutput;
-	delete refgrid;
+	//delete
+	dataOutput.reset();
 
 	//ensure files exist
 	ASSERT_TRUE(std::filesystem::exists(nan1path));
 	ASSERT_TRUE(std::filesystem::exists(nan2path));
 
-	GDALRasterImage* nan1Tif = new GDALRasterImage(nan1path.string());
-	GDALRasterImage* nan2Tif = new GDALRasterImage(nan2path.string());
+	GDALRasterImage nan1Tif(nan1path.string());
+	GDALRasterImage nan2Tif(nan2path.string());
 
 	//note in the GetVal function, x is the first parameter (which is the column selector)
 	//check nan tif 1
-	EXPECT_EQ(nan1Tif->GetVal(0, 0), 1);				//[0,0] = 1
-	EXPECT_TRUE(std::isnan(nan1Tif->GetVal(1, 0)));		//[0,1] = nan
-	EXPECT_EQ(nan1Tif->GetVal(0, 1), 1);				//[1,0] = 1
-	EXPECT_TRUE(std::isnan(nan1Tif->GetVal(1, 1)));		//[1,1] = nan
+	EXPECT_EQ(nan1Tif.GetVal(0, 0), 1);				//[0,0] = 1
+	EXPECT_TRUE(std::isnan(nan1Tif.GetVal(1, 0)));		//[0,1] = nan
+	EXPECT_EQ(nan1Tif.GetVal(0, 1), 1);				//[1,0] = 1
+	EXPECT_TRUE(std::isnan(nan1Tif.GetVal(1, 1)));		//[1,1] = nan
 
 	//check nan tif 2
-	EXPECT_TRUE(std::isnan(nan2Tif->GetVal(0, 0)));		//[0,0] = nan
-	EXPECT_TRUE(std::isnan(nan2Tif->GetVal(1, 0)));		//[0,1] = nan
-	EXPECT_EQ(nan2Tif->GetVal(0, 1), 1);				//[1,0] = 1
-	EXPECT_EQ(nan2Tif->GetVal(1, 1), 1);				//[1,1] = 1
-
-	//clean up
-	delete nan1Tif;
-	delete nan2Tif;
+	EXPECT_TRUE(std::isnan(nan2Tif.GetVal(0, 0)));		//[0,0] = nan
+	EXPECT_TRUE(std::isnan(nan2Tif.GetVal(1, 0)));		//[0,1] = nan
+	EXPECT_EQ(nan2Tif.GetVal(0, 1), 1);				//[1,0] = 1
+	EXPECT_EQ(nan2Tif.GetVal(1, 1), 1);				//[1,1] = 1
 }
 
 TEST(DataOutputTests, extremes) {
-	//get refgrid
-	GDALRasterImage* refgrid = new GDALRasterImage(refgridDir);
-
 	//get output path
 	std::filesystem::path outPath = outDir;
 
@@ -160,7 +145,7 @@ TEST(DataOutputTests, extremes) {
 	float smallNeg = static_cast<float>(-.000001);
 
 	//create dataOutput, set and write values
-	DataOutput* dataOutput = new DataOutput(refgrid, outDir);
+	std::unique_ptr<DataOutput> dataOutput = std::make_unique<DataOutput>(refGrid, outDir);
 	dataOutput->setVal(year, month, name, 0, std::numeric_limits<float>::max());
 	dataOutput->setVal(year, month, name, 1, std::numeric_limits<float>::min());
 	dataOutput->setVal(year, month, name, 2, smallPos);
@@ -168,21 +153,17 @@ TEST(DataOutputTests, extremes) {
 	dataOutput->writeRow(0);
 	dataOutput->writeRow(1);
 
-	//clean up
-	delete dataOutput;
-	delete refgrid;
+	//delete
+	dataOutput.reset();
 
 	//ensure file exists
 	ASSERT_TRUE(std::filesystem::exists(path));
 
-	GDALRasterImage* tif = new GDALRasterImage(path.string());
+	GDALRasterImage tif(path.string());
 
 	//check values
-	EXPECT_EQ(tif->GetVal(0, 0), std::numeric_limits<float>::max());
-	EXPECT_EQ(tif->GetVal(1, 0), std::numeric_limits<float>::min());
-	EXPECT_EQ(tif->GetVal(0, 1), smallPos);
-	EXPECT_EQ(tif->GetVal(1, 1), smallNeg);
-
-	//clean up
-	delete tif;
+	EXPECT_EQ(tif.GetVal(0, 0), std::numeric_limits<float>::max());
+	EXPECT_EQ(tif.GetVal(1, 0), std::numeric_limits<float>::min());
+	EXPECT_EQ(tif.GetVal(0, 1), smallPos);
+	EXPECT_EQ(tif.GetVal(1, 1), smallNeg);
 }
