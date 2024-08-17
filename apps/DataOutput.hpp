@@ -39,13 +39,13 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<varMap>> imageBuffers;
 	std::mutex imageBuffersMutex;
 
-	//determine the filepath of the output given year, month, name.
-	//call getImageBuffer() to get the associated wrapper.
-	//write the correct val at the correct index using index, val, and hitNODATA.
-	void setVal(int year, int month, std::string name, int index, float val);
-
 public:
 	DataOutput(RefGridProperties& refGrid, std::string outpath, std::unordered_map<std::string, PPPG_OP_VAR> vars);
+
+	//determine the filepath of the output given year, month, name.
+	//call getImageBuffer() to get the associated wrapper.
+	//write the correct val at the correct index using index, val.
+	void setVal(int year, int month, std::string name, int index, float val);
 
 	int writeOutputGrids(const std::unordered_map<std::string, double>& opVarVals, long cellIndex);
 	void writeMonthlyOutputGrids(const std::unordered_map<std::string, double>& opVarVals, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex);
