@@ -16,6 +16,5 @@ double lookupManageTable( int year, int table, double def, int cellIndex );
 
 void readSpeciesParamFile(const std::string& speciesFile, DataInput&dataInput);
 void readSiteParamFile(const std::string& paramFile, DataInput& dataInput);
-//PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo);
 
 std::string getOutPathTMP(const std::string& siteParamFile);
