@@ -182,7 +182,7 @@ private:
 		{"minimum basic density - for young trees", "rhomin"},
 		{"maximum basic density - for older trees", "rhomax"},
 		{"age at which rho = (rhomin+rhomax)/2", "trho"},
-		{"year Planted", "yearlanted"},
+		{"year planted", "yearplanted"},
 	};
 	std::unordered_set<std::string> allInputParams = {
 		"pfs2",
@@ -307,6 +307,7 @@ private:
 		{"rain", SeriesIndex::RAIN},
 		{"solar radtn", SeriesIndex::SOLAR_RAD},
 		{"frost", SeriesIndex::FROST_DAYS},
+		{"frost days", SeriesIndex::FROST_DAYS},
 		{"ndvi_avh", SeriesIndex::NDVI_AVH},
 		{"net radtn", SeriesIndex::NET_RAD},
 		{"vpd", SeriesIndex::VPD},
@@ -314,6 +315,100 @@ private:
 	PPPG_SERIES_PARAM seriesParams[9];
 	std::unordered_set<std::string> acquiredSeriesParams;
 	//std::unordered_map<std::string, std::unordered_map<int, std::vector<PPPG_PARAM>>> seriesParams;
+
+	std::unordered_map<std::string, std::string> outputParamNames = {
+		{"stocking density","stemno"},
+		{"weight of foliage","wf" },
+		{"weight of roots","wr"},
+		{"weight of stems","ws"},
+		{"total weight","totalw"},
+		{"mean annual increment","mai"},
+		{"average dbh","avdbh"},
+		{"basal area","basarea"},
+		{"stand volume","standvol"},
+		{"transpiration","transp"},
+		{"available soil water","asw"},
+		{"gross primary production (tdm/ha)","gpp"},
+		{"change in aboveground boimass (tdm/ha)","delwag"},
+		{"accumulated aboveground biomass (tdm/ha)","cumwabv"},
+		{"net primary production (tdm/ha)","npp"},
+		{"leaf area index","lai"},
+		{"frout","fr"},
+	};
+	std::unordered_set<std::string> allOutputParams = {
+		"stemno",
+		"wf",
+		"wr",
+		"ws",
+		"totalw",
+		"mai",
+		"avdbh",
+		"basarea",
+		"standvol",
+		"transp",
+		"ctransp",
+		"asw",
+		"evaptransp",
+		"cevaptransp",
+		"laix",
+		"agelaix",
+		"gpp",
+		"cgpp",
+		"totallitter",
+		"clitter",
+		"delwag",
+		"cumwabv",
+		"npp",
+		"cnpp",
+		"lai",
+		"clai",
+		"fr",
+		"physmod",
+		"alphac",
+		"fage",
+		"fracbb",
+		"wue",
+		"cwue",
+		"cvi",
+		"ccvi",
+		"fsw",
+		"fvpd",
+		"ft",
+		"fnutr",
+		"ffrost",
+		"apar",
+		"aparu",
+		"maix",
+		"agemaix"
+	};
+	std::unordered_set<std::string> only3PG = {
+		"stemno",
+		"wf",
+		"wr",
+		"ws",
+		"totalw",
+		"mai",
+		"avdbh",
+		"basarea",
+		"standvol",
+		"transp",
+		"ctransp",
+		"asw",
+		"evaptransp",
+		"cevaptransp",
+		"laix",
+		"agelaix",
+		"gpp",
+		"cgpp",
+		"totallitter",
+		"clitter" };
+	std::unordered_set<std::string> only3PGS = {
+		"delwag",
+		"cumwabv" 
+	};
+	bool allow3PG = true;
+	bool allow3PGS = true;
+	std::unordered_map<std::string, PPPG_OP_VAR> outputParams;
 
 	bool haveTavg = false;
 	bool haveVPD = false;
@@ -331,9 +426,11 @@ private:
 public:
 	bool tryAddInputParam(std::string pname, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
+	bool tryAddOutputParam(std::string name, std::vector<std::string> value, int lineno);
 	bool inputFinished(bool modelMode3PGS);
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
+	std::unordered_map<std::string, PPPG_OP_VAR> getOpVars();
 	bool haveNetRadParam();
 	RefGridProperties getRefGrid();
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);

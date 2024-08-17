@@ -29,106 +29,62 @@ Use of this software assumes agreement to this condition of use
 #endif
 
 //--------------------------------------------------------------------------
-
-// std::string strcpyTrim(std::string s, std::string ct)
-// {
-//   boost::algorithm::trim(ct);
-//   s = ct;
-//   return ct;
-//   // Copy ct to s, plus trim leading and trailing white space. 
-//   int i;
-//   char *start, *end, *cp;
-
-//   if (ct == NULL) {
-//     s[0] = '\0';
-//     return NULL;
-//   }
-
-//   // Trim the id string of leading whitespace.  
-//   for (start = ct; isspace(*start); start++)
-//     ;
-  
-//   // Was the whole string whitespace. 
-//   if (*start == '\0') {
-//     s[0] = '\0';
-//     return s;
-//   }
-
-//   // Copy it. 
-//   // Trim trailing whitespace. 
-//   for (end = start; *end != '\0'; end++)
-//     ;
-//   end--;
-//   if (isspace(*end)) {
-//     for ( ; isspace(*end); end--)
-//       ;
-//   }
-//   end++;
-//   *end = '\0';
-
-//   // Copy 
-//   for (i=0, cp = start; cp <= end; cp++, i++)
-//     s[i] = *cp;
-//   return s;
-// }
-
-//--------------------------------------------------------------------------
-Logger::Logger(const string& filename)
-{
-    logName = filename;
-}
-
-void Logger::StartLog(const string& outPath)
-{
-    this->logging = true;
-    logLoc = outPath;
-    log.open(logLoc + logName, ios::trunc);
-    string currDate = GetCurrentDate();
-    string currTime = GetCurrentTime();
-    log << "-------------------\n";
-    log << "OS date: " << setw(20) << currDate << "\n";
-    log << "OS time: " << setw(20) << currTime << "\n";
-    log << "-------------------\n";
-    log.close();
-}
-
-Logger::~Logger()
-{
-    if (log.is_open())
-    {
-        log.close();
-    }
-}
-
-void Logger::Log(const string& logMsg)
-{
-    if (!this->logging) {
-        return;
-    }
-    log.open(logLoc + logName, ios::app);
-    log << logMsg + "\n";
-    log.close();
-}
-
-string Logger::GetCurrentDate()
-{
-    if (!this->logging) {
-        return "ERROR logger not started";
-    }
-    auto now = std::chrono::system_clock::now();
-    auto local_time = std::chrono::current_zone()->to_local(now);
-    return std::format("{:%d-%m-%Y}", local_time);
-}
-
-string Logger::GetCurrentTime()
-{
-    if (!this->logging) {
-        return "ERROR logger not started";
-    }
-    auto now = std::chrono::system_clock::now();
-    auto local_time = std::chrono::current_zone()->to_local(now);
-    return std::format("{:%H:%M:%S}", local_time);
-}
+//Logger::Logger(const string& filename)
+//{
+//    logName = filename;
+//}
+//
+//void Logger::StartLog(const string& outPath)
+//{
+//    this->logging = true;
+//    logLoc = outPath;
+//    log.open(logLoc + logName, ios::trunc);
+//    string currDate = GetCurrentDate();
+//    string currTime = GetCurrentTime();
+//    log << "-------------------\n";
+//    log << "OS date: " << setw(20) << currDate << "\n";
+//    log << "OS time: " << setw(20) << currTime << "\n";
+//    log << "-------------------\n";
+//    log.close();
+//}
+//
+//Logger::~Logger()
+//{
+//    if (log.is_open())
+//    {
+//        log.close();
+//    }
+//}
+//
+//void Logger::Log(const std::string& logMsg)
+//{
+//    if (!this->logging) {
+//        return;
+//    }
+//    log.open(logLoc + logName, std::ios::app);
+//    log << logMsg + "\n";
+//    log.close();
+//}
+//
+//std::string Logger::GetCurrentDate()
+//{
+//    if (!this->logging) {
+//        return "ERROR logger not started";
+//    }
+//    auto now = std::chrono::system_clock::now();
+//    auto local_time = std::chrono::current_zone()->to_local(now);
+//    return std::format("{:%d-%m-%Y}", local_time);
+//}
+//
+//std::string Logger::GetCurrentTime()
+//{
+//    if (!this->logging) {
+//        return "ERROR logger not started";
+//    }
+//    auto now = std::chrono::system_clock::now();
+//    auto local_time = std::chrono::current_zone()->to_local(now);
+//    return std::format("{:%H:%M:%S}", local_time);
+//}
 //--------------------------------------------------------------------------
 
 bool ichar_equals(char a, char b)

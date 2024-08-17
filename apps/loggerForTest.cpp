@@ -1,3 +1,3 @@
 #include "util.hpp"
 
-Logger logger("logfile.txt");
+//Logger logger("logfile.txt");

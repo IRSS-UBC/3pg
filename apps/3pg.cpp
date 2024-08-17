@@ -30,6 +30,7 @@ Use of this software assumes agreement to this condition of use
 #include "DataOutput.hpp"
 #include "DataInput.hpp"
 #include "ParamStructs.hpp"
+#include "util.hpp"
 
 //----------------------------------------------------------------------------------------
 std::string VERSION = "0.1";
@@ -45,7 +46,7 @@ std::string COPYMSG = "This version of 3-PG has been revised by:\n"
 
 extern bool modelMode3PGS;
 
-Logger logger("logfile.txt");
+//Logger logger("logfile.txt");
 
 class InputParser {
 public:
@@ -124,7 +125,6 @@ int main(int argc, char* argv[])
     MYDate spMinMY, spMaxMY;
     std::string defParamFile;
     std::string siteParamFile;
-    std::unordered_map<std::string, PPPG_OP_VAR> opVars;
 
     /* Parse command line args */
     InputParser input(argc, argv);
@@ -146,17 +146,17 @@ int main(int argc, char* argv[])
     }
 
     std::string outPath = getOutPathTMP(siteParamFile);
-    logger.StartLog(outPath);
+    //logger.StartLog(outPath);
     DataInput dataInput;
 
     /* Copyright */
     std::cout << COPYMSG << std::endl;
-    logger.Log(COPYMSG);
+    //logger.Log(COPYMSG);
 
     // Load the parameters
     std::cout << "Loading and validating parameters...";
     readSpeciesParamFile(defParamFile, dataInput);
-    opVars = readSiteParamFile(siteParamFile, dataInput);
+    readSiteParamFile(siteParamFile, dataInput);
 
     //check that we have all the correct parameters
     if (!dataInput.inputFinished(modelMode3PGS)) {
@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
     // Check for a spatial run, if so open input grids and define refGrid. 
     openInputGrids();
     RefGridProperties refGrid = dataInput.getRefGrid();
-    DataOutput dataOutput(refGrid, outPath);
+    DataOutput dataOutput(refGrid, outPath, dataInput.getOpVars());
 
     // Find the over all start year and end year. 
     // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
@@ -183,11 +183,11 @@ int main(int argc, char* argv[])
     Progress progress(refGrid.nRows);
 
     for (int i = 0; i < refGrid.nRows; i++) {
-        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, refGrid, &dataInput, &dataOutput, &progress] {
+        boost::asio::post(pool, [spMinMY, spMaxMY, i, refGrid, &dataInput, &dataOutput, &progress] {
             int cellIndexStart = i * refGrid.nCols;
             for (int j = 0; j < refGrid.nCols; j++) {
                 int cellIndex = cellIndexStart + j;
-                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput, dataOutput);
+                runTreeModel(spMinMY, spMaxMY, cellIndex, dataInput, dataOutput);
             }
 
             dataOutput.writeRow(i);

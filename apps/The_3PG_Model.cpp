@@ -216,55 +216,56 @@ struct Vars {
     double delWAG;
 };
 
-void copyVars(Vars vars, std::unordered_map<std::string, PPPG_OP_VAR>& opVars) {
-    opVars["WF"].v = vars.WF;
-    opVars["LAIx"].v = vars.LAIx;
-    opVars["StemNo"].v = vars.StemNo;
-    opVars["WS"].v = vars.WS;
-    opVars["BasArea"].v = vars.BasArea;
-    opVars["WR"].v = vars.WR;
-    opVars["MAIx"].v = vars.MAIx;
-    opVars["ASW"].v = vars.ASW;
-    opVars["fracBB"].v = vars.fracBB;
-    opVars["TotalLitter"].v = vars.TotalLitter;
-    opVars["WUE"].v = vars.WUE;
-    opVars["cNPP"].v = vars.cNPP;
-    opVars["avDBH"].v = vars.avDBH;
-    opVars["LAI"].v = vars.LAI;
-    opVars["alphaC"].v = vars.alphaC;
-    opVars["cLAI"].v = vars.cLAI;
-    opVars["cTransp"].v = vars.cTransp;
-    opVars["StandVol"].v = vars.StandVol;
-    opVars["cEvapTransp"].v = vars.cEvapTransp;
-    opVars["MAI"].v = vars.MAI;
-    opVars["FR"].v = vars.FR;
-    opVars["cLitter"].v = vars.cLitter;
-    opVars["cumWabv"].v = vars.cumWabv;
-    opVars["cCVI"].v = vars.cCVI;
-    opVars["cGPP"].v = vars.cGPP;
-    opVars["fT"].v = vars.fT;
-    opVars["fVPD"].v = vars.fVPD;
-    opVars["fSW"].v = vars.fSW;
-    opVars["fNutr"].v = vars.fNutr;
-    opVars["fFrost"].v = vars.fFrost;
-    opVars["fAge"].v = vars.fAge;
-    opVars["PhysMod"].v = vars.PhysMod;
-    opVars["APAR"].v = vars.APAR;
-    opVars["APARu"].v = vars.APARu;
-    opVars["NPP"].v = vars.NPP;
-    opVars["TotalW"].v = vars.TotalW;
-    opVars["Transp"].v = vars.Transp;
-    opVars["EvapTransp"].v = vars.EvapTransp;
-    opVars["ageMAIx"].v = vars.ageMAIx;
-    opVars["ageLAIx"].v = vars.ageLAIx;
-    opVars["CVI"].v = vars.CVI;
-    opVars["cWUE"].v = vars.cWUE;
-    opVars["delWAG"].v = vars.delWAG;
+void copyVars(Vars vars, std::unordered_map<std::string, double>& opVarVals) {
+    opVarVals["wf"] = vars.WF;
+    opVarVals["laix"] = vars.LAIx;
+    opVarVals["stemno"] = vars.StemNo;
+    opVarVals["ws"] = vars.WS;
+    opVarVals["basarea"] = vars.BasArea;
+    opVarVals["wr"] = vars.WR;
+    opVarVals["maix"] = vars.MAIx;
+    opVarVals["asw"] = vars.ASW;
+    opVarVals["fracbb"] = vars.fracBB;
+    opVarVals["totallitter"] = vars.TotalLitter;
+    opVarVals["wue"] = vars.WUE;
+    opVarVals["cnpp"] = vars.cNPP;
+    opVarVals["avdbh"] = vars.avDBH;
+    opVarVals["lai"] = vars.LAI;
+    opVarVals["alphac"] = vars.alphaC;
+    opVarVals["clai"] = vars.cLAI;
+    opVarVals["ctransp"] = vars.cTransp;
+    opVarVals["standvol"] = vars.StandVol;
+    opVarVals["cevaptransp"] = vars.cEvapTransp;
+    opVarVals["mai"] = vars.MAI;
+    opVarVals["fr"] = vars.FR;
+    opVarVals["clitter"] = vars.cLitter;
+    opVarVals["cumwabv"] = vars.cumWabv;
+    opVarVals["ccvi"] = vars.cCVI;
+    opVarVals["cgpp"] = vars.cGPP;
+    opVarVals["ft"] = vars.fT;
+    opVarVals["fvpd"] = vars.fVPD;
+    opVarVals["fsw"] = vars.fSW;
+    opVarVals["fnutr"] = vars.fNutr;
+    opVarVals["ffrost"] = vars.fFrost;
+    opVarVals["fage"] = vars.fAge;
+    opVarVals["physmod"] = vars.PhysMod;
+    opVarVals["apar"] = vars.APAR;
+    opVarVals["aparu"] = vars.APARu;
+    opVarVals["npp"] = vars.NPP;
+    opVarVals["totalw"] = vars.TotalW;
+    opVarVals["transp"] = vars.Transp;
+    opVarVals["evaptransp"] = vars.EvapTransp;
+    opVarVals["agemaix"] = vars.ageMAIx;
+    opVarVals["agelaix"] = vars.ageLAIx;
+    opVarVals["cvi"] = vars.CVI;
+    opVarVals["cwue"] = vars.cWUE;
+    opVarVals["delwag"] = vars.delWAG;
 }
 
 // This is the main routine for the 3PG model
-void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
+void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
 {
+    std::unordered_map<std::string, double> opVarVals;
     Vars vars;
 
     // ANL - Load the parameter values.  On NODATA return, because all pixels are initialized to nodata
@@ -487,8 +488,8 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
     vars.FR = params.FRp;
 
     //write initial state of output variables
-    copyVars(vars, opVars);
-    writeMonthlyOutputGrids(opVars, dataOutput, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
+    copyVars(vars, opVarVals);
+    dataOutput.writeMonthlyOutputGrids(opVarVals, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
 
     //Start processing loop
     for (cy = spMinMY.year; cy <= spMaxMY.year; cy++) {
@@ -897,8 +898,8 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
             if (!yrPreStart && !yrPstEnd && !(calYear == spMaxMY.year && calMonth == spMaxMY.mon)) {
                 //the !(calYear == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
                 //output, but rather skip it and the values are eventually written via writeOutputGrids().
-                copyVars(vars, opVars);
-                writeMonthlyOutputGrids(opVars, dataOutput, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
+                copyVars(vars, opVarVals);
+                dataOutput.writeMonthlyOutputGrids(opVarVals, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
             }
         }
 
@@ -948,6 +949,6 @@ void runTreeModel(std::unordered_map<std::string, PPPG_OP_VAR> opVars, MYDate sp
         vars.LAI = vars.WF * SLA * 0.1;
 
     }
-    copyVars(vars, opVars);
-    writeOutputGrids(opVars, dataOutput, cellIndex);
+    copyVars(vars, opVarVals);
+    dataOutput.writeOutputGrids(opVarVals, cellIndex);
 }

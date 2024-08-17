@@ -32,16 +32,11 @@ typedef struct PPPG_PARAM {
 // repeatedly, on a time step defined by recurStart, recurYear, and recurMonthly. 
 typedef struct PPPG_OP_VAR {
 	std::string id;                       // String version of the variable name. 
-	double v;                    // The address of the model variable. 
-	ParamSpatial spType;            // If its a spatial parameter and what grid type. 
 	std::string gridName;  // The gridname, in spatial mode. 
-	//GDALRasterImage *g;                        // The final output grid, in spatial mode. 
-	bool write; // Whether the variable is wanted. 
 	int recurStart;                 // First year to write regular output. 
 	int recurYear = -1;                  // Interval on which to write regular output. 
 	int recurMonth;                 // Single month number we want output in. 
 	bool recurMonthly;              // Whether to write every month in an output year. 
-	//std::vector<GDALRasterImage*> RO;                      // The output tifs for regular output. 
 } PPPG_OP_VAR;
  
 typedef struct PPPG_SERIES_PARAM {

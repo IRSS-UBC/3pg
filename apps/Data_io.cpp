@@ -47,7 +47,7 @@ static std::string rcsid = "$Id: Data_io.cpp,v 1.10 2001/08/02 06:41:01 lou026 E
 #define PPPG_MAX_SERIES_LENGTH PPPG_MAX_SERIES_YEARS*12
 
 //logger
-extern Logger logger; 
+//extern Logger logger; 
 
 // Controls and counters
 extern double DaysInMonth[13];                  // array for days in months
@@ -133,10 +133,10 @@ bool openGrid(PPPG_VVAL& vval)
 
         try {
             vval.g = new GDALRasterImage(vval.gridName);
-            logger.Log(openString + succesReadString);
+            //logger.Log(openString + succesReadString);
         }
         catch (const std::exception&) {
-            logger.Log(openString + failReadString);
+            //logger.Log(openString + failReadString);
             exit(EXIT_FAILURE);
         }
 
@@ -197,7 +197,7 @@ double lookupManageTable( int year, int table, double def, int k )
     mt = IrrigMT; 
   else {
     std::cout << "Program error: called lookupManageTable with invalid table" << std::endl;
-    logger.Log("Program error: called lookupManageTable with invalid table");
+    //logger.Log("Program error: called lookupManageTable with invalid table");
     exit(EXIT_FAILURE);
   }
 
@@ -229,166 +229,163 @@ double lookupManageTable( int year, int table, double def, int k )
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 
-PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo)
-{
-  // For a parameter name pName and a parameter value, pValue, both as strings, read 
-  // the value into an appropriate variable. The parameter name can be either the 
-  // same as the variable name, or it can be a long descriptive name.  
-  std::string cp;
-  std::string outstr;
-  bool yearlyOutput = false;
-
-  PPPG_OP_VAR opVar;
-  if (pValue.empty()) {
-    outstr = "No grid name for param " + pName +  " on line: " + to_string(lineNo);
-    std::cout << outstr << std::endl;
-    logger.Log(outstr);
-    exit(EXIT_FAILURE);
-  }
-  if (pValue.size() > 5) {
-      outstr = "More than 5 value elements detected for param " + pName + " on line: " + to_string(lineNo);
-      std::cout << outstr << std::endl;
-      logger.Log(outstr);
-      exit(EXIT_FAILURE);
-  }
-  // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
-  opVar.gridName = pValue.front();
-  const std::filesystem::path filePath = opVar.gridName;
-  if (filePath.extension() == ".tif") // Heed the dot.
-  {
-      opVar.spType = pTif;
-  }
-  else
-  {
-      outstr = filePath.filename().generic_string() + " is an invalid filename. Found " + filePath.extension().generic_string() + " but must be '.tif'";
-      std::cout << outstr << std::endl;
-      logger.Log(outstr);
-      exit(EXIT_FAILURE);
-  }
-  // Check for optional second, third, fourth and fifth tokens; these are used to specify recurring output pattern.
-  // The following parsing rules apply:
-  //    - If second token exists, then a third and fourth token must also exist. A fifth token is optional.
-  //    - The third token must be an integer, representing the start year of the recurrence pattern.
-  //    - The fourth token must be 'monthly' or 'month'
-  //    - If fourth token is 'monthly', then fifth token must not exist (assumed to be 1).
-  //    - If fourth token is 'month', then fifth token must be an integer between 1 and 12.
-  try {
-    // NOTE: using .at() accessor here to ensure an exception is thrown if the index is out of range
-    // There is likely a better way to do this whole flow of logic, but for now we are sticking as close
-    // as possible to the original code.
-    cp = pValue.at(1);
-    yearlyOutput = true;
-  }
-  catch (const std::out_of_range&) {
-      // No recurring year output
-      yearlyOutput = false;
-  }
-  if (yearlyOutput == true) {
-    // Look for start year
-    try {
-      opVar.recurStart = std::stoi(cp);
-    }
-    catch (std::invalid_argument const&) {
-      outstr = "Expected an integer start year in recuring output specification on line " +  to_string(lineNo);
-      std::cout << outstr << std::endl;
-      logger.Log(outstr);
-      exit(EXIT_FAILURE);
-    }
-    // Look for interval
-    try {
-      cp = pValue.at(2);
-      try {
-        const int interval = std::stoi(cp);
-        if (interval == 0)
-        {
-            outstr = "Found interval of zero years in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
-            std::cout << outstr << std::endl;
-            logger.Log(outstr);
-            exit(EXIT_FAILURE);
-        }
-        opVar.recurYear = interval;
-      }
-      catch (std::invalid_argument const&) {
-          outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
-          std::cout << outstr << std::endl;
-          logger.Log(outstr);
-          exit(EXIT_FAILURE);
-      }
-    }
-    catch (const std::out_of_range&) {
-        outstr = "Found start year but no interval in recuring output specification on line " + to_string(lineNo);
-        std::cout << outstr << std::endl;
-        logger.Log(outstr);
-        exit(EXIT_FAILURE);
-    }
-    // Look for 'monthly' or 'month' keywords. 
-    try {
-      cp = pValue.at(3);
-      if (cp == "monthly")
-        opVar.recurMonthly = true;
-      else if (cp == "month") {
-        opVar.recurMonthly = false;
-        // If 'month', look for the month interger
-        try {
-          cp = pValue.at(4);
-          try {
-            opVar.recurMonth = std::stoi(cp);
-            if (opVar.recurMonth == 0)
-            {
-                outstr = "Found month of zero in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
-                std::cout << outstr << std::endl;
-                logger.Log(outstr);
-                exit(EXIT_FAILURE);
-            }
-          }
-          catch (std::invalid_argument const&) {
-              outstr = "Expected an integer month in recuring output specification on line " + to_string(lineNo);
-              std::cout << outstr << std::endl;
-              logger.Log(outstr);
-              exit(EXIT_FAILURE);
-          }
-        }
-        catch (const std::out_of_range&) {
-            outstr = "Found 'month' keyword but no month in recuring output specification on line " + to_string(lineNo);
-            std::cout << outstr << std::endl;
-            logger.Log(outstr);
-            exit(EXIT_FAILURE);
-        }
-      }
-      else {
-          outstr = "Unrecognised keyword '" + cp + "' on line " + to_string(lineNo);
-          std::cout << outstr << std::endl;
-          logger.Log(outstr);
-          exit(EXIT_FAILURE);
-      }
-    }
-    catch (const std::out_of_range&) {
-        
-        outstr = "Found start year and interval but no keyword in recuring output specification on line " + to_string(lineNo);
-        std::cout << outstr << std::endl;
-        logger.Log(outstr);
-        exit(EXIT_FAILURE);
-    }
-  }
-  // Mark the variable for later writing
-    opVar.write = true;
-    logger.Log("   variable: " + opVar.id + "   grid: " + opVar.gridName);
-    if (opVar.recurStart)
-    {
-        string outputGridString = "      starting in " + to_string(opVar.recurStart) + ", writing every " + to_string(opVar.recurYear) + " years";
-        if (opVar.recurMonthly)
-        {
-            outputGridString = outputGridString + ", with monthly values";
-        }
-        else if (opVar.recurMonth != 0)
-        {
-            outputGridString = outputGridString + ", on the " + to_string(opVar.recurMonth) + " month";
-
-        }
-        logger.Log(outputGridString);
-    }
-  return opVar;
-}
+//PPPG_OP_VAR readOutputParam(const std::string& pName, const std::vector<std::string>& pValue, int lineNo)
+//{
+//  // For a parameter name pName and a parameter value, pValue, both as strings, read 
+//  // the value into an appropriate variable. The parameter name can be either the 
+//  // same as the variable name, or it can be a long descriptive name.  
+//  std::string cp;
+//  std::string outstr;
+//  bool yearlyOutput = false;
+//
+//  PPPG_OP_VAR opVar;
+//  if (pValue.empty()) {
+//    outstr = "No grid name for param " + pName +  " on line: " + to_string(lineNo);
+//    std::cout << outstr << std::endl;
+//    //logger.Log(outstr);
+//    exit(EXIT_FAILURE);
+//  }
+//  if (pValue.size() > 5) {
+//      outstr = "More than 5 value elements detected for param " + pName + " on line: " + to_string(lineNo);
+//      std::cout << outstr << std::endl;
+//      //logger.Log(outstr);
+//      exit(EXIT_FAILURE);
+//  }
+//  // First token in the pValue is the output grid filename, outPath and filename are concatenated for the full path
+//  opVar.gridName = pValue.front();
+//  const std::filesystem::path filePath = opVar.gridName;
+//  if (filePath.extension() == ".tif") // Heed the dot.
+//  {
+//      opVar.spType = pTif;
+//  }
+//  else
+//  {
+//      outstr = filePath.filename().generic_string() + " is an invalid filename. Found " + filePath.extension().generic_string() + " but must be '.tif'";
+//      std::cout << outstr << std::endl;
+//      //logger.Log(outstr);
+//      exit(EXIT_FAILURE);
+//  }
+//  // Check for optional second, third, fourth and fifth tokens; these are used to specify recurring output pattern.
+//  // The following parsing rules apply:
+//  //    - If second token exists, then a third and fourth token must also exist. A fifth token is optional.
+//  //    - The third token must be an integer, representing the start year of the recurrence pattern.
+//  //    - The fourth token must be 'monthly' or 'month'
+//  //    - If fourth token is 'monthly', then fifth token must not exist (assumed to be 1).
+//  //    - If fourth token is 'month', then fifth token must be an integer between 1 and 12.
+//  try {
+//    // NOTE: using .at() accessor here to ensure an exception is thrown if the index is out of range
+//    // There is likely a better way to do this whole flow of logic, but for now we are sticking as close
+//    // as possible to the original code.
+//    cp = pValue.at(1);
+//    yearlyOutput = true;
+//  }
+//  catch (const std::out_of_range&) {
+//      // No recurring year output
+//      yearlyOutput = false;
+//  }
+//  if (yearlyOutput == true) {
+//    // Look for start year
+//    try {
+//      opVar.recurStart = std::stoi(cp);
+//    }
+//    catch (std::invalid_argument const&) {
+//      outstr = "Expected an integer start year in recuring output specification on line " +  to_string(lineNo);
+//      std::cout << outstr << std::endl;
+//      //logger.Log(outstr);
+//      exit(EXIT_FAILURE);
+//    }
+//    // Look for interval
+//    try {
+//      cp = pValue.at(2);
+//      try {
+//        const int interval = std::stoi(cp);
+//        if (interval == 0)
+//        {
+//            outstr = "Found interval of zero years in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
+//            std::cout << outstr << std::endl;
+//            //logger.Log(outstr);
+//            exit(EXIT_FAILURE);
+//        }
+//        opVar.recurYear = interval;
+//      }
+//      catch (std::invalid_argument const&) {
+//          outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
+//          std::cout << outstr << std::endl;
+//          //logger.Log(outstr);
+//          exit(EXIT_FAILURE);
+//      }
+//    }
+//    catch (const std::out_of_range&) {
+//        outstr = "Found start year but no interval in recuring output specification on line " + to_string(lineNo);
+//        std::cout << outstr << std::endl;
+//        //logger.Log(outstr);
+//        exit(EXIT_FAILURE);
+//    }
+//    // Look for 'monthly' or 'month' keywords. 
+//    try {
+//      cp = pValue.at(3);
+//      if (cp == "monthly")
+//        opVar.recurMonthly = true;
+//      else if (cp == "month") {
+//        opVar.recurMonthly = false;
+//        // If 'month', look for the month interger
+//        try {
+//          cp = pValue.at(4);
+//          try {
+//            opVar.recurMonth = std::stoi(cp);
+//            if (opVar.recurMonth == 0)
+//            {
+//                outstr = "Found month of zero in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
+//                std::cout << outstr << std::endl;
+//                //logger.Log(outstr);
+//                exit(EXIT_FAILURE);
+//            }
+//          }
+//          catch (std::invalid_argument const&) {
+//              outstr = "Expected an integer month in recuring output specification on line " + to_string(lineNo);
+//              std::cout << outstr << std::endl;
+//              //logger.Log(outstr);
+//              exit(EXIT_FAILURE);
+//          }
+//        }
+//        catch (const std::out_of_range&) {
+//
+//        }
+//      }
+//      else {
+//          outstr = "Unrecognised keyword '" + cp + "' on line " + to_string(lineNo);
+//          std::cout << outstr << std::endl;
+//          //logger.Log(outstr);
+//          exit(EXIT_FAILURE);
+//      }
+//    }
+//    catch (const std::out_of_range&) {
+//        
+//        outstr = "Found start year and interval but no keyword in recuring output specification on line " + to_string(lineNo);
+//        std::cout << outstr << std::endl;
+//        //logger.Log(outstr);
+//        exit(EXIT_FAILURE);
+//    }
+//  }
+//  // Mark the variable for later writing
+//    opVar.write = true;
+//    //logger.Log("   variable: " + opVar.id + "   grid: " + opVar.gridName);
+//    if (opVar.recurStart)
+//    {
+//        string outputGridString = "      starting in " + to_string(opVar.recurStart) + ", writing every " + to_string(opVar.recurYear) + " years";
+//        if (opVar.recurMonthly)
+//        {
+//            outputGridString = outputGridString + ", with monthly values";
+//        }
+//        else if (opVar.recurMonth != 0)
+//        {
+//            outputGridString = outputGridString + ", on the " + to_string(opVar.recurMonth) + " month";
+//
+//        }
+//        //logger.Log(outputGridString);
+//    }
+//  return opVar;
+//}
 
 string getOutPathTMP(const std::string& siteParamFile)
 {
@@ -427,12 +424,12 @@ string getOutPathTMP(const std::string& siteParamFile)
             if (pValues.empty())
             {
                 std::cout << "No output directory specified." << std::endl;
-                logger.Log("No ouput directory specified.");
+                //logger.Log("No ouput directory specified.");
                 exit(EXIT_FAILURE);
             }
             else if (pValues.size() > 1) {
                 std::cout << "More than one value element detected in output directory specification." << std::endl;
-                logger.Log("More than one value element detected in output directory specification.");
+                //logger.Log("More than one value element detected in output directory specification.");
                 exit(EXIT_FAILURE);
             }
             else {
@@ -448,7 +445,7 @@ string getOutPathTMP(const std::string& siteParamFile)
                     }
                     else {
                         std::cout << "Output directory " << cp << " does not exist." << std::endl;
-                        logger.Log("Output directory " + cp + " does not exist.");
+                        //logger.Log("Output directory " + cp + " does not exist.");
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -472,12 +469,12 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
     if (pValue.empty()) 
     {
         std::cout << "No output directory specified." << std::endl; 
-        logger.Log("No ouput directory specified.");
+        //logger.Log("No ouput directory specified.");
         exit(EXIT_FAILURE);
     }
     else if (pValue.size() > 1) {
       std::cout << "More than one value element detected in output directory specification." << std::endl;
-      logger.Log("More than one value element detected in output directory specification.");
+      //logger.Log("More than one value element detected in output directory specification.");
       exit(EXIT_FAILURE);
     }
     else {
@@ -497,12 +494,12 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
         }
         else {
           std::cout << "Output directory " << cp << " does not exist." << std::endl;
-          logger.Log("Output directory " + cp + " does not exist.");
+          //logger.Log("Output directory " + cp + " does not exist.");
           exit(EXIT_FAILURE);
         }
       }
       std::cout << "   output path: " << outPath << std::endl; // "   output path: %s\n
-      logger.Log("   output path: " + outPath);
+      //logger.Log("   output path: " + outPath);
       return true;
     }
     
@@ -511,12 +508,12 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
   else if (namesMatch("Model mode", pName)) {
     if (pValue.empty()) {
       std::cout << "No model mode specified." << std::endl;
-      logger.Log("No model mode specified.");
+      //logger.Log("No model mode specified.");
       return false;
     }
     if (pValue.size() > 1) {
       std::cout << "More than one value element detected in model mode specification." << std::endl;
-      logger.Log("More than one value element detected in model mode specification.");
+      //logger.Log("More than one value element detected in model mode specification.");
       exit(EXIT_FAILURE);
     }
     if ("3PGS" == pValue.front())
@@ -525,7 +522,7 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
       modelMode3PGS = false;
     else {
       std::cout << "Invalid value for parameter 'Model mode': " << pValue.front() << std::endl;
-      logger.Log("Invalid value for parameter 'Model mode': " + pValue.front());
+      //logger.Log("Invalid value for parameter 'Model mode': " + pValue.front());
       exit(EXIT_FAILURE);
     }
     return true;
@@ -560,7 +557,7 @@ bool readParam( PPPG_VVAL &vval, std::string pValue )
     else
     {
         std::cout << filePath.filename() << " is an invalid filetype (" << filePath.extension() << ")" << std::endl; 
-        logger.Log(filePath.filename().generic_string() + " is an invalid filetype (" + filePath.extension().generic_string() + ")");
+        //logger.Log(filePath.filename().generic_string() + " is an invalid filetype (" + filePath.extension().generic_string() + ")");
         exit(EXIT_FAILURE);
     }
     return false;
@@ -615,7 +612,7 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
     boost::split(tTokens, line, boost::is_any_of(", \n\t"));
     if (tTokens.size() != 2) {
       std::cout << "Could not read management table at line " << lineNo << std::endl;
-      logger.Log("Could not read management table at line " + to_string(lineNo));
+      //logger.Log("Could not read management table at line " + to_string(lineNo));
       exit(EXIT_FAILURE);
     }
     // trim leading whitespace from each token using boost::trim
@@ -628,13 +625,13 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
     }
     catch (std::invalid_argument const&) {
       std::cout << "Expected an integer year in management table at line " << lineNo << std::endl;
-      logger.Log("Expected an interger year in management table at line " + to_string(lineNo));
+      //logger.Log("Expected an interger year in management table at line " + to_string(lineNo));
       exit(EXIT_FAILURE);
     }
     // Read the second token, which is either a constant or a grid name.
     if( !readParam( tab[i].data, tTokens.back() )) {
       std::cout << "Could not read management table value at line " << lineNo << std::endl;
-      logger.Log("Could not read management table value at line " + to_string(lineNo));
+      //logger.Log("Could not read management table value at line " + to_string(lineNo));
       exit(EXIT_FAILURE);
     }
     else {
@@ -642,11 +639,11 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
     }
     if (tab[i].data.spType == pScalar) {
       std::cout << "   " << tabName << " year: " << tab[i].year << "   value: " << tab[i].data.sval << std::endl;
-      logger.Log("   " + tabName + " year: " + to_string(tab[i].year) + "   value:" + to_string(tab[i].data.sval));
+      //logger.Log("   " + tabName + " year: " + to_string(tab[i].year) + "   value:" + to_string(tab[i].data.sval));
     }
     else {
       std::cout << "   " << tabName << " year: " << tab[i].year << "   grid: " << tab[i].data.gridName << std::endl;
-      logger.Log("   " + tabName + " year: " + to_string(tab[i].year) + "   grid: " + tab[i].data.gridName);
+      //logger.Log("   " + tabName + " year: " + to_string(tab[i].year) + "   grid: " + tab[i].data.gridName);
     } 
     i++; 
   }
@@ -664,7 +661,7 @@ void readSpeciesParamFile(const std::string& speciesFile, DataInput& dataInput) 
 
     auto isDoubleQuote = [](char c) { return c == '\"'; };
     std::ifstream inFile(speciesFile);
-    logger.Log("Reading  species parameter from file '" + speciesFile + "'...");
+    //logger.Log("Reading  species parameter from file '" + speciesFile + "'...");
     while (std::getline(inFile, line)) {
         lineNo++;
         if (line.empty()) { continue; }
@@ -686,13 +683,13 @@ void readSpeciesParamFile(const std::string& speciesFile, DataInput& dataInput) 
         }
         else {
             std::cout << "Invalid site parameter: " << pName << std::endl;
-            logger.Log("Invalid site parameter: " + pName);
+            //logger.Log("Invalid site parameter: " + pName);
             exit(EXIT_FAILURE);
         }
     }
 }
 
-std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string& paramFile, DataInput& dataInput)
+void readSiteParamFile(const std::string& paramFile, DataInput& dataInput)
 {
   // Read a text file containing 3PG parameters.  Comments are allowed
   // and must begin with C++ style '//'.  Comments can begin at any
@@ -706,11 +703,11 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
   std::string pValue;
   std::string cp;
   int lineNo=0;
-  std::unordered_map<std::string, PPPG_OP_VAR> opVars;
+  //std::unordered_map<std::string, PPPG_OP_VAR> opVars;
 
   auto isDoubleQuote = [](char c) { return c == '\"'; };
   std::ifstream inFile(paramFile);
-  logger.Log("Reading input parameters from file '" + paramFile + "'...");
+  //logger.Log("Reading input parameters from file '" + paramFile + "'...");
   while (std::getline(inFile, line)) {
       lineNo++;
     // Skip blank lines
@@ -743,19 +740,16 @@ std::unordered_map<std::string, PPPG_OP_VAR> readSiteParamFile(const std::string
     }
 
     if (dataInput.tryAddInputParam(pName, pValues)) { continue; }
-    if (output_var_names.find(pName) != output_var_names.end()) {
-        opVars.emplace(pName, readOutputParam(pName, pValues, lineNo));
-    }
+    if (dataInput.tryAddOutputParam(pName, pValues, lineNo)) { continue; }
     else if (readOtherParam(pName, pValues)) { continue; }
     else if (dataInput.tryAddSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
     else if (readInputManageParam(pName, inFile, lineNo)) { continue; }
     else {
         std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
-        logger.Log("Cannot read parameter in file " + paramFile + ", line: " + to_string(lineNo) + ": " + pName);
+        //logger.Log("Cannot read parameter in file " + paramFile + ", line: " + to_string(lineNo) + ": " + pName);
         exit(EXIT_FAILURE);
     }
   }
-  return opVars;
 }
 
 //----------------------------------------------------------------------------------
@@ -769,7 +763,7 @@ GDALRasterImage* openInputGrids( )
   bool spatial = false, first = true;
   GDALRasterImage *refGrid;
 
-  logger.Log("Opening input rasters...");
+  //logger.Log("Opening input rasters...");
 
   // Open all management table grids. 
   PPPG_MT_PARAM *tab;
@@ -790,7 +784,7 @@ GDALRasterImage* openInputGrids( )
           || ( refGrid->nRows != tab[i].data.g->nRows ) 
           || ( refGrid->nCols != tab[i].data.g->nCols ) ) {
             std::cout << "Grid dimensions must match, raster " << tab[i].data.gridName << " differs from first raster." << std::endl;
-            logger.Log("Grid dimensions must match, raster " + tab[i].data.gridName + " differs from first raster.");
+            //logger.Log("Grid dimensions must match, raster " + tab[i].data.gridName + " differs from first raster.");
             exit(EXIT_FAILURE);
           // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
           //   tab[i].data.gridName ); 
@@ -807,81 +801,4 @@ GDALRasterImage* openInputGrids( )
   //}
 
   return nullptr;
-}
-
-//----------------------------------------------------------------------------------
-
-int writeOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, DataOutput& dataOutput, long cellIndex) {
-    //for each possible output variable
-    for (auto& [pN, opV] : opVars) {
-        //if it has been marked to be written
-        if (opV.write) {
-            //determine value, name, and tell dataOutput class to write
-            float val = (float)(opV.v);
-            std::string name = opV.gridName;
-            name = name.substr(0, name.find_last_of("."));
-            dataOutput.setVal(-1, -1, name, cellIndex, val);
-        }
-    }
-    return EXIT_SUCCESS;
-}
-
-//----------------------------------------------------------------------------------
-
-void writeMonthlyOutputGrids(const std::unordered_map<std::string, PPPG_OP_VAR>& opVars, DataOutput& dataOutput, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex) {
-    //for each possible output variable
-    for (auto& [pN, opV] : opVars) {
-
-        //skip output variable if it is not marked for recurring output
-        if (opV.recurYear == -1) {
-            continue;
-        }
-
-        //skip output variable if it is not marked for recurring output
-        if (!opV.recurStart) {
-            continue;
-        }
-
-        // skip output variable if it is not at the recur interval
-        if (((calYear - opV.recurStart) % opV.recurYear) != 0) {
-            continue;
-        }
-
-        //mx is no longer used to index an array, but is useful (for now) for checking
-        //whether we've gone above or below the max or min allowed year/month combo.
-        int mx = (calYear - minMY.year) * 12 + (calMonth - 1);
-        int maxInd = (maxMY.year - minMY.year + 1) * 12 + 12;
-
-        //ensure the year and month are not below the min
-        if (mx < 0) {
-            continue;
-        }
-
-        //ensure the year and month are not above the max
-        if (mx > maxInd) {
-            string outStr = "Program error, mx=" + to_string(mx) + " too high in writeMonthlyOutputGrids at month/year " + to_string(calMonth) + "/" + to_string(calYear);
-            std::cout << outStr << std::endl;
-            logger.Log(outStr);
-            exit(EXIT_FAILURE);
-        }
-
-        //skip output variable if we're not meant to be printing every month AND we're not on the month we're meant to be printing
-        if (!opV.recurMonthly && opV.recurMonth != calMonth) {
-            continue;
-        }
-
-        //ensure output type is tif
-        if (opV.spType != pTif) {
-            std::string outStr = "output type must be tif";
-            std::cout << outStr << std::endl;
-            logger.Log(outStr);
-            exit(EXIT_FAILURE);
-        }
-
-        //determine value, name, and tell dataOutput class to write
-        float val = (float)(opV.v);
-        std::string name = opV.gridName;
-        name = name.substr(0, name.find_last_of("."));
-        dataOutput.setVal(calYear, calMonth, name, cellIndex, val);
-    }
 }

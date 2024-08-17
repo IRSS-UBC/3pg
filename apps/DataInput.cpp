@@ -1,7 +1,7 @@
 #include "DataInput.hpp"
 #include "util.hpp"
 
-extern Logger logger;
+//extern Logger logger;
 
 bool DataInput::getScalar(std::string value, PPPG_PARAM* param) {
 	try {
@@ -14,7 +14,7 @@ bool DataInput::getScalar(std::string value, PPPG_PARAM* param) {
 
 		//log input param acquired
 		std::string output = "    " + param->id + "        constant: " + std::to_string(param->val);
-		logger.Log(output);
+		//logger.Log(output);
 
 		return true;
 	}
@@ -33,7 +33,7 @@ bool DataInput::getGrid(std::string value, PPPG_PARAM* param) {
 		if (filePath.extension() != ".tif") {
 			std::string errstr = filePath.filename().generic_string() + " is an invalid file type. File extension must be '.tif'";
 			std::cout << errstr << std::endl;
-			logger.Log(errstr);
+			//logger.Log(errstr);
 			return false;
 		}
 
@@ -41,7 +41,7 @@ bool DataInput::getGrid(std::string value, PPPG_PARAM* param) {
 		if (!std::filesystem::exists(filePath)) {
 			std::string errstr = filePath.string() + " does not exist.";
 			std::cout << errstr << std::endl;
-			logger.Log(errstr);
+			//logger.Log(errstr);
 			return false;
 		}
 
@@ -55,15 +55,15 @@ bool DataInput::getGrid(std::string value, PPPG_PARAM* param) {
 
 		//log input param
 		std::string output = "    " + param->id + "        raster: " + param->g->name;
-		logger.Log(output);
+		//logger.Log(output);
 		return true;
 	}
-	catch (std::filesystem::filesystem_error const& e) {
+	catch (std::filesystem::filesystem_error) {
 		//set and print/log error string
 		std::string errstr = " " + value + " could not be interpreted as a scalar or grid name";
 		std::cout << errstr << std::endl;
-		logger.Log(errstr);
-		logger.Log(e.what());
+		//logger.Log(errstr);
+		//logger.Log(e.what());
 		return false;
 	}
 }
@@ -76,7 +76,7 @@ bool DataInput::openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>
 	catch (const std::exception& e) {
 		std::string errstr = "failed to open " + path + "\n" + e.what();
 		std::cout << errstr << std::endl;
-		logger.Log(errstr);
+		//logger.Log(errstr);
 		return false;
 	}
 
@@ -96,7 +96,7 @@ bool DataInput::openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>
 			) {
 			std::string errstr = "Grid dimensions of " + path + " differs from " + this->refGrid.name;
 			std::cout << errstr << std::endl;
-			logger.Log(errstr);
+			//logger.Log(errstr);
 			return false;
 		}
 	}
@@ -194,7 +194,7 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 		if (values.size() != 12) {
 			std::string errstr = "there must be 12 monthly values given for parameter " + name + ". There were only " + std::to_string(values.size()) + ".";
 			std::cout << errstr << std::endl;
-			logger.Log(errstr);
+			//logger.Log(errstr);
 			exit(EXIT_FAILURE);
 		}
 
@@ -247,7 +247,7 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 			if (sTokens.size() != 13) {
 				std::string errstr = "there must be 12 monthly values given for parameter " + name + " at year " + sTokens.front() + ". There were only " + std::to_string(sTokens.size() - 1) + ".";
 				std::cout << errstr << std::endl;
-				logger.Log(errstr);
+				//logger.Log(errstr);
 				exit(EXIT_FAILURE);
 			}
 
@@ -258,7 +258,7 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 			catch (const std::out_of_range&) {
 				std::string errstr = "Year could not be converted to integer on line " + std::to_string(lineNo);
 				std::cout << errstr << std::endl;
-				logger.Log(errstr);
+				//logger.Log(errstr);
 				exit(EXIT_FAILURE);
 			}
 
@@ -277,7 +277,7 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 			else {
 				std::string errstr = "yearly inputs for parameter " + name + " are not in consecutive order on line " + std::to_string(lineNo);
 				std::cout << errstr << std::endl;
-				logger.Log(errstr);
+				//logger.Log(errstr);
 				exit(EXIT_FAILURE);
 			}
 
@@ -312,7 +312,195 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 	return true;
 }
 
+bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> value, int lineNo) {
+	boost::algorithm::to_lower(name);
+
+	PPPG_OP_VAR opVar;
+
+	//fr is a possible output param, although it's also an input param. The fr output param is indicated by frout, not fr.
+	if (name == "fr") {
+		return false;
+	}
+
+	//get name if it is an output param, return false if it isn't
+	if (!this->allOutputParams.contains(name)) {
+		if (!this->outputParamNames.contains(name)) {
+			return false;
+		}
+
+		opVar.id = this->outputParamNames.at(name);
+	}
+	else {
+		opVar.id = name;
+	}
+
+	//ensure we have enough tokens
+	if (value.empty()) {
+		std::string outstr = "No grid name for param " + name + " on line: " + to_string(lineNo);
+		std::cout << outstr << std::endl;
+		//logger.Log(outstr);
+		exit(EXIT_FAILURE);
+	}
+
+	//ensure we don't have too many tokens
+	if (value.size() > 5) {
+		std::string outstr = "More than 5 value elements detected for param " + name + " on line: " + to_string(lineNo);
+		std::cout << outstr << std::endl;
+		//logger.Log(outstr);
+		exit(EXIT_FAILURE);
+	}
+
+	//ensure correct file extensions
+	if (!value.front().ends_with(".tif")) {
+		std::string outstr = value.front() + " is an invalid filename. Found " + value.front() + " but must be '.tif'";
+		std::cout << outstr << std::endl;
+		//logger.Log(outstr);
+		exit(EXIT_FAILURE);
+	}
+
+	//set the gridname in the parameter
+	opVar.gridName = value.front();
+	if (opVar.gridName.substr(opVar.gridName.find_last_of(".") + 1) != "tif") {
+		std::string outstr = "output type must be of type tif.";
+		std::cout << outstr << std::endl;
+		//logger.Log(outstr);
+	}
+
+	// Check for optional second, third, fourth and fifth tokens; these are used to specify recurring output pattern.
+	// The following parsing rules apply:
+	//    - If second token exists, then a third and fourth token must also exist. A fifth token is optional.
+	//    - The third token must be an integer, representing the start year of the recurrence pattern.
+	//    - The fourth token must be 'monthly' or 'month'
+	//    - If fourth token is 'monthly', then fifth token must not exist (assumed to be 1).
+	//    - If fourth token is 'month', then fifth token must be an integer between 1 and 12.
+	if (value.size() > 1) {
+		//ensure the start year is an integer
+		try {
+			opVar.recurStart = std::stoi(value[1]);
+		}
+		catch (std::invalid_argument) {
+			std::string outstr = "Expected an integer start year in recuring output specification on line " + to_string(lineNo);
+			std::cout << outstr << std::endl;
+			//logger.Log(outstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//ensure we have an interval
+		if (value.size() < 3) {
+			std::string outstr = "Expected an integer start year in recuring output specification on line " + to_string(lineNo);
+			std::cout << outstr << std::endl;
+			//logger.Log(outstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//ensure the interval is an integer
+		try {
+			opVar.recurYear = std::stoi(value[2]);
+		}
+		catch (std::invalid_argument) {
+			std::string outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
+			std::cout << outstr << std::endl;
+			//logger.Log(outstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//ensure interval isn't zero
+		if (opVar.recurYear == 0) {
+			std::string outstr = "Found interval of zero years in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
+			std::cout << outstr << std::endl;
+			//logger.Log(outstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//ensure we have month/monthly keyword
+		if (value.size() < 4) {
+			std::string outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
+			std::cout << outstr << std::endl;
+			//logger.Log(outstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//ensure the keyword is one we can use
+		if (value[3] != "month" && value[3] != "monthly") {
+			std::string outstr = "Unrecognised keyword '" + value[3] + "' on line " + to_string(lineNo) + ". expecting 'month' or 'monthly'.";
+			std::cout << outstr << std::endl;
+			//logger.Log(outstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//set monthly recurrence
+		opVar.recurMonthly = (value[3] == "monthly");
+
+		if (opVar.recurMonthly) {
+			//ensure the user didn't add too many inputs
+			if (value.size() > 4) {
+				std::string outstr = "too many inputs were given on line " + to_string(lineNo) + ". For monthly outputs, no month needs to be given.";
+				std::cout << outstr << std::endl;
+				//logger.Log(outstr);
+				exit(EXIT_FAILURE);
+			}
+		}
+		else {
+			//ensure a month was given
+			if (value.size() < 5) {
+				std::string outstr = "Found 'month' keyword but no month in recuring output specification on line " + to_string(lineNo);
+				std::cout << outstr << std::endl;
+				//logger.Log(outstr);
+				exit(EXIT_FAILURE);
+			}
+
+			//ensure the month is an integer
+			try {
+				opVar.recurMonth = std::stoi(value[4]);
+			}
+			catch (std::invalid_argument) {
+				std::string outstr = "Expected an integer month in recuring output specification on line " + to_string(lineNo);
+				std::cout << outstr << std::endl;
+				//logger.Log(outstr);
+				exit(EXIT_FAILURE);
+			}
+
+			//ensure the month isn't 0
+			if (opVar.recurMonth == 0) {
+				std::string outstr = "Found month of zero in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
+				std::cout << outstr << std::endl;
+				//logger.Log(outstr);
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+
+	//log parameter
+	//logger.Log("   variable: " + opVar.id + "   grid: " + opVar.gridName);
+	if (opVar.recurStart) {
+		string outputGridString = "      starting in " + to_string(opVar.recurStart) + ", writing every " + to_string(opVar.recurYear) + " years";
+		if (opVar.recurMonthly) {
+			outputGridString += ", with monthly values.";
+		}
+		else if (opVar.recurMonth != 0){
+			outputGridString += ", on the " + to_string(opVar.recurMonth) + " month.";
+		}
+		//logger.Log(outputGridString);
+	}
+
+	//continuous check for 3PG and 3PGS specific parameters
+	this->allow3PG = this->allow3PG && !this->only3PGS.contains(name);
+	this->allow3PGS = this->allow3PGS && !this->only3PG.contains(name);
+	this->outputParams.emplace(name, opVar);
+
+	return true;
+}
+
 bool DataInput::inputFinished(bool modelMode3PGS) {
+	if (modelMode3PGS && !this->allow3PGS || !modelMode3PGS && !this->allow3PG) {
+		std::string mode = modelMode3PGS ? "3PGS" : "3PG";
+		std::string errstr = "output parameters selected are not compatable with " + mode + " mode.";
+
+		std::cout << errstr << std::endl;
+		//logger.Log(errstr);
+		return false;
+	}
+
 	bool haveSeedlingMass = this->inputParams.contains("seedlingmass");
 	bool haveWFi = this->inputParams.contains("wfi");
 	bool haveWRi = this->inputParams.contains("wri");
@@ -328,7 +516,7 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 			errstr = "Missing parameter: at least one of WFi, WRi, and WSi required.";
 		}
 		std::cout << errstr << std::endl;
-		logger.Log(errstr);
+		//logger.Log(errstr);
 		return false;
 	}
 
@@ -359,7 +547,7 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	bool haveRain = this->acquiredSeriesParams.contains("rain");
 	bool haveSolarRad = this->acquiredSeriesParams.contains("solar radtn");
 	bool haveNetRad = this->acquiredSeriesParams.contains("net radtn");
-	bool haveFrost = this->acquiredSeriesParams.contains("frost");
+	bool haveFrost = this->acquiredSeriesParams.contains("frost") || this->acquiredSeriesParams.contains("frost days");
 	bool haveNDVI = this->acquiredSeriesParams.contains("ndvi_avh");
 	
 	//check Tavg
@@ -625,6 +813,10 @@ double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, lon
 	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
 }
 
+std::unordered_map<std::string, PPPG_OP_VAR> DataInput::getOpVars() {
+	return this->outputParams;
+}
+
 void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 	//error checking
 	if (!finishedInput) {
@@ -691,7 +883,7 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 		//if month isn't within the range of 0 to 12, print and log error
 		std::string errstr = "Invalid start month detected: " + std::to_string(minMY.mon);
 		std::cout << errstr << std::endl;
-		logger.Log(errstr);
+		//logger.Log(errstr);
 
 		//then exit
 		exit(EXIT_FAILURE);
@@ -702,7 +894,7 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 		//if minimum year is larger than maximum year, print and log error
 		std::string errstr = "min year (" + std::to_string(minMY.year) + ") is greater than max year (" + std::to_string(maxMY.year) + ")";
 		std::cout << errstr << std::endl;
-		logger.Log(errstr);
+		//logger.Log(errstr);
 
 		//then exit
 		exit(EXIT_FAILURE);
@@ -710,7 +902,7 @@ void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
 
 	//valid run period successfully determined
 	string runPeriodStr = "first run year = " + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
-	logger.Log(runPeriodStr);
+	//logger.Log(runPeriodStr);
 }
 
 RefGridProperties DataInput::getRefGrid() {
