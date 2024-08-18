@@ -5,6 +5,12 @@ DataInput::DataInput(std::function<void(std::string)>& log) {
 	this->log = log;
 }
 
+DataInput::DataInput() {
+	this->log = [](std::string message) {
+		//do nothing
+	};
+}
+
 bool DataInput::getScalar(std::string value, PPPG_PARAM* param) {
 	try {
 		//get the value from the array

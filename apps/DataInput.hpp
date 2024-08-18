@@ -426,6 +426,7 @@ private:
 	bool openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>& grid);
 public:
 	DataInput(std::function<void(std::string)>& log);
+	DataInput();//for no logger
 	bool tryAddInputParam(std::string pname, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
 	bool tryAddOutputParam(std::string name, std::vector<std::string> value, int lineno);
