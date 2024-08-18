@@ -29,63 +29,6 @@ Use of this software assumes agreement to this condition of use
 #endif
 
 //--------------------------------------------------------------------------
-//Logger::Logger(const string& filename)
-//{
-//    logName = filename;
-//}
-//
-//void Logger::StartLog(const string& outPath)
-//{
-//    this->logging = true;
-//    logLoc = outPath;
-//    log.open(logLoc + logName, ios::trunc);
-//    string currDate = GetCurrentDate();
-//    string currTime = GetCurrentTime();
-//    log << "-------------------\n";
-//    log << "OS date: " << setw(20) << currDate << "\n";
-//    log << "OS time: " << setw(20) << currTime << "\n";
-//    log << "-------------------\n";
-//    log.close();
-//}
-//
-//Logger::~Logger()
-//{
-//    if (log.is_open())
-//    {
-//        log.close();
-//    }
-//}
-//
-//void Logger::Log(const std::string& logMsg)
-//{
-//    if (!this->logging) {
-//        return;
-//    }
-//    log.open(logLoc + logName, std::ios::app);
-//    log << logMsg + "\n";
-//    log.close();
-//}
-//
-//std::string Logger::GetCurrentDate()
-//{
-//    if (!this->logging) {
-//        return "ERROR logger not started";
-//    }
-//    auto now = std::chrono::system_clock::now();
-//    auto local_time = std::chrono::current_zone()->to_local(now);
-//    return std::format("{:%d-%m-%Y}", local_time);
-//}
-//
-//std::string Logger::GetCurrentTime()
-//{
-//    if (!this->logging) {
-//        return "ERROR logger not started";
-//    }
-//    auto now = std::chrono::system_clock::now();
-//    auto local_time = std::chrono::current_zone()->to_local(now);
-//    return std::format("{:%H:%M:%S}", local_time);
-//}
-//--------------------------------------------------------------------------
 
 bool ichar_equals(char a, char b)
 {

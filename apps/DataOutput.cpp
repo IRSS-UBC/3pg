@@ -1,7 +1,5 @@
 #include "DataOutput.hpp"
 
-//extern Logger logger;
-
 DataOutput::ImageBuffer::ImageBuffer(std::string filepath, RefGridProperties refGrid) {
 	//no synchronization required for the constructor
 	this->image = std::make_unique<GDALRasterImage>(filepath, refGrid);
@@ -173,7 +171,6 @@ void DataOutput::writeMonthlyOutputGrids(const std::unordered_map<std::string, d
 		if (mx > maxInd) {
 			std::string outStr = "Program error, mx=" + to_string(mx) + " too high in writeMonthlyOutputGrids at month/year " + to_string(calMonth) + "/" + to_string(calYear);
 			std::cout << outStr << std::endl;
-			//logger.Log(outStr);
 			exit(EXIT_FAILURE);
 		}
 

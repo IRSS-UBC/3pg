@@ -73,6 +73,11 @@ PPPG_MT_PARAM MinAswMT[PPPG_MAX_SERIES_YEARS+1];
 
 //----------------------------------------------------------------------------------
 
+std::function<void(std::string)> logMessage;
+void setLogFunc(std::function<void(std::string)>& log) {
+    logMessage = log;
+}
+
 bool openGrid(PPPG_VVAL& vval)
 {
     if (vval.spType == pTif) {
@@ -82,10 +87,10 @@ bool openGrid(PPPG_VVAL& vval)
 
         try {
             vval.g = new GDALRasterImage(vval.gridName);
-            //logger.Log(openString + succesReadString);
+            logMessage(openString + succesReadString);
         }
         catch (const std::exception&) {
-            //logger.Log(openString + failReadString);
+            logMessage(openString + failReadString);
             exit(EXIT_FAILURE);
         }
 
@@ -120,7 +125,7 @@ double lookupManageTable( int year, int table, double def, int k )
     mt = IrrigMT; 
   else {
     std::cout << "Program error: called lookupManageTable with invalid table" << std::endl;
-    //logger.Log("Program error: called lookupManageTable with invalid table");
+    logMessage("Program error: called lookupManageTable with invalid table");
     exit(EXIT_FAILURE);
   }
 
@@ -188,12 +193,12 @@ string getOutPathTMP(const std::string& siteParamFile)
             if (pValues.empty())
             {
                 std::cout << "No output directory specified." << std::endl;
-                //logger.Log("No ouput directory specified.");
+                logMessage("No ouput directory specified.");
                 exit(EXIT_FAILURE);
             }
             else if (pValues.size() > 1) {
                 std::cout << "More than one value element detected in output directory specification." << std::endl;
-                //logger.Log("More than one value element detected in output directory specification.");
+                logMessage("More than one value element detected in output directory specification.");
                 exit(EXIT_FAILURE);
             }
             else {
@@ -209,7 +214,7 @@ string getOutPathTMP(const std::string& siteParamFile)
                     }
                     else {
                         std::cout << "Output directory " << cp << " does not exist." << std::endl;
-                        //logger.Log("Output directory " + cp + " does not exist.");
+                        logMessage("Output directory " + cp + " does not exist.");
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -233,12 +238,12 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
     if (pValue.empty()) 
     {
         std::cout << "No output directory specified." << std::endl; 
-        //logger.Log("No ouput directory specified.");
+        logMessage("No ouput directory specified.");
         exit(EXIT_FAILURE);
     }
     else if (pValue.size() > 1) {
       std::cout << "More than one value element detected in output directory specification." << std::endl;
-      //logger.Log("More than one value element detected in output directory specification.");
+      logMessage("More than one value element detected in output directory specification.");
       exit(EXIT_FAILURE);
     }
     else {
@@ -258,12 +263,12 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
         }
         else {
           std::cout << "Output directory " << cp << " does not exist." << std::endl;
-          //logger.Log("Output directory " + cp + " does not exist.");
+          logMessage("Output directory " + cp + " does not exist.");
           exit(EXIT_FAILURE);
         }
       }
       std::cout << "   output path: " << outPath << std::endl; // "   output path: %s\n
-      //logger.Log("   output path: " + outPath);
+      logMessage("   output path: " + outPath);
       return true;
     }
     
@@ -272,12 +277,12 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
   else if (namesMatch("Model mode", pName)) {
     if (pValue.empty()) {
       std::cout << "No model mode specified." << std::endl;
-      //logger.Log("No model mode specified.");
+      logMessage("No model mode specified.");
       return false;
     }
     if (pValue.size() > 1) {
       std::cout << "More than one value element detected in model mode specification." << std::endl;
-      //logger.Log("More than one value element detected in model mode specification.");
+      logMessage("More than one value element detected in model mode specification.");
       exit(EXIT_FAILURE);
     }
     if ("3PGS" == pValue.front())
@@ -286,7 +291,7 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
       modelMode3PGS = false;
     else {
       std::cout << "Invalid value for parameter 'Model mode': " << pValue.front() << std::endl;
-      //logger.Log("Invalid value for parameter 'Model mode': " + pValue.front());
+      logMessage("Invalid value for parameter 'Model mode': " + pValue.front());
       exit(EXIT_FAILURE);
     }
     return true;
@@ -321,7 +326,7 @@ bool readParam( PPPG_VVAL &vval, std::string pValue )
     else
     {
         std::cout << filePath.filename() << " is an invalid filetype (" << filePath.extension() << ")" << std::endl; 
-        //logger.Log(filePath.filename().generic_string() + " is an invalid filetype (" + filePath.extension().generic_string() + ")");
+        logMessage(filePath.filename().generic_string() + " is an invalid filetype (" + filePath.extension().generic_string() + ")");
         exit(EXIT_FAILURE);
     }
     return false;
@@ -376,7 +381,7 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
     boost::split(tTokens, line, boost::is_any_of(", \n\t"));
     if (tTokens.size() != 2) {
       std::cout << "Could not read management table at line " << lineNo << std::endl;
-      //logger.Log("Could not read management table at line " + to_string(lineNo));
+      logMessage("Could not read management table at line " + to_string(lineNo));
       exit(EXIT_FAILURE);
     }
     // trim leading whitespace from each token using boost::trim
@@ -389,13 +394,13 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
     }
     catch (std::invalid_argument const&) {
       std::cout << "Expected an integer year in management table at line " << lineNo << std::endl;
-      //logger.Log("Expected an interger year in management table at line " + to_string(lineNo));
+      logMessage("Expected an interger year in management table at line " + to_string(lineNo));
       exit(EXIT_FAILURE);
     }
     // Read the second token, which is either a constant or a grid name.
     if( !readParam( tab[i].data, tTokens.back() )) {
       std::cout << "Could not read management table value at line " << lineNo << std::endl;
-      //logger.Log("Could not read management table value at line " + to_string(lineNo));
+      logMessage("Could not read management table value at line " + to_string(lineNo));
       exit(EXIT_FAILURE);
     }
     else {
@@ -403,11 +408,11 @@ bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &l
     }
     if (tab[i].data.spType == pScalar) {
       std::cout << "   " << tabName << " year: " << tab[i].year << "   value: " << tab[i].data.sval << std::endl;
-      //logger.Log("   " + tabName + " year: " + to_string(tab[i].year) + "   value:" + to_string(tab[i].data.sval));
+      logMessage("   " + tabName + " year: " + to_string(tab[i].year) + "   value:" + to_string(tab[i].data.sval));
     }
     else {
       std::cout << "   " << tabName << " year: " << tab[i].year << "   grid: " << tab[i].data.gridName << std::endl;
-      //logger.Log("   " + tabName + " year: " + to_string(tab[i].year) + "   grid: " + tab[i].data.gridName);
+      logMessage("   " + tabName + " year: " + to_string(tab[i].year) + "   grid: " + tab[i].data.gridName);
     } 
     i++; 
   }
@@ -425,7 +430,7 @@ void readSpeciesParamFile(const std::string& speciesFile, DataInput& dataInput) 
 
     auto isDoubleQuote = [](char c) { return c == '\"'; };
     std::ifstream inFile(speciesFile);
-    //logger.Log("Reading  species parameter from file '" + speciesFile + "'...");
+    logMessage("Reading  species parameter from file '" + speciesFile + "'...");
     while (std::getline(inFile, line)) {
         lineNo++;
         if (line.empty()) { continue; }
@@ -447,7 +452,7 @@ void readSpeciesParamFile(const std::string& speciesFile, DataInput& dataInput) 
         }
         else {
             std::cout << "Invalid site parameter: " << pName << std::endl;
-            //logger.Log("Invalid site parameter: " + pName);
+            logMessage("Invalid site parameter: " + pName);
             exit(EXIT_FAILURE);
         }
     }
@@ -471,7 +476,7 @@ void readSiteParamFile(const std::string& paramFile, DataInput& dataInput)
 
   auto isDoubleQuote = [](char c) { return c == '\"'; };
   std::ifstream inFile(paramFile);
-  //logger.Log("Reading input parameters from file '" + paramFile + "'...");
+  logMessage("Reading input parameters from file '" + paramFile + "'...");
   while (std::getline(inFile, line)) {
       lineNo++;
     // Skip blank lines
@@ -510,7 +515,7 @@ void readSiteParamFile(const std::string& paramFile, DataInput& dataInput)
     else if (readInputManageParam(pName, inFile, lineNo)) { continue; }
     else {
         std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
-        //logger.Log("Cannot read parameter in file " + paramFile + ", line: " + to_string(lineNo) + ": " + pName);
+        logMessage("Cannot read parameter in file " + paramFile + ", line: " + to_string(lineNo) + ": " + pName);
         exit(EXIT_FAILURE);
     }
   }
@@ -527,7 +532,7 @@ GDALRasterImage* openInputGrids( )
   bool spatial = false, first = true;
   GDALRasterImage *refGrid;
 
-  //logger.Log("Opening input rasters...");
+  logMessage("Opening input rasters...");
 
   // Open all management table grids. 
   PPPG_MT_PARAM *tab;
@@ -548,7 +553,7 @@ GDALRasterImage* openInputGrids( )
           || ( refGrid->nRows != tab[i].data.g->nRows ) 
           || ( refGrid->nCols != tab[i].data.g->nCols ) ) {
             std::cout << "Grid dimensions must match, raster " << tab[i].data.gridName << " differs from first raster." << std::endl;
-            //logger.Log("Grid dimensions must match, raster " + tab[i].data.gridName + " differs from first raster.");
+            logMessage("Grid dimensions must match, raster " + tab[i].data.gridName + " differs from first raster.");
             exit(EXIT_FAILURE);
           // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
           //   tab[i].data.gridName ); 

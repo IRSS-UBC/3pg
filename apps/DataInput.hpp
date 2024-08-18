@@ -409,6 +409,7 @@ private:
 	bool allow3PG = true;
 	bool allow3PGS = true;
 	std::unordered_map<std::string, PPPG_OP_VAR> outputParams;
+	std::function<void(std::string)> log;
 
 	bool haveTavg = false;
 	bool haveVPD = false;
@@ -424,6 +425,7 @@ private:
 	double getValFromSeriesParam(int paramIndex, int year, int month, long cellIndex);
 	bool openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>& grid);
 public:
+	DataInput(std::function<void(std::string)>& log);
 	bool tryAddInputParam(std::string pname, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
 	bool tryAddOutputParam(std::string name, std::vector<std::string> value, int lineno);

@@ -46,8 +46,6 @@ std::string COPYMSG = "This version of 3-PG has been revised by:\n"
 
 extern bool modelMode3PGS;
 
-//Logger logger("logfile.txt");
-
 class InputParser {
 public:
     InputParser(int& argc, char** argv) {
@@ -119,8 +117,81 @@ public:
 
 //----------------------------------------------------------------------------------------
 
+class Logger {
+private:
+    std::string logName;
+    std::string logLoc;
+    std::ofstream log;
+    bool logging = false;
+public:
+    Logger(const std::string& filename) {
+        logName = filename;
+    }
+
+    ~Logger() {
+        if (log.is_open())
+        {
+            log.close();
+        }
+    }
+
+    void StartLog(const std::string& outPath) {
+        this->logging = true;
+        logLoc = outPath;
+        log.open(logLoc + logName, std::ios::trunc);
+        std::string currDate = GetCurrentDate();
+        std::string currTime = GetCurrentTime();
+        log << "-------------------\n";
+        log << "OS date: " << std::setw(20) << currDate << "\n";
+        log << "OS time: " << std::setw(20) << currTime << "\n";
+        log << "-------------------\n";
+        log.close();
+    }
+
+    std::string GetCurrentDate() {
+        if (!this->logging) {
+            return "ERROR logger not started";
+        }
+        auto now = std::chrono::system_clock::now();
+        auto local_time = std::chrono::current_zone()->to_local(now);
+        return std::format("{:%d-%m-%Y}", local_time);
+    }
+
+    std::string GetCurrentTime() {
+        if (!this->logging) {
+            return "ERROR logger not started";
+        }
+        auto now = std::chrono::system_clock::now();
+        auto local_time = std::chrono::current_zone()->to_local(now);
+        return std::format("{:%H:%M:%S}", local_time);
+    }
+
+    void Log(const std::string& logMsg){
+        if (!this->logging) {
+            return;
+        }
+        log.open(logLoc + logName, std::ios::app);
+        log << logMsg + "\n";
+        log.close();
+    }
+
+};
+
+//----------------------------------------------------------------------------------------
+
 int main(int argc, char* argv[])
 {
+    //lambda function of logger, to be passed as parameter to other parts of program that log
+    //I'm doing this because every other way I tried resulted in some encredibly bizzare build errors.
+    //
+    //A potential long term goal would be to have the logging class become a private member of the dataInput
+    //class, although this seems to work for now.
+    std::string filename = "logfile.txt";
+    Logger logger(filename);
+    std::function<void(std::string)> log = [&logger](std::string message) {
+        logger.Log(message);
+    };
+
     bool spatial = 0;
     MYDate spMinMY, spMaxMY;
     std::string defParamFile;
@@ -145,13 +216,14 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
+    setLogFunc(log);
     std::string outPath = getOutPathTMP(siteParamFile);
-    //logger.StartLog(outPath);
-    DataInput dataInput;
+    logger.StartLog(outPath);
+    DataInput dataInput(log);
 
     /* Copyright */
     std::cout << COPYMSG << std::endl;
-    //logger.Log(COPYMSG);
+    logger.Log(COPYMSG);
 
     // Load the parameters
     std::cout << "Loading and validating parameters...";
@@ -169,7 +241,6 @@ int main(int argc, char* argv[])
     DataOutput dataOutput(refGrid, outPath, dataInput.getOpVars());
 
     // Find the over all start year and end year. 
-    // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
     std::cout << "  Complete" << std::endl;
     dataInput.findRunPeriod(spMinMY, spMaxMY);
  
