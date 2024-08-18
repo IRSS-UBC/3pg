@@ -336,7 +336,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 	//ensure we have enough tokens
 	if (value.empty()) {
-		std::string outstr = "No grid name for param " + name + " on line: " + to_string(lineNo);
+		std::string outstr = "No grid name for param " + opVar.id + " on line: " + to_string(lineNo);
 		std::cout << outstr << std::endl;
 		//logger.Log(outstr);
 		exit(EXIT_FAILURE);
@@ -344,7 +344,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 	//ensure we don't have too many tokens
 	if (value.size() > 5) {
-		std::string outstr = "More than 5 value elements detected for param " + name + " on line: " + to_string(lineNo);
+		std::string outstr = "More than 5 value elements detected for param " + opVar.id + " on line: " + to_string(lineNo);
 		std::cout << outstr << std::endl;
 		//logger.Log(outstr);
 		exit(EXIT_FAILURE);
@@ -484,9 +484,9 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 	}
 
 	//continuous check for 3PG and 3PGS specific parameters
-	this->allow3PG = this->allow3PG && !this->only3PGS.contains(name);
-	this->allow3PGS = this->allow3PGS && !this->only3PG.contains(name);
-	this->outputParams.emplace(name, opVar);
+	this->allow3PG = this->allow3PG && !this->only3PGS.contains(opVar.id);
+	this->allow3PGS = this->allow3PGS && !this->only3PG.contains(opVar.id);
+	this->outputParams.emplace(opVar.id, opVar);
 
 	return true;
 }

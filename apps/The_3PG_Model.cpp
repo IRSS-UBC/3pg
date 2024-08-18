@@ -195,6 +195,7 @@ struct Vars {
     double cLitter;
     double cumWabv;
     double cCVI;
+    double GPP;
     double cGPP;
     double fT;
     double fVPD;
@@ -241,6 +242,7 @@ void copyVars(Vars vars, std::unordered_map<std::string, double>& opVarVals) {
     opVarVals["clitter"] = vars.cLitter;
     opVarVals["cumwabv"] = vars.cumWabv;
     opVarVals["ccvi"] = vars.cCVI;
+    opVarVals["gpp"] = vars.GPP;
     opVarVals["cgpp"] = vars.cGPP;
     opVarVals["ft"] = vars.fT;
     opVarVals["fvpd"] = vars.fVPD;
@@ -348,7 +350,6 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     double lightIntcptn;
     double CanCond;
     double AvStemMass;
-    double GPPdm;
     double pR;
     double pS;
     double pF;
@@ -716,8 +717,8 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
             epsilon = params.gDM_mol * params.molPAR_MJ * vars.alphaC;
             RADint = RAD * lightIntcptn * CanCover;
             GPPmolc = vars.APARu * vars.alphaC;                   // mol/m^2
-            GPPdm = epsilon * RADint / 100;               // tDM/ha
-            vars.NPP = GPPdm * params.y;                            // assumes respiratory rate is constant
+            vars.GPP = epsilon * RADint / 100;               // tDM/ha
+            vars.NPP = vars.GPP * params.y;                            // assumes respiratory rate is constant
 
             // calculate canopy conductance
             double gC;
@@ -757,7 +758,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
 
             // correct for actual ET
             TranspScaleFactor = vars.EvapTransp / (vars.Transp + RainIntcptn);      
-            GPPdm = TranspScaleFactor * GPPdm;
+            vars.GPP = TranspScaleFactor * vars.GPP;
             vars.NPP = TranspScaleFactor * vars.NPP;
             if (vars.EvapTransp != 0) {
                 vars.WUE = 100 * vars.NPP / vars.EvapTransp;
@@ -843,8 +844,8 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
 
                 cRADint = cRADint + RADint;
                 aRADint = aRADint + RADint;
-                vars.cGPP = vars.cGPP + GPPdm;
-                aGPP = aGPP + GPPdm;
+                vars.cGPP = vars.cGPP + vars.GPP;
+                aGPP = aGPP + vars.GPP;
                 vars.cNPP = vars.cNPP + vars.NPP;
                 aNPP = aNPP + vars.NPP;
                 vars.cCVI = vars.cCVI + vars.CVI;
