@@ -51,7 +51,8 @@ CPLErr DataOutput::ImageBuffer::writeRow(int row) {
 	return retval;
 }
 
-DataOutput::DataOutput(RefGridProperties& refGrid, std::string outpath) {
+DataOutput::DataOutput(RefGridProperties& refGrid, std::string outpath, std::unordered_map<std::string, PPPG_OP_VAR> vars) {
+	this->vars = vars;
 	this->refGrid = refGrid;
 	this->outpath = outpath;
 }
@@ -123,4 +124,65 @@ CPLErr DataOutput::writeRow(int row) {
 
 	//return with no error if we've made it this far
 	return CE_None;
+}
+
+int DataOutput::writeOutputGrids(const std::unordered_map<std::string, double>& opVarVals, long cellIndex) {
+	//for each possible output variable
+	for (auto& [pN, opV] : this->vars) {
+		//determine value, name, and tell dataOutput class to write
+		float val = (float)(opVarVals.at(pN));
+		std::string name = opV.gridName;
+		name = name.substr(0, name.find_last_of("."));
+		this->setVal(-1, -1, name, cellIndex, val);
+	}
+	return EXIT_SUCCESS;
+}
+
+void DataOutput::writeMonthlyOutputGrids(const std::unordered_map<std::string, double>& opVarVals, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex) {
+	//for each possible output variable
+	for (auto& [pN, opV] : this->vars) {
+
+		//skip output variable if it is not marked for recurring output
+		if (opV.recurYear == -1) {
+			continue;
+		}
+
+		//skip output variable if it is not marked for recurring output
+		if (!opV.recurStart) {
+			continue;
+		}
+
+		// skip output variable if it is not at the recur interval
+		if (((calYear - opV.recurStart) % opV.recurYear) != 0) {
+			continue;
+		}
+
+		//mx is no longer used to index an array, but is useful (for now) for checking
+		//whether we've gone above or below the max or min allowed year/month combo.
+		int mx = (calYear - minMY.year) * 12 + (calMonth - 1);
+		int maxInd = (maxMY.year - minMY.year + 1) * 12 + 12;
+
+		//ensure the year and month are not below the min
+		if (mx < 0) {
+			continue;
+		}
+
+		//ensure the year and month are not above the max
+		if (mx > maxInd) {
+			std::string outStr = "Program error, mx=" + to_string(mx) + " too high in writeMonthlyOutputGrids at month/year " + to_string(calMonth) + "/" + to_string(calYear);
+			std::cout << outStr << std::endl;
+			exit(EXIT_FAILURE);
+		}
+
+		//skip output variable if we're not meant to be printing every month AND we're not on the month we're meant to be printing
+		if (!opV.recurMonthly && opV.recurMonth != calMonth) {
+			continue;
+		}
+
+		//determine value, name, and tell dataOutput class to write
+		float val = (float)(opVarVals.at(pN));
+		std::string name = opV.gridName;
+		name = name.substr(0, name.find_last_of("."));
+		this->setVal(calYear, calMonth, name, cellIndex, val);
+	}
 }

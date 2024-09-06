@@ -1,9 +1,13 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <unordered_map>
 #include <mutex>
 #include "GDALRasterImage.hpp"
+#include "ParamStructs.hpp"
+#include "MYDate.h"
+#include "util.hpp"
 
 //a class which should only be defined once that synchronizes and abstracts away the writing
 //of pixel values to GDALRasterImage output files.
@@ -11,6 +15,7 @@ class DataOutput {
 private:
 	RefGridProperties refGrid;
 	std::string outpath;
+	std::unordered_map<std::string, PPPG_OP_VAR> vars;
 
 	//thread safe wrapper of GDALRasterImage which can:
 	// - create a GDALRasterImage
@@ -35,12 +40,16 @@ private:
 	std::mutex imageBuffersMutex;
 
 public:
-	DataOutput(RefGridProperties& refGrid, std::string outpath);
+	DataOutput(RefGridProperties& refGrid, std::string outpath, std::unordered_map<std::string, PPPG_OP_VAR> vars);
 
 	//determine the filepath of the output given year, month, name.
 	//call getImageBuffer() to get the associated wrapper.
-	//write the correct val at the correct index using index, val, and hitNODATA.
+	//write the correct val at the correct index using index, val.
 	void setVal(int year, int month, std::string name, int index, float val);
+
+	int writeOutputGrids(const std::unordered_map<std::string, double>& opVarVals, long cellIndex);
+	void writeMonthlyOutputGrids(const std::unordered_map<std::string, double>& opVarVals, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex);
+
 	CPLErr writeRow(int row);
 };
 
