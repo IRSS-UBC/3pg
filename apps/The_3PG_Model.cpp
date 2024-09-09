@@ -567,23 +567,6 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 calMonth = cm;
             }
 
-            //Check to see the year we are currently in is before the plant year
-            if (cm == params.StartMonth) {
-                //Initialise output step cumulative variables
-                delStemNo = 0;
-                cRADint = 0;
-                cStemDM = 0;
-                cRainInt = 0;
-                cSupIrrig = 0;
-                vars.cLAI = 0;
-                vars.cCVI = 0;
-                vars.cGPP = 0;
-                vars.cNPP = 0;
-                vars.cTransp = 0;
-                vars.cEvapTransp = 0;
-                vars.cLitter = 0;
-            }
-
             yrPreStart = false;
             yrPstEnd = false;
             if (calYear < params.yearPlanted)
