@@ -378,7 +378,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     double dayLength;
 
     // year and month counters, etc
-    int calYear, calMonth, runYear, cm, cy;
+    int calYear, calMonth, cm, cy;
 
     int thinEventNo, defoltnEventNo;
 
@@ -492,95 +492,107 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     copyVars(vars, opVarVals);
     dataOutput.writeMonthlyOutputGrids(opVarVals, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
 
+    //calculate the starting iteration month/year using the start month and the start year.
+    //the start iteration is the first month following the start month, since the initial state
+    //is the state during the start month. The model will then run until 
+
+    int startIterYear;
+    int startIterMonth;
+    int endIterYear;
+    int endIterMonth;
+
+    startIterYear = spMinMY.year;
+    startIterMonth = params.StartMonth + 1;
+    if (startIterYear == 13) {
+        startIterMonth = 1;
+        startIterYear++;
+    }
+
+    endIterYear = spMaxMY.year;
+    endIterMonth = spMaxMY.mon;
+
+    //std::cout << "year " << startIterYear << std::endl;;
+    //std::cout << "resetting" << std::endl;
+
+    // Initialise cumulative variables
+    vars.cLitter = 0;
+    CumdelWF = 0;
+    CumdelWR = 0;
+    CumdelWS = 0;
+    CumAPARU = 0;
+    cumARAD = 0;
+    cumLAI = 0;
+    cumGPP = 0;
+    vars.cumWabv = 0;            //Now known as cumWabvgrnd
+    cumTransp = 0;
+    cumEvapTransp = 0;
+    cumIrrig = 0;
+
+    //Initialise annual cumulative variables
+    aStemDM = 0;
+    aRADint = 0;
+    aGPP = 0;
+    aNPP = 0;
+    aEvapTransp = 0;
+    aTransp = 0;
+    aSupIrrig = 0;
+
+    // Get management-related options for current year and cell. 
+    // First load param file values, then possibly override them with management table values. 
+    if (!dataInput.haveAgeDepFert)
+        vars.FR = params.FRp;
+    if (nFertility > 0)
+        vars.FR = lookupManageTable(calYear, MT_FERTILITY, params.FRp, cellIndex);
+
+    MinASW = params.MinASWp;
+    if (nMinAvailSW > 0)
+        MinASW = lookupManageTable(calYear, MT_MINASW, params.MinASWp, cellIndex);
+
+    Irrig = 0;
+    if (nIrrigation > 0) {
+        Irrig = lookupManageTable(calYear, MT_IRRIGATION, 0, cellIndex);
+    }
+    else Irrig = 0;
+
+    //Initialise output step cumulative variables
+    delStemNo = 0;
+    cRADint = 0;
+    cRainInt = 0;
+    cStemDM = 0;
+    cSupIrrig = 0;
+    vars.cLAI = 0;
+    vars.cCVI = 0;
+    vars.cNPP = 0;
+    vars.cGPP = 0;
+    vars.cTransp = 0;
+    vars.cEvapTransp = 0;
+    vars.cLitter = 0;
+
     //Start processing loop
-    for (cy = spMinMY.year; cy <= spMaxMY.year; cy++) {
-        runYear = cy;
+    for (cy = startIterYear; cy <= endIterYear; cy++) {
         calYear = cy;
         calMonth = (int)params.StartMonth;
 
-        // Initialise cumulative variables
-        vars.cLitter = 0;
-        CumdelWF = 0;
-        CumdelWR = 0;
-        CumdelWS = 0;
-        CumAPARU = 0;
-        cumARAD = 0;
-        cumLAI = 0;
-        cumGPP = 0;
-        vars.cumWabv = 0;            //Now known as cumWabvgrnd
-        cumTransp = 0;
-        cumEvapTransp = 0;
-        cumIrrig = 0;
-
-        //Initialise annual cumulative variables
-        aStemDM = 0;
-        aRADint = 0;
-        aGPP = 0;
-        aNPP = 0;
-        aEvapTransp = 0;
-        aTransp = 0;
-        aSupIrrig = 0;
-
-        // Get management-related options for current year and cell. 
-        // First load param file values, then possibly override them with management table values. 
-        if (!dataInput.haveAgeDepFert)
-            vars.FR = params.FRp;
-        if (nFertility > 0)
-            vars.FR = lookupManageTable(runYear, MT_FERTILITY, params.FRp, cellIndex);
-
-        MinASW = params.MinASWp;
-        if (nMinAvailSW > 0)
-            MinASW = lookupManageTable(runYear, MT_MINASW, params.MinASWp, cellIndex);
-
-        Irrig = 0;
-        if (nIrrigation > 0) {
-            Irrig = lookupManageTable(runYear, MT_IRRIGATION, 0, cellIndex);
+        int start;
+        int end;
+        if (cy == startIterYear) {
+            start = startIterMonth;
         }
-        else Irrig = 0;
+        else {
+            start = 1;
+        }
 
-        //Initialise output step cumulative variables
-        delStemNo = 0;
-        cRADint = 0;
-        cRainInt = 0;
-        cStemDM = 0;
-        cSupIrrig = 0;
-        vars.cLAI = 0;
-        vars.cCVI = 0;
-        vars.cNPP = 0;
-        vars.cGPP = 0;
-        vars.cTransp = 0;
-        vars.cEvapTransp = 0;
-        vars.cLitter = 0;
+        if (cy == endIterYear) {
+            end = endIterMonth;
+        }
+        else {
+            end = 12;
+        }
 
         // Do monthly calculations
-        for (cm = (int)params.StartMonth + 1; cm < (int)params.StartMonth + 13; cm++) {
-            //Note that the added one is to sync in with the VB code, which always
-            //incrememt to the next month before starting...
-            if (cm >= 13) {
-                calYear = cy + 1;
-                if (calYear > spMaxMY.year)
-                    goto skipYearEndCalcs;
-                calMonth = cm - 12;
-            }
-            else {
-                calYear = cy;
-                calMonth = cm;
-            }
-
-            yrPreStart = false;
-            yrPstEnd = false;
-            if (calYear < params.yearPlanted)
-                yrPreStart = true;
-            if ((calYear == params.yearPlanted) && (calMonth < params.StartMonth))
-                yrPreStart = true;
-            if (calYear > (params.EndYear))
-                yrPstEnd = true;
-            if ((calYear == (params.EndYear)) && (calMonth > params.StartMonth))
-                yrPstEnd = true;
-
-
-            if (yrPreStart || yrPstEnd)
-                goto skipMonthCalcs;
+        for (cm = start; cm <= end; cm++) {
+            //std::cout << "year " << calYear << " month " << cm << std::endl;
+            calMonth = cm;
 
             if (!dataInput.getSeriesParams(cellIndex, calYear, calMonth, sParams)) {
                 return;
@@ -775,12 +787,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
 
             //StandAge = (cy - yearPlanted) + (cm - StartMonth + 1) / 12.0; //OG position
             StandAge = StandAge + 1.0 / 12.0;
-
-            if (StandAge < 0)
-            {
-                std::cout << "Negative StandAge" << std::endl;
-                //fprintf(logfp, "Negative StandAge");
-            }
+            //std::cout << "StandAge now " << StandAge << std::endl;
 
             if (!modelMode3PGS) {
 
@@ -867,67 +874,111 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 vars.cumWabv += vars.delWAG;
             }
 
-        skipMonthCalcs:
-
-            //Joe is not sure what the following comment means, but figures it might be important so he's leaving it.
-            // 3PGS. Monthly output of some grids.  Note that yrPstEnd is not in this check, to ensure
-            //previous calculated values are written instead of nodata
-
-            //Joe: the startMonth, cy, cm, yrPreStart, yrPstEnd code has to be some of the most unecessarily complicated
-            //code I've ever seen... Add on to that that even if we are PAST THE END, we continue iterating through a for
-            //loop, just not changing any values (???). AND the month counter (cm) starts iterating at 2 and finishes at 14...
-            //I'm working right now on changing how data output works to make future parallelization possible while refactoring 
-            //as little as possible (to keep changes as more manageable chunks), but in the future, we MUST change how this works, 
-            //it *should* be pretty simple to just use minMY and maxMY.
             if (!yrPreStart && !yrPstEnd && !(calYear == spMaxMY.year && calMonth == spMaxMY.mon)) {
                 //the !(calYear == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
                 //output, but rather skip it and the values are eventually written via writeOutputGrids().
                 copyVars(vars, opVarVals);
                 dataOutput.writeMonthlyOutputGrids(opVarVals, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
             }
-        }
 
-        if (yrPreStart || yrPstEnd)
-            goto skipYearEndCalcs;
+            //reset cumulative variables
+            if (cm == params.StartMonth) {
+                //std::cout << "resetting" << std::endl;
+                // Initialise cumulative variables
+                vars.cLitter = 0;
+                CumdelWF = 0;
+                CumdelWR = 0;
+                CumdelWS = 0;
+                CumAPARU = 0;
+                cumARAD = 0;
+                cumLAI = 0;
+                cumGPP = 0;
+                vars.cumWabv = 0;            //Now known as cumWabvgrnd
+                cumTransp = 0;
+                cumEvapTransp = 0;
+                cumIrrig = 0;
 
-        // Calculate above ground and total Epsilon
-        if (!modelMode3PGS) {
-            if (aRADint == 0) {
-                //        sprintf(outstr, 
-                //          "Warning: No growth occurred in year with Standage = %4.0f "
-                //          "at cell index %d\n", StandAge, cellIndex);
-                //        fprintf(logfp, outstr);
-                //        fprintf(stderr, outstr);
+                //Initialise annual cumulative variables
+                aStemDM = 0;
+                aRADint = 0;
+                aGPP = 0;
+                aNPP = 0;
+                aEvapTransp = 0;
+                aTransp = 0;
+                aSupIrrig = 0;
+
+                // Get management-related options for current year and cell. 
+                // First load param file values, then possibly override them with management table values. 
+                if (!dataInput.haveAgeDepFert)
+                    vars.FR = params.FRp;
+                if (nFertility > 0)
+                    vars.FR = lookupManageTable(calYear, MT_FERTILITY, params.FRp, cellIndex);
+
+                MinASW = params.MinASWp;
+                if (nMinAvailSW > 0)
+                    MinASW = lookupManageTable(calYear, MT_MINASW, params.MinASWp, cellIndex);
+
+                Irrig = 0;
+                if (nIrrigation > 0) {
+                    Irrig = lookupManageTable(calYear, MT_IRRIGATION, 0, cellIndex);
+                }
+                else Irrig = 0;
+
+                //Initialise output step cumulative variables
+                delStemNo = 0;
+                cRADint = 0;
+                cRainInt = 0;
+                cStemDM = 0;
+                cSupIrrig = 0;
+                vars.cLAI = 0;
+                vars.cCVI = 0;
+                vars.cNPP = 0;
+                vars.cGPP = 0;
+                vars.cTransp = 0;
+                vars.cEvapTransp = 0;
+                vars.cLitter = 0;
+
+                //YEAR END CALCULATIONS (these are run when the model has iterated across 12 months
+                //and have nothing to do with the actual year)
+
+                // Calculate above ground and total Epsilon
+                if (!modelMode3PGS) {
+                    if (aRADint == 0) {
+                        //        sprintf(outstr, 
+                        //          "Warning: No growth occurred in year with Standage = %4.0f "
+                        //          "at cell index %d\n", StandAge, cellIndex);
+                        //        fprintf(logfp, outstr);
+                        //        fprintf(stderr, outstr);
+                    }
+                    else {
+                        aEpsilonStem = 100 * aStemDM / aRADint;    //100 converts to gDM/MJ
+                        aEpsilonGross = 100 * aGPP / aRADint;
+                    }
+                }
+
+                // Update some stand characteristics
+                vars.LAI = cumLAI / 12.0;
+                vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB));  //Modified StandAge
+                vars.StandVol = vars.WS * (1 - vars.fracBB) / Density;
+                if (StandAge > 0)              //Modified StandAge
+                    vars.MAI = vars.StandVol / StandAge;   //Modified StandAge
+                else
+                    vars.MAI = 0;
+
+                // Determine peak LAI & MAI and age at peaks
+                if (vars.LAI > vars.LAIx) {
+                    vars.LAIx = vars.LAI;
+                    vars.ageLAIx = StandAge;  //Modified StandAge
+                }
+                if (vars.MAI > vars.MAIx) {
+                    vars.MAIx = vars.MAI;
+                    vars.ageMAIx = StandAge;  //Modified StandAge
+                }
+
+                // Restore LAI
+                vars.LAI = vars.WF * SLA * 0.1;
             }
-            else {
-                aEpsilonStem = 100 * aStemDM / aRADint;    //100 converts to gDM/MJ
-                aEpsilonGross = 100 * aGPP / aRADint;
-            }
         }
-
-        // Update some stand characteristics
-        vars.LAI = cumLAI / 12.0;
-        vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB));  //Modified StandAge
-        vars.StandVol = vars.WS * (1 - vars.fracBB) / Density;
-        if (StandAge > 0)              //Modified StandAge
-            vars.MAI = vars.StandVol / StandAge;   //Modified StandAge
-        else
-            vars.MAI = 0;
-
-        // Determine peak LAI & MAI and age at peaks
-        if (vars.LAI > vars.LAIx) {
-            vars.LAIx = vars.LAI;
-            vars.ageLAIx = StandAge;  //Modified StandAge
-        }
-        if (vars.MAI > vars.MAIx) {
-            vars.MAIx = vars.MAI;
-            vars.ageMAIx = StandAge;  //Modified StandAge
-        }
-
-    skipYearEndCalcs:
-
-        // ANL if (showDetailedResults) writeAnnualResults(year);
-        // ANL if (showStandSummary) writeStandSummary(year);if(calMonth == 1)
 
         // Restore LAI
         vars.LAI = vars.WF * SLA * 0.1;
