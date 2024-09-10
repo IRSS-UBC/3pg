@@ -171,50 +171,50 @@ void GetStandAge(double& StandAge, InputParams & params)
 //-----------------------------------------------------------------------------
 
 struct Vars {
-    double WF;
+    double WF = 0;
     double LAIx = 0;
-    double StemNo;
-    double WS;
-    double BasArea;
-    double WR;
+    double StemNo = 0;
+    double WS = 0;
+    double BasArea = 0;
+    double WR = 0;
     double MAIx = 0;
-    double ASW;
-    double fracBB;
-    double TotalLitter;
-    double WUE;
-    double cNPP;
-    double avDBH;
-    double LAI;
-    double alphaC;
-    double cLAI;
-    double cTransp;
-    double StandVol;
-    double cEvapTransp;
-    double MAI;
-    double FR;
-    double cLitter;
-    double cumWabv;
-    double cCVI;
-    double GPP;
-    double cGPP;
-    double fT;
-    double fVPD;
-    double fSW;
-    double fNutr;
-    double fFrost;
-    double fAge;
-    double PhysMod;
-    double APAR;
-    double APARu;
-    double NPP;
-    double TotalW;
-    double Transp;
-    double EvapTransp;
-    double ageMAIx;
-    double ageLAIx;
-    double CVI;
-    double cWUE;
-    double delWAG;
+    double ASW = 0;
+    double fracBB = 0;
+    double TotalLitter = 0;
+    double WUE = 0;
+    double cNPP = 0;
+    double avDBH = 0;
+    double LAI = 0;
+    double alphaC = 0;
+    double cLAI = 0;
+    double cTransp = 0;
+    double StandVol = 0;
+    double cEvapTransp = 0;
+    double MAI = 0;
+    double FR = 0;
+    double cLitter = 0;
+    double cumWabv = 0;
+    double cCVI = 0;
+    double GPP = 0;
+    double cGPP = 0;
+    double fT = 0;
+    double fVPD = 0;
+    double fSW = 0;
+    double fNutr = 0;
+    double fFrost = 0;
+    double fAge = 0;
+    double PhysMod = 0;
+    double APAR = 0;
+    double APARu = 0;
+    double NPP = 0;
+    double TotalW = 0;
+    double Transp = 0;
+    double EvapTransp = 0;
+    double ageMAIx = 0;
+    double ageLAIx = 0;
+    double CVI = 0;
+    double cWUE = 0;
+    double delWAG = 0;
 };
 
 void copyVars(Vars vars, std::unordered_map<std::string, double>& opVarVals) {
@@ -267,43 +267,26 @@ void copyVars(Vars vars, std::unordered_map<std::string, double>& opVarVals) {
 // This is the main routine for the 3PG model
 void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
 {
+    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    step 1: initialize variables
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
     std::unordered_map<std::string, double> opVarVals;
     Vars vars;
 
-    // ANL - Load the parameter values.  On NODATA return, because all pixels are initialized to nodata
+    // load input parameters, and exit if it's a NODATA pixel
     InputParams params;
     if (!dataInput.getInputParams(cellIndex, params)) {
         return;
     }
 
-    //various variables that used to be global but I have no idea how necessary they are to the modol
+    //various necessary variables (hopefully better comment to come)
     double aEpsilonGross;
     double aEpsilonStem;
-    double aEvapTransp;
-    double aGPP;
-    double aNPP;
-    double aRADint;
-    double aStemDM;
-    double aSupIrrig;
-    double aTransp;
     double avDBHi;
-    double cRADint;
-    double cRainInt;
-    double cStemDM;
-    double cSupIrrig;
-    double CumAPARU;
-    double cumARAD;
-    double CumdelWF;
-    double CumdelWR;
-    double CumdelWS;
-    double cumEvapTransp;
-    double cumGPP;
-    double cumIrrig;
     double CumStemLoss;
-    double cumTransp;
     double GPPmolc;
     double LAIi;
-
     double TranspScaleFactor;
     double RunOff;
     double monthlyIrrig;
@@ -312,9 +295,33 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     double pooledSW = 0;
     double RainIntcptn = 0;
 
-    //before start or after end indication
-    bool yrPreStart = false;
-    bool yrPstEnd = false;
+    // Initialise cumulative variables
+    double CumdelWF = 0;
+    double CumdelWR = 0;
+    double CumdelWS = 0;
+    double CumAPARU = 0;
+    double cumARAD = 0;
+    double cumLAI = 0;
+    double cumGPP = 0;
+    double cumTransp = 0;
+    double cumEvapTransp = 0;
+    double cumIrrig = 0;
+
+    //Initialise annual cumulative variables
+    double aStemDM = 0;
+    double aRADint = 0;
+    double aGPP = 0;
+    double aNPP = 0;
+    double aEvapTransp = 0;
+    double aTransp = 0;
+    double aSupIrrig = 0;
+
+    //Initialise output step cumulative variables
+    double delStemNo = 0;
+    double cRADint = 0;
+    double cRainInt = 0;
+    double cStemDM = 0;
+    double cSupIrrig = 0;
 
     // At initialisation param file has only possible value to use.  
     double MinASW = params.MinASWp;
@@ -365,9 +372,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     int dayofyr;
     double MoistRatio; // PhysMod has been moved
     double wSmax;
-    double delStemNo;
 
-    double cumLAI;
     double oldVol;    //Added 16/07/02 as part of CVI
 
     //New Soilwater modifier adjuster
@@ -377,9 +382,6 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     // monthly met data
     double dayLength;
 
-    // year and month counters, etc
-    int calYear, calMonth, cm, cy;
-
     int thinEventNo, defoltnEventNo;
 
     bool haveAvgTempSeries = false;  //Change: - Needs to be available iff 
@@ -388,9 +390,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     // 3PGS - variables for 3PGS
     double FPAR_AVH;
 
-    //std::cout << "\n\nCELL INDEX " << cellIndex << "!!!!!!!!!!!!!!!!!!!!!\n\n" << std::endl;
     // Compute daylengths
-    // ANL - only do dayLength here, as Tav and VPD potentially need recalculation each year. 
     dayofyr = -15;
     for (int mn = 1; mn <= 12; mn++) {
         dayofyr = dayofyr + DaysInMonth[mn];
@@ -464,18 +464,31 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     LAIi = vars.LAI;
     CumStemLoss = 0;
     
+    // Get management-related options for current year and cell. 
+// First load param file values, then possibly override them with management table values. 
+    if (!dataInput.haveAgeDepFert)
+        vars.FR = params.FRp;
+    if (nFertility > 0)
+        vars.FR = lookupManageTable(spMinMY.year, MT_FERTILITY, params.FRp, cellIndex);
 
-    // Do annual calculations.  The year loop here is controlled by minMY and maxMY, 
-    // which refer to the overall run start and end, across all cells.
+    MinASW = params.MinASWp;
+    if (nMinAvailSW > 0)
+        MinASW = lookupManageTable(spMinMY.year, MT_MINASW, params.MinASWp, cellIndex);
 
-    //Print first month results
-    calYear = spMinMY.year;
-    calMonth = (int)params.StartMonth;
+    Irrig = 0;
+    if (nIrrigation > 0) {
+        Irrig = lookupManageTable(spMinMY.year, MT_IRRIGATION, 0, cellIndex);
+    }
+    else Irrig = 0;
+
+    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    step 2: write start month initialization values to output
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
     //Find out if there is supposed to be any data here in the first place...
 
     SeriesParams sParams;
-    if (!dataInput.getSeriesParams(cellIndex, calYear, calMonth, sParams)) {
+    if (!dataInput.getSeriesParams(cellIndex, spMinMY.year, (int)params.StartMonth, sParams)) {
         return;
     }
 
@@ -490,115 +503,42 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
 
     //write initial state of output variables
     copyVars(vars, opVarVals);
-    dataOutput.writeMonthlyOutputGrids(opVarVals, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
+    dataOutput.writeMonthlyOutputGrids(opVarVals, spMinMY.year, (int)params.StartMonth, spMinMY, spMaxMY, cellIndex);
 
-    //calculate the starting iteration month/year using the start month and the start year.
-    //the start iteration is the first month following the start month, since the initial state
-    //is the state during the start month. The model will then run until 
+    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    step 3: determine start and end month/years
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-    int startIterYear;
-    int startIterMonth;
-    int endIterYear;
-    int endIterMonth;
+    //calculate the starting iteration month/year using the start month.
+    //the first is the month following the start month, since the start month state is the initial state.
 
-    startIterYear = spMinMY.year;
-    startIterMonth = params.StartMonth + 1;
-    if (startIterYear == 13) {
-        startIterMonth = 1;
-        startIterYear++;
-    }
+    //start monthly/yearly iteration on StartMonth + 1 unless StartMonth is 12, then start on month 1 of the following year
+    int firstYear = ((int)params.StartMonth == 12) ? spMinMY.year + 1 : spMinMY.year;
+    int firstMonth = ((int)params.StartMonth == 12) ? 1 : params.StartMonth + 1;
 
-    endIterYear = spMaxMY.year;
-    endIterMonth = spMaxMY.mon;
+    //end monthly/yearly iteration on the last month and year according to spMaxMY
+    int lastYear = spMaxMY.year;
+    int lastMonth = spMaxMY.mon;
 
-    //std::cout << "year " << startIterYear << std::endl;;
-    //std::cout << "resetting" << std::endl;
+    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    step 4: start yearly processing loop
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+    for (int year = firstYear; year <= lastYear; year++) {
 
-    // Initialise cumulative variables
-    vars.cLitter = 0;
-    CumdelWF = 0;
-    CumdelWR = 0;
-    CumdelWS = 0;
-    CumAPARU = 0;
-    cumARAD = 0;
-    cumLAI = 0;
-    cumGPP = 0;
-    vars.cumWabv = 0;            //Now known as cumWabvgrnd
-    cumTransp = 0;
-    cumEvapTransp = 0;
-    cumIrrig = 0;
+        //find start and end month for the current year iteration
+        int startMonth = (year == firstYear) ? firstMonth : 1;
+        int endMonth = (year == lastYear) ? lastMonth : 12;
 
-    //Initialise annual cumulative variables
-    aStemDM = 0;
-    aRADint = 0;
-    aGPP = 0;
-    aNPP = 0;
-    aEvapTransp = 0;
-    aTransp = 0;
-    aSupIrrig = 0;
+        /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        step 5: start monthly processing loop
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+        for (int month = startMonth; month <= endMonth; month++) {
 
-    // Get management-related options for current year and cell. 
-    // First load param file values, then possibly override them with management table values. 
-    if (!dataInput.haveAgeDepFert)
-        vars.FR = params.FRp;
-    if (nFertility > 0)
-        vars.FR = lookupManageTable(calYear, MT_FERTILITY, params.FRp, cellIndex);
-
-    MinASW = params.MinASWp;
-    if (nMinAvailSW > 0)
-        MinASW = lookupManageTable(calYear, MT_MINASW, params.MinASWp, cellIndex);
-
-    Irrig = 0;
-    if (nIrrigation > 0) {
-        Irrig = lookupManageTable(calYear, MT_IRRIGATION, 0, cellIndex);
-    }
-    else Irrig = 0;
-
-    //Initialise output step cumulative variables
-    delStemNo = 0;
-    cRADint = 0;
-    cRainInt = 0;
-    cStemDM = 0;
-    cSupIrrig = 0;
-    vars.cLAI = 0;
-    vars.cCVI = 0;
-    vars.cNPP = 0;
-    vars.cGPP = 0;
-    vars.cTransp = 0;
-    vars.cEvapTransp = 0;
-    vars.cLitter = 0;
-
-    //Start processing loop
-    for (cy = startIterYear; cy <= endIterYear; cy++) {
-        calYear = cy;
-        calMonth = (int)params.StartMonth;
-
-        int start;
-        int end;
-        if (cy == startIterYear) {
-            start = startIterMonth;
-        }
-        else {
-            start = 1;
-        }
-
-        if (cy == endIterYear) {
-            end = endIterMonth;
-        }
-        else {
-            end = 12;
-        }
-
-        // Do monthly calculations
-        for (cm = start; cm <= end; cm++) {
-            //std::cout << "year " << calYear << " month " << cm << std::endl;
-            calMonth = cm;
-
-            if (!dataInput.getSeriesParams(cellIndex, calYear, calMonth, sParams)) {
+            if (!dataInput.getSeriesParams(cellIndex, year, month, sParams)) {
                 return;
             }
 
-            dayLength = mDayLength[calMonth];
+            dayLength = mDayLength[month];
 
             // Determine the various environmental modifiers
 
@@ -699,7 +639,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
             //   alphaC is alpha, the nominal "canopy qunatum efficiency", multiplied by
             //     modifiers to take into account effects of nutrition, temperature and
             //     frost on photosynthetic rate
-            RAD = sParams.SolarRad * DaysInMonth[calMonth];        // MJ/m^2
+            RAD = sParams.SolarRad * DaysInMonth[month];        // MJ/m^2
             PAR = RAD * params.molPAR_MJ;                      // mol/m^2
             // 3PGS
             if (modelMode3PGS)
@@ -728,7 +668,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
             // calculate transpiration from Penman-Monteith (mm/day converted to mm/month)
             vars.Transp = CanopyTranspiration(sParams.SolarRad, sParams.VPD, dayLength, params.BLcond,
                 CanCond, sParams.NetRad, dataInput.haveNetRadParam(), params);
-            vars.Transp = DaysInMonth[calMonth] * vars.Transp;
+            vars.Transp = DaysInMonth[month] * vars.Transp;
 
             // rainfall interception
             if (params.LAImaxIntcptn <= 0)
@@ -785,9 +725,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 vars.TotalLitter = vars.TotalLitter + delLitter;
             }
 
-            //StandAge = (cy - yearPlanted) + (cm - StartMonth + 1) / 12.0; //OG position
             StandAge = StandAge + 1.0 / 12.0;
-            //std::cout << "StandAge now " << StandAge << std::endl;
 
             if (!modelMode3PGS) {
 
@@ -874,18 +812,16 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 vars.cumWabv += vars.delWAG;
             }
 
-            if (!yrPreStart && !yrPstEnd && !(calYear == spMaxMY.year && calMonth == spMaxMY.mon)) {
-                //the !(calYear == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
+            if (!(year == spMaxMY.year && month == spMaxMY.mon)) {
+                //the !(year == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
                 //output, but rather skip it and the values are eventually written via writeOutputGrids().
                 copyVars(vars, opVarVals);
-                dataOutput.writeMonthlyOutputGrids(opVarVals, calYear, calMonth, spMinMY, spMaxMY, cellIndex);
+                dataOutput.writeMonthlyOutputGrids(opVarVals, year, month, spMinMY, spMaxMY, cellIndex);
             }
 
-            //reset cumulative variables
-            if (cm == params.StartMonth) {
-                //std::cout << "resetting" << std::endl;
-                // Initialise cumulative variables
-                vars.cLitter = 0;
+            //reset cumulative variables and run year-end calculations
+            if (month == params.StartMonth) {
+                // reset cumulative variables
                 CumdelWF = 0;
                 CumdelWR = 0;
                 CumdelWS = 0;
@@ -898,7 +834,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 cumEvapTransp = 0;
                 cumIrrig = 0;
 
-                //Initialise annual cumulative variables
+                // reset annual cumulative variables
                 aStemDM = 0;
                 aRADint = 0;
                 aGPP = 0;
@@ -912,15 +848,15 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 if (!dataInput.haveAgeDepFert)
                     vars.FR = params.FRp;
                 if (nFertility > 0)
-                    vars.FR = lookupManageTable(calYear, MT_FERTILITY, params.FRp, cellIndex);
+                    vars.FR = lookupManageTable(year, MT_FERTILITY, params.FRp, cellIndex);
 
                 MinASW = params.MinASWp;
                 if (nMinAvailSW > 0)
-                    MinASW = lookupManageTable(calYear, MT_MINASW, params.MinASWp, cellIndex);
+                    MinASW = lookupManageTable(year, MT_MINASW, params.MinASWp, cellIndex);
 
                 Irrig = 0;
                 if (nIrrigation > 0) {
-                    Irrig = lookupManageTable(calYear, MT_IRRIGATION, 0, cellIndex);
+                    Irrig = lookupManageTable(year, MT_IRRIGATION, 0, cellIndex);
                 }
                 else Irrig = 0;
 
@@ -938,8 +874,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 vars.cEvapTransp = 0;
                 vars.cLitter = 0;
 
-                //YEAR END CALCULATIONS (these are run when the model has iterated across 12 months
-                //and have nothing to do with the actual year)
+                //year end calculations, run after the model has run for 12 months -- NOT on December every year
 
                 // Calculate above ground and total Epsilon
                 if (!modelMode3PGS) {
@@ -980,7 +915,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
             }
         }
 
-        // Restore LAI
+        // Restore LAI here too... (this is how the model worked before so I'm keeping it -- Joe)
         vars.LAI = vars.WF * SLA * 0.1;
 
     }
