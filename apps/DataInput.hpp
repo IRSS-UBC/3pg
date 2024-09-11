@@ -97,7 +97,6 @@ struct SeriesParams {
 };
 
 typedef enum {
-	NONE = -1,
 	TMAX = 0,
 	TMIN = 1,
 	TAVG = 2,
@@ -109,9 +108,15 @@ typedef enum {
 	VPD = 8,
 } SeriesIndex;
 
+typedef enum {
+	FERTILITY = 0,
+	MINASW = 1,
+	IRRIGATION = 2,
+} ManagementIndex;
+
 class DataInput {
 private:
-	//maps and sets for dealing with input parameters
+	//data structures for dealing with input parameters
 	std::unordered_map<std::string, std::string> inputParamNames = {
 		{"foliage:stem partitioning ratio @ d=2 cm", "pfs2"},
 		{"foliage:stem partitioning ratio @ d=20 cm", "pfs20"},
@@ -299,7 +304,7 @@ private:
 	};
 	std::unordered_map<std::string, std::unique_ptr<PPPG_PARAM>> inputParams;
 
-	//maps and sets for dealing with series parameters
+	//data structures for dealing with series parameters
 	std::unordered_map<std::string, SeriesIndex> seriesParamNameMap = {
 		{"tmax", SeriesIndex::TMAX},
 		{"tmin", SeriesIndex::TMIN},
@@ -314,8 +319,8 @@ private:
 	};
 	PPPG_SERIES_PARAM seriesParams[9];
 	std::unordered_set<std::string> acquiredSeriesParams;
-	//std::unordered_map<std::string, std::unordered_map<int, std::vector<PPPG_PARAM>>> seriesParams;
-
+	
+	//data structures for dealing with output paramenters
 	std::unordered_map<std::string, std::string> outputParamNames = {
 		{"stocking density","stemno"},
 		{"weight of foliage","wf" },
@@ -411,6 +416,9 @@ private:
 	std::unordered_map<std::string, PPPG_OP_VAR> outputParams;
 	std::function<void(std::string)> log;
 
+	//data structures for dealing with
+	PPPG_MT_PARAM managementTables[3];
+
 	bool haveTavg = false;
 	bool haveVPD = false;
 	bool haveNDVI = false;
@@ -427,18 +435,20 @@ private:
 public:
 	DataInput(std::function<void(std::string)>& log);
 	DataInput();//for no logger
-	bool tryAddInputParam(std::string pname, std::vector<std::string> value);
+	bool tryAddInputParam(std::string name, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
 	bool tryAddOutputParam(std::string name, std::vector<std::string> value, int lineno);
+	//bool tryAddManagementParam(std::string name, std::ifstream& inFile, int& lineNo);
 	bool inputFinished(bool modelMode3PGS);
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
+	bool getManagementParam(ManagementIndex index, long cellIndex, int year, double& val);
 	std::unordered_map<std::string, PPPG_OP_VAR> getOpVars();
 	bool haveNetRadParam();
 	RefGridProperties getRefGrid();
 	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
 
-	bool haveSeedlingMass;
-	bool haveMinASWTG;
-	bool haveAgeDepFert;
+	bool haveSeedlingMass = false;
+	bool haveMinASWTG = false;
+	bool haveAgeDepFert = false;
 };

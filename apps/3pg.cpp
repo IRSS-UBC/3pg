@@ -236,7 +236,6 @@ int main(int argc, char* argv[])
     }
 
     // Check for a spatial run, if so open input grids and define refGrid. 
-    openInputGrids();
     RefGridProperties refGrid = dataInput.getRefGrid();
     DataOutput dataOutput(refGrid, outPath, dataInput.getOpVars());
 

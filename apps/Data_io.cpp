@@ -53,105 +53,13 @@ static std::string rcsid = "$Id: Data_io.cpp,v 1.10 2001/08/02 06:41:01 lou026 E
 extern double DaysInMonth[13];                  // array for days in months
 extern bool modelMode3PGS;
 
-// Time variant management factors
-extern int nFertility;                          // size of site fertility array
-//extern MANAGE_TABLE Fertility[1000];            // time-variant site fertility
-extern int nMinAvailSW;                         // size of MinAvailSW array
-//extern MANAGE_TABLE MinAvailSW[1000];           // time-variant MinAvailSW (mm)
-extern int nIrrigation;                         // size of irrigation array
-//extern MANAGE_TABLE Irrigation[1000];           // time-variant irrigation (ML/y)
-extern double Irrig;                            // current annual irrigation (ML/y)
-
 std::string outPath = "./";
-
-//----------------------------------------------------------------------------------
-
-// 3PG management table parameters. At most one value per year. 
-PPPG_MT_PARAM FertMT[PPPG_MAX_SERIES_YEARS+1];
-PPPG_MT_PARAM IrrigMT[PPPG_MAX_SERIES_YEARS+1];
-PPPG_MT_PARAM MinAswMT[PPPG_MAX_SERIES_YEARS+1];
 
 //----------------------------------------------------------------------------------
 
 std::function<void(std::string)> logMessage;
 void setLogFunc(std::function<void(std::string)>& log) {
     logMessage = log;
-}
-
-bool openGrid(PPPG_VVAL& vval)
-{
-    if (vval.spType == pTif) {
-        string openString = "   opening raster from " + vval.gridName + "...";
-        string succesReadString = "read raster";
-        string failReadString = "failed";
-
-        try {
-            vval.g = new GDALRasterImage(vval.gridName);
-            logMessage(openString + succesReadString);
-        }
-        catch (const std::exception&) {
-            logMessage(openString + failReadString);
-            exit(EXIT_FAILURE);
-        }
-
-    }
-    else {
-        return false;
-    }
-    return true;
-}
-
-//-----------------------------------------------------------------------------
-
-double lookupManageTable( int year, int table, double def, int k )
-{
-  // Lookup the value of a cell in a management table, for a year. 
-  // Entries in management tables apply up to but not including the 
-  // next year listed, for consistency with the VB version.  Ie, the 
-  // management tables describe periods, not events.  def is the 'default' 
-  // value, which will correspond to the general parameter value for the 
-  // attribute (ie there can be both an "FR" parameter and an FR management 
-  // table).  
-  PPPG_MT_PARAM *mt;  
-  GDALRasterImage *fg;
-  int i;
-  double val; 
-
-  if ( table == MT_FERTILITY ) 
-    mt = FertMT; 
-  else if (table == MT_MINASW )
-    mt = MinAswMT; 
-  else if (table == MT_IRRIGATION )
-    mt = IrrigMT; 
-  else {
-    std::cout << "Program error: called lookupManageTable with invalid table" << std::endl;
-    logMessage("Program error: called lookupManageTable with invalid table");
-    exit(EXIT_FAILURE);
-  }
-
-  // Load the table entries.  Unfortunately we have to reload every 
-  // entries value to allow values from earlier entries to persist through 
-  // NODATA cells in later entries.  If we hit NODATA, we must look at the next 
-  // table entry as, if it exists, its value will apply. 
-  val = def; 
-  bool hitdata = false; 
-  for (i = 0; mt[i].year > 0; i++) {
-    // Read earlier table entries. 
-    if ( mt[i].data.spType == pScalar ) {
-      val = mt[i].data.sval; 
-    }
-    else if ( mt[i].data.spType == pTif ) {
-      fg = (GDALRasterImage *)mt[i].data.g;
-      if (fg->IsNoData(fg->GetVal(k)))
-        continue; 
-      else
-        val = fg->GetVal(k);
-    }
-    if ( mt[i].year >= year )
-      break;
-  }
-
-  return val; 
 }
 
 //----------------------------------------------------------------------------------
@@ -302,126 +210,6 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
 
 //----------------------------------------------------------------------------------
 
-bool readParam( PPPG_VVAL &vval, std::string pValue )
-{
-  std::string cp;
-
-   cp = pValue;
-  try {
-    vval.sval = std::stod(cp);
-    vval.spType = pScalar;
-    return true;
-  }
-  catch (std::invalid_argument const&) {
-    // If not, then try a grid name
-    cp = pValue;
-    const std::filesystem::path filePath = cp;
-    // Check that the file is a TIF file
-    if (filePath.extension() == ".tif") // Heed the dot.
-    {
-        vval.gridName = cp;
-        vval.spType = pTif;
-        return true;
-    }
-    else
-    {
-        std::cout << filePath.filename() << " is an invalid filetype (" << filePath.extension() << ")" << std::endl; 
-        logMessage(filePath.filename().generic_string() + " is an invalid filetype (" + filePath.extension().generic_string() + ")");
-        exit(EXIT_FAILURE);
-    }
-    return false;
-  }
-}
-
-//----------------------------------------------------------------------------------
-
-bool readInputManageParam(const std::string pName, std::ifstream& inFile, int &lineNo)
-{
-  // Read management table input parameters.
-  // A table must begin on the line following the keyword identifying it.
-  // The table has one entry per line, each entry consists of a year and a value, seperated by whitespace.
-  // A blank line terminates the table.  Each value can be either a constant or a grid name.  
-  std::string line;
-  std::string tok, cp;
-  PPPG_MT_PARAM *tab;
-  int i, *nRead; 
-  std::string tabName;
-
-  // Are we reading a managment table?
-  if ( namesMatch( "Management: fertility", pName ) ) {
-    tab = FertMT;
-    tabName = "Fertility MT";
-    nRead = &nFertility; 
-  }
-  else if ( namesMatch( "Management: irrigation", pName ) ) {
-    tab = IrrigMT; 
-    tabName = "Irrigation MT";
-    nRead = &nIrrigation; 
-  }
-  else if ( namesMatch( "Management: MinASW", pName ) ) {
-    tab = MinAswMT;
-    tabName = "Min ASW MT";
-    nRead = &nMinAvailSW;
-  }
-  else
-    return false; 
-
-  // Read the table using ifstreams.
-  // The table has one entry per line, each entry consists of a year and a value, seperated by whitespace.
-  // A blank line terminates the table.  Each value can be either a constant or a grid name.
-  i = 0; 
-  while (std::getline(inFile, line)) {
-    lineNo++; // Passed-by-reference, will alter the value of lineNo in the calling function.
-    if (line.empty())
-      // Blank line terminates the table.
-      tab[i].year = -1; 
-      break;
-    // Tokenize the line
-    std::vector<std::string> tTokens;
-    boost::split(tTokens, line, boost::is_any_of(", \n\t"));
-    if (tTokens.size() != 2) {
-      std::cout << "Could not read management table at line " << lineNo << std::endl;
-      logMessage("Could not read management table at line " + to_string(lineNo));
-      exit(EXIT_FAILURE);
-    }
-    // trim leading whitespace from each token using boost::trim
-    for (int i = 0; i < tTokens.size(); i++)
-      boost::trim(tTokens[i]);
-
-    // Read the year
-    try {
-      tab[i].year = std::stoi(tTokens.front());
-    }
-    catch (std::invalid_argument const&) {
-      std::cout << "Expected an integer year in management table at line " << lineNo << std::endl;
-      logMessage("Expected an interger year in management table at line " + to_string(lineNo));
-      exit(EXIT_FAILURE);
-    }
-    // Read the second token, which is either a constant or a grid name.
-    if( !readParam( tab[i].data, tTokens.back() )) {
-      std::cout << "Could not read management table value at line " << lineNo << std::endl;
-      logMessage("Could not read management table value at line " + to_string(lineNo));
-      exit(EXIT_FAILURE);
-    }
-    else {
-      tab[i].got = 1;
-    }
-    if (tab[i].data.spType == pScalar) {
-      std::cout << "   " << tabName << " year: " << tab[i].year << "   value: " << tab[i].data.sval << std::endl;
-      logMessage("   " + tabName + " year: " + to_string(tab[i].year) + "   value:" + to_string(tab[i].data.sval));
-    }
-    else {
-      std::cout << "   " << tabName << " year: " << tab[i].year << "   grid: " << tab[i].data.gridName << std::endl;
-      logMessage("   " + tabName + " year: " + to_string(tab[i].year) + "   grid: " + tab[i].data.gridName);
-    } 
-    i++; 
-  }
-  *nRead = i; 
-  return true;  
-}
-
-//----------------------------------------------------------------------------------
-
 void readSpeciesParamFile(const std::string& speciesFile, DataInput& dataInput) {
     std::string line, pName;
     std::string pValue;
@@ -512,62 +300,11 @@ void readSiteParamFile(const std::string& paramFile, DataInput& dataInput)
     if (dataInput.tryAddOutputParam(pName, pValues, lineNo)) { continue; }
     else if (readOtherParam(pName, pValues)) { continue; }
     else if (dataInput.tryAddSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
-    else if (readInputManageParam(pName, inFile, lineNo)) { continue; }
+    //else if (dataInput.tryAddManagementParam(pName, inFile, lineNo)) { continue; }
     else {
         std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
         logMessage("Cannot read parameter in file " + paramFile + ", line: " + to_string(lineNo) + ": " + pName);
         exit(EXIT_FAILURE);
     }
   }
-}
-
-//----------------------------------------------------------------------------------
-
-GDALRasterImage* openInputGrids( )
-{
-  // Open any grids in the params array, the climate and NDVI series arrays, and 
-  // the management tables. 
-  // Copy the grid parameters of the first grid opened to refGrid. 
-  int j; 
-  bool spatial = false, first = true;
-  GDALRasterImage *refGrid;
-
-  logMessage("Opening input rasters...");
-
-  // Open all management table grids. 
-  PPPG_MT_PARAM *tab;
-  PPPG_MT_PARAM *tablist[] = { FertMT, IrrigMT, MinAswMT, NULL }; 
-  for (j = 0 ; tablist[j] != NULL; j++) {
-    tab = tablist[j]; 
-    for (int i = 0; tab[i].year > 0; i++) {
-      if ( openGrid( tab[i].data ) ) {
-        spatial = true; 
-        if ( first ) {
-          refGrid = (GDALRasterImage *)tab[i].data.g;
-          first = false; 
-        }
-        else if ( ( fabs( refGrid->xMin - tab[i].data.g->xMin ) > 0.0001 ) 
-          || ( fabs( refGrid->yMin - tab[i].data.g->yMin ) > 0.0001 )
-          || ( fabs( refGrid->xMax - tab[i].data.g->xMax ) > 0.0001 )
-          || ( fabs( refGrid->yMax - tab[i].data.g->yMax ) > 0.0001 ) 
-          || ( refGrid->nRows != tab[i].data.g->nRows ) 
-          || ( refGrid->nCols != tab[i].data.g->nCols ) ) {
-            std::cout << "Grid dimensions must match, raster " << tab[i].data.gridName << " differs from first raster." << std::endl;
-            logMessage("Grid dimensions must match, raster " + tab[i].data.gridName + " differs from first raster.");
-            exit(EXIT_FAILURE);
-          // sprintf(outstr, "Grid dimensions must match, grid %s differs from first grid.\n", 
-          //   tab[i].data.gridName ); 
-          // logAndExit(logfp, outstr); 
-        }
-      }
-    }
-  }
-
-  //if (!spatial) {
-  //  std::cout << "None" << std::endl;
-  //  // fprintf(logfp, "none\n");
-  //  refGrid = NULL; 
-  //}
-
-  return nullptr;
 }

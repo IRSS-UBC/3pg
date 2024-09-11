@@ -3,6 +3,5 @@
 #include <fstream>
 using namespace std;
 
-char *strcpyTrim(char *s, char *ct);
 bool namesMatch(const std::string &n1, const std::string &n2);
 
