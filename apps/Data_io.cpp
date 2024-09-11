@@ -300,7 +300,7 @@ void readSiteParamFile(const std::string& paramFile, DataInput& dataInput)
     if (dataInput.tryAddOutputParam(pName, pValues, lineNo)) { continue; }
     else if (readOtherParam(pName, pValues)) { continue; }
     else if (dataInput.tryAddSeriesParam(pName, pValues, inFile, lineNo)) { continue; }
-    //else if (dataInput.tryAddManagementParam(pName, inFile, lineNo)) { continue; }
+    else if (dataInput.tryAddManagementParam(pName, inFile, lineNo)) { continue; }
     else {
         std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
         logMessage("Cannot read parameter in file " + paramFile + ", line: " + to_string(lineNo) + ": " + pName);

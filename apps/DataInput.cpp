@@ -504,13 +504,13 @@ bool DataInput::tryAddManagementParam(std::string name, std::ifstream& inFile, i
 	boost::algorithm::to_lower(name);
 
 	int index;
-	if (name.compare("management: fertility")) {
+	if (name.compare("management: fertility") == 0) {
 		index = ManagementIndex::FERTILITY;
 	}
-	else if (name.compare("management: minasw")) {
+	else if (name.compare("management: minasw") == 0) {
 		index = ManagementIndex::MINASW;
 	}
-	else if (name.compare("management: irrigation")) {
+	else if (name.compare("management: irrigation") == 0) {
 		index = ManagementIndex::IRRIGATION;
 	}
 	else {
@@ -931,15 +931,15 @@ bool DataInput::getManagementParam(ManagementIndex index, long cellIndex, int ye
 	
 	//get parameter
 	PPPG_PARAM* param = table->yearlyParams[yearIndex].get();
-	
+
 	//get val if scalar and return true
-	if (param->spType = pScalar) {
+	if (param->spType == pScalar) {
 		val = param->val;
 		return true;
 	}
 	
 	//get val from grid, return true if not nan
-	if (param->spType = pTif) {
+	if (param->spType == pTif) {
 		val = param->g->GetVal(cellIndex);
 		return !isnan(val);
 	}
