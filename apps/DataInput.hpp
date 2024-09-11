@@ -438,7 +438,7 @@ public:
 	bool tryAddInputParam(std::string name, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
 	bool tryAddOutputParam(std::string name, std::vector<std::string> value, int lineno);
-	//bool tryAddManagementParam(std::string name, std::ifstream& inFile, int& lineNo);
+	bool tryAddManagementParam(std::string name, std::ifstream& inFile, int& lineNo);
 	bool inputFinished(bool modelMode3PGS);
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);

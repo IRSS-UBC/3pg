@@ -499,96 +499,96 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 	return true;
 }
 
-//bool DataInput::tryAddManagementParam(std::string name, std::ifstream& inFile, int& lineNo) {
-//	//convert to lowercase for comparision
-//	boost::algorithm::to_lower(name);
-//
-//	int index;
-//	if (name.compare("management: fertility")) {
-//		index = ManagementIndex::FERTILITY;
-//	}
-//	else if (name.compare("management: minasw")) {
-//		index = ManagementIndex::MINASW;
-//	}
-//	else if (name.compare("management: irrigation")) {
-//		index = ManagementIndex::IRRIGATION;
-//	}
-//	else {
-//		return false;
-//	}
-//
-//	PPPG_MT_PARAM table = this->managementTables[index];
-//	
-//	std::string line;
-//	//while (std::getline(inFile, line)) {
-//	//	//increment line number
-//	//	lineNo++;
-//	//
-//	//	//blank line terminates table
-//	//	if (line.empty()) {
-//	//		break;
-//	//	}
-//	//
-//	//	//tokenize line
-//	//	std::vector<std::string> tokens;
-//	//	boost::split(tokens, line, boost::is_any_of(", \n\t"), boost::token_compress_on);
-//	//
-//	//	//ensure line has exactly 2 tokens
-//	//	if (tokens.size() != 2) {
-//	//		//print and log error
-//	//		std::string errstr = "could not read management table at line " + std::to_string(lineNo);
-//	//		std::cout << errstr << std::endl;
-//	//		this->log(errstr);
-//	//
-//	//		//exit
-//	//		exit(EXIT_FAILURE);
-//	//	}
-//	//
-//	//	int year;
-//	//	std::unique_ptr<PPPG_PARAM> param = std::make_unique<PPPG_PARAM>();
-//	//
-//	//	//ensure the year is an integer
-//	//	try {
-//	//		year = std::stoi(tokens[0]);
-//	//	}
-//	//	catch (std::invalid_argument const&) {
-//	//		//print and log error
-//	//		std::string errstr = "expected aninteger year in management table at line " + std::to_string(lineNo);
-//	//		std::cout << errstr << std::endl;
-//	//		this->log(errstr);
-//	//
-//	//		//exit
-//	//		exit(EXIT_FAILURE);
-//	//	}
-//	//
-//	//	if (DataInput::getScalar(tokens[1], param.get()) || DataInput::getGrid(tokens[1], param.get())) {
-//	//		//if this is the first entry in the management table, set the initial year
-//	//		if (table.firstYear == -1) {
-//	//			table.firstYear = year;
-//	//		}
-//	//
-//	//		//if years were skipped in the management table, fill in those years with the same index as the last element
-//	//		if (year > table.firstYear + table.yearToIndex.size()) {
-//	//			while (year > table.firstYear + table.yearToIndex.size()) {
-//	//				table.yearToIndex.push_back(table.yearToIndex.back());
-//	//			}
-//	//		}
-//	//
-//	//		//add new param to the back of the yearlyParams table, and add the index to the index table
-//	//		//table.yearlyParams.emplace_back();
-//	//		//table.yearlyParams.back() = std::move(param);
-//	//		table.yearToIndex.push_back(table.yearlyParams.size() - 1);
-//	//		
-//	//		//keep iterating
-//	//		continue;
-//	//	}
-//	//
-//	//	//if the value could not be interpreted as either a scalar or a grid, then exit
-//	//	exit(EXIT_FAILURE);
-//	//}
-//
-//	return true;
-//}
+bool DataInput::tryAddManagementParam(std::string name, std::ifstream& inFile, int& lineNo) {
+	//convert to lowercase for comparision
+	boost::algorithm::to_lower(name);
+
+	int index;
+	if (name.compare("management: fertility")) {
+		index = ManagementIndex::FERTILITY;
+	}
+	else if (name.compare("management: minasw")) {
+		index = ManagementIndex::MINASW;
+	}
+	else if (name.compare("management: irrigation")) {
+		index = ManagementIndex::IRRIGATION;
+	}
+	else {
+		return false;
+	}
+	
+	PPPG_MT_PARAM* table = &this->managementTables[index];
+	
+	std::string line;
+	while (std::getline(inFile, line)) {
+		//increment line number
+		lineNo++;
+	
+		//blank line terminates table
+		if (line.empty()) {
+			break;
+		}
+	
+		//tokenize line
+		std::vector<std::string> tokens;
+		boost::split(tokens, line, boost::is_any_of(", \n\t"), boost::token_compress_on);
+	
+		//ensure line has exactly 2 tokens
+		if (tokens.size() != 2) {
+			//print and log error
+			std::string errstr = "could not read management table at line " + std::to_string(lineNo);
+			std::cout << errstr << std::endl;
+			this->log(errstr);
+	
+			//exit
+			exit(EXIT_FAILURE);
+		}
+	
+		int year;
+		std::unique_ptr<PPPG_PARAM> param = std::make_unique<PPPG_PARAM>();
+	
+		//ensure the year is an integer
+		try {
+			year = std::stoi(tokens[0]);
+		}
+		catch (std::invalid_argument const&) {
+			//print and log error
+			std::string errstr = "expected aninteger year in management table at line " + std::to_string(lineNo);
+			std::cout << errstr << std::endl;
+			this->log(errstr);
+	
+			//exit
+			exit(EXIT_FAILURE);
+		}
+	
+		if (DataInput::getScalar(tokens[1], param.get()) || DataInput::getGrid(tokens[1], param.get())) {
+			//if this is the first entry in the management table, set the initial year
+			if (table->firstYear == -1) {
+				table->firstYear = year;
+			}
+	
+			//if years were skipped in the management table, fill in those years with the same index as the last element
+			if (year > table->firstYear + table->yearToIndex.size()) {
+				while (year > table->firstYear + table->yearToIndex.size()) {
+					table->yearToIndex.push_back(table->yearToIndex.back());
+				}
+			}
+	
+			//add new param to the back of the yearlyParams table, and add the index to the index table
+			table->yearlyParams.emplace_back();
+			table->yearlyParams.back() = std::move(param);
+			table->yearToIndex.push_back((int)table->yearlyParams.size() - 1);
+			
+			//keep iterating
+			continue;
+		}
+	
+		//if the value could not be interpreted as either a scalar or a grid, then exit
+		exit(EXIT_FAILURE);
+	}
+
+	return true;
+}
 
 bool DataInput::inputFinished(bool modelMode3PGS) {
 	if (modelMode3PGS && !this->allow3PGS || !modelMode3PGS && !this->allow3PG) {
@@ -913,25 +913,25 @@ double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, lon
 }
 
 bool DataInput::getManagementParam(ManagementIndex index, long cellIndex, int year, double& val) {
-	PPPG_MT_PARAM table = this->managementTables[index];
-
+	PPPG_MT_PARAM* table = &this->managementTables[index];
+	
 	//if management parameter doesn't exist, return false
-	if (table.firstYear == -1 || year < table.firstYear) {
+	if (table->firstYear == -1 || year < table->firstYear) {
 		return false;
 	}
-
+	
 	//get index to management table vector for correct year
 	int yearIndex;
-	if (year - table.firstYear > table.yearToIndex.size()) {
-		yearIndex = table.yearToIndex.back();
+	if (year - table->firstYear > table->yearToIndex.size()) {
+		yearIndex = table->yearToIndex.back();
 	}
 	else {
-		yearIndex = table.yearToIndex[year - table.firstYear];
+		yearIndex = table->yearToIndex[year - table->firstYear];
 	}
-
+	
 	//get parameter
-	PPPG_PARAM* param = table.yearlyParams[yearIndex].get();
-
+	PPPG_PARAM* param = table->yearlyParams[yearIndex].get();
+	
 	//get val if scalar and return true
 	if (param->spType = pScalar) {
 		val = param->val;
@@ -943,7 +943,7 @@ bool DataInput::getManagementParam(ManagementIndex index, long cellIndex, int ye
 		val = param->g->GetVal(cellIndex);
 		return !isnan(val);
 	}
-
+	
 	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
 }
 
