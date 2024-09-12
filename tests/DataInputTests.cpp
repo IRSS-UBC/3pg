@@ -1371,3 +1371,91 @@ TEST(DataInputTests, seriesParamInputFormat) {
 	//clean up
 	delete dataInput;
 }
+
+//test management table functionality
+TEST(DataInputTests, managementTable) {
+	DataInput *dataInput = new DataInput();
+	std::ifstream paramFp1("test_files//DataInputTests//manageTableTest1.txt");
+	std::ifstream paramFp2("test_files//DataInputTests//manageTableTest2.txt");
+	std::ifstream paramFp3("test_files//DataInputTests//manageTableTest3.txt");
+	int lineNo1 = 0;
+	int lineNo2 = 0;
+	int lineNo3 = 0;
+
+	ASSERT_TRUE(dataInput->tryAddManagementParam("Management: irrigation", paramFp1, lineNo1));
+	ASSERT_TRUE(dataInput->tryAddManagementParam("management: minasw", paramFp2, lineNo2));
+	ASSERT_TRUE(dataInput->tryAddManagementParam("management: FERTILITY", paramFp3, lineNo3));
+
+	double val;
+	
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~
+	Irrigation
+	~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1993, val));
+
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1994, val));
+	EXPECT_EQ(val, 8);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1995, val));
+	EXPECT_EQ(val, 8);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1996, val));
+	EXPECT_EQ(val, 8);
+
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1997, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 1, 1997, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 2, 1997, val)); //false because nan
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 3, 1997, val));
+	EXPECT_EQ(val, 3);
+
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1999, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 1, 1999, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 2, 1999, val)); //false because nan
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 3, 1999, val));
+	EXPECT_EQ(val, 3);
+
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 2000, val));
+	EXPECT_EQ(val, 5);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 2001, val));
+	EXPECT_EQ(val, 5);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 5000, val));
+	EXPECT_EQ(val, 5);
+
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~
+	MinASW
+	~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1994, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1995, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1996, val));
+	EXPECT_EQ(val, 3);
+
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~
+	Fertility
+	~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, 1, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 1, 1, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 2, 1, val)); //false because nan
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 3, 1, val));
+	EXPECT_EQ(val, 3);
+	
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, 2999, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 1, 2999, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 2, 2999, val)); //false because nan
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 3, 2999, val));
+	EXPECT_EQ(val, 3);
+	
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, 3000, val));
+	EXPECT_EQ(val, .0005);
+	
+	val = -1;
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, std::numeric_limits<int>::max(), val));
+	EXPECT_EQ(val, .0005);
+}

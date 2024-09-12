@@ -464,25 +464,30 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     LAIi = vars.LAI;
     CumStemLoss = 0;
     
-    // Get management-related options for current year and cell. 
-// First load param file values, then possibly override them with management table values. 
-    if (!dataInput.haveAgeDepFert)
+    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    step 2: load management params if they exist
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+    //set fertility to management value if it exists, otherwise set to param
+    //also set fertility decay flag if we don't have the management param but do have params FRStart, FREnd, and FRDec
+    bool fertilityDecay = false;
+    if (!dataInput.getManagementParam(ManagementIndex::FERTILITY, cellIndex, spMinMY.year, MinASW)) {
+        fertilityDecay = dataInput.haveAgeDepFert;
         vars.FR = params.FRp;
-    if (nFertility > 0)
-        vars.FR = lookupManageTable(spMinMY.year, MT_FERTILITY, params.FRp, cellIndex);
-
-    MinASW = params.MinASWp;
-    if (nMinAvailSW > 0)
-        MinASW = lookupManageTable(spMinMY.year, MT_MINASW, params.MinASWp, cellIndex);
-
-    Irrig = 0;
-    if (nIrrigation > 0) {
-        Irrig = lookupManageTable(spMinMY.year, MT_IRRIGATION, 0, cellIndex);
     }
-    else Irrig = 0;
+
+    //set MinASW to management value if it exists, otherwise set to param
+    if (!dataInput.getManagementParam(ManagementIndex::MINASW, cellIndex, spMinMY.year, MinASW)) {
+        MinASW = params.MinASWp;
+    }
+
+    //set irrigation to management value if it exists, otherwise set to 0
+    if (!dataInput.getManagementParam(ManagementIndex::IRRIGATION, cellIndex, spMinMY.year, Irrig)) {
+        Irrig = 0;
+    }
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    step 2: write start month initialization values to output
+    step 3: write start month initialization values to output
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
     //Find out if there is supposed to be any data here in the first place...
@@ -506,7 +511,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     dataOutput.writeMonthlyOutputGrids(opVarVals, spMinMY.year, (int)params.StartMonth, spMinMY, spMaxMY, cellIndex);
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    step 3: determine start and end month/years
+    step 4: determine start and end month/years
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
     //calculate the starting iteration month/year using the start month.
@@ -521,7 +526,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     int lastMonth = spMaxMY.mon;
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    step 4: start yearly processing loop
+    step 5: start yearly processing loop
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
     for (int year = firstYear; year <= lastYear; year++) {
 
@@ -530,10 +535,9 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
         int endMonth = (year == lastYear) ? lastMonth : 12;
 
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        step 5: start monthly processing loop
+        step 6: start monthly processing loop
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
         for (int month = startMonth; month <= endMonth; month++) {
-
             if (!dataInput.getSeriesParams(cellIndex, year, month, sParams)) {
                 return;
             }
@@ -542,16 +546,9 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
 
             // Determine the various environmental modifiers
 
-            //Fertility.
-            if (nFertility > 0)
-            {
-                //Do nothing
-            }
-            else {
-                //If we are in a period where we wish FR to decay, make it so.
-                if (dataInput.haveAgeDepFert && (params.FRstart <= StandAge) && (params.FRend > StandAge)) {
-                    vars.FR = vars.FR - vars.FR * params.FRdec;
-                }
+            //calculate fertility using fertility decay if it applies to the current month on the current pixel
+            if (fertilityDecay && (params.FRstart <= StandAge) && (params.FRend > StandAge)) {
+                vars.FR = vars.FR - vars.FR * params.FRdec;
             }
 
             // calculate temperature response function to apply to alpha
@@ -843,23 +840,6 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 aTransp = 0;
                 aSupIrrig = 0;
 
-                // Get management-related options for current year and cell. 
-                // First load param file values, then possibly override them with management table values. 
-                if (!dataInput.haveAgeDepFert)
-                    vars.FR = params.FRp;
-                if (nFertility > 0)
-                    vars.FR = lookupManageTable(year, MT_FERTILITY, params.FRp, cellIndex);
-
-                MinASW = params.MinASWp;
-                if (nMinAvailSW > 0)
-                    MinASW = lookupManageTable(year, MT_MINASW, params.MinASWp, cellIndex);
-
-                Irrig = 0;
-                if (nIrrigation > 0) {
-                    Irrig = lookupManageTable(year, MT_IRRIGATION, 0, cellIndex);
-                }
-                else Irrig = 0;
-
                 //Initialise output step cumulative variables
                 delStemNo = 0;
                 cRADint = 0;
@@ -873,6 +853,24 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 vars.cTransp = 0;
                 vars.cEvapTransp = 0;
                 vars.cLitter = 0;
+
+                //get new yearly management params
+                //set fertility to management value if it exists, otherwise set to param (and set fertilityDecay flag)
+                fertilityDecay = false;
+                if (!dataInput.getManagementParam(ManagementIndex::FERTILITY, cellIndex, spMinMY.year, MinASW)) {
+                    fertilityDecay = dataInput.haveAgeDepFert;
+                    vars.FR = params.FRp;
+                }
+
+                //set MinASW to management value if it exists, otherwise set to param
+                if (!dataInput.getManagementParam(ManagementIndex::MINASW, cellIndex, spMinMY.year, MinASW)) {
+                    MinASW = params.MinASWp;
+                }
+
+                //set irrigation to management value if it exists, otherwise set to 0
+                if (!dataInput.getManagementParam(ManagementIndex::IRRIGATION, cellIndex, spMinMY.year, Irrig)) {
+                    Irrig = 0;
+                }
 
                 //year end calculations, run after the model has run for 12 months -- NOT on December every year
 
