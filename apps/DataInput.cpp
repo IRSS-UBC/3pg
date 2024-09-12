@@ -149,26 +149,14 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 		}
 	}
 
-	//try to get the value as a scalar
-	if (DataInput::getScalar(value.front(), param.get())) {
+	//try to get the value as a scalar then grid
+	if (DataInput::getScalar(value.front(), param.get()) || DataInput::getGrid(value.front(), param.get())) {
 		//remove from required params set
 		this->requiredInputParams3PGS.erase(param->id);
 		this->requiredInputParams3PG.erase(param->id);
 
 		//if gotten, add to inputParams map
 		this->inputParams.emplace(param->id, std::move(param));
-		return true;
-	}
-	
-	//try to get the value as a grid
-	if (DataInput::getGrid(value.front(), param.get())) {
-		//remove from required params set
-		this->requiredInputParams3PGS.erase(param->id);
-		this->requiredInputParams3PG.erase(param->id);
-
-		//if gotten, add to inputParams map and return
-		this->inputParams.emplace(param->id, std::move(param));
-
 		return true;
 	}
 
@@ -217,14 +205,8 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 			std::unique_ptr<PPPG_PARAM> monthlyParam = std::make_unique<PPPG_PARAM>();
 			monthlyParam->id = name + " month " + std::to_string(i);
 
-			//try to add as a scalar param
-			if (DataInput::getScalar(values[i], monthlyParam.get())) {
-				param->monthlyParams[i] = std::move(monthlyParam);
-				continue;
-			}
-
-			//try to add as a grid param
-			if (DataInput::getGrid(values[i], monthlyParam.get())) {
+			//try to add as a scalar param then grid
+			if (DataInput::getScalar(values[i], monthlyParam.get()) || DataInput::getGrid(values[i], monthlyParam.get())) {
 				param->monthlyParams[i] = std::move(monthlyParam);
 				continue;
 			}
@@ -296,14 +278,8 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 				std::unique_ptr<PPPG_PARAM> monthlyParam = std::make_unique<PPPG_PARAM>();
 				monthlyParam->id = name + " year " + sTokens.front() + " month " + std::to_string(i);
 
-				//try to add as a scalar param
-				if (DataInput::getScalar(sTokens[i + 1], monthlyParam.get())) {
-					param->monthlyParams[paramIndex] = std::move(monthlyParam);
-					continue;
-				}
-
-				//try to add as a grid param
-				if (DataInput::getGrid(sTokens[i + 1], monthlyParam.get())) {
+				//try to add as a scalar then grid param
+				if (DataInput::getScalar(sTokens[i + 1], monthlyParam.get()) || DataInput::getGrid(sTokens[i + 1], monthlyParam.get())) {
 					param->monthlyParams[paramIndex] = std::move(monthlyParam);
 					continue;
 				}
