@@ -265,7 +265,7 @@ void copyVars(Vars vars, std::unordered_map<std::string, double>& opVarVals) {
 }
 
 // This is the main routine for the 3PG model
-void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
+void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
 {
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     step 1: initialize variables
@@ -471,18 +471,18 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     //set fertility to management value if it exists, otherwise set to param
     //also set fertility decay flag if we don't have the management param but do have params FRStart, FREnd, and FRDec
     bool fertilityDecay = false;
-    if (!dataInput.getManagementParam(ManagementIndex::FERTILITY, cellIndex, spMinMY.year, MinASW)) {
+    if (!dataInput.getManagementParam(ManagementIndex::FERTILITY, cellIndex, params.yearPlanted + params.StartAge, MinASW)) {
         fertilityDecay = dataInput.haveAgeDepFert;
         vars.FR = params.FRp;
     }
 
     //set MinASW to management value if it exists, otherwise set to param
-    if (!dataInput.getManagementParam(ManagementIndex::MINASW, cellIndex, spMinMY.year, MinASW)) {
+    if (!dataInput.getManagementParam(ManagementIndex::MINASW, cellIndex, params.yearPlanted + params.StartAge, MinASW)) {
         MinASW = params.MinASWp;
     }
 
     //set irrigation to management value if it exists, otherwise set to 0
-    if (!dataInput.getManagementParam(ManagementIndex::IRRIGATION, cellIndex, spMinMY.year, Irrig)) {
+    if (!dataInput.getManagementParam(ManagementIndex::IRRIGATION, cellIndex, params.yearPlanted + params.StartAge, Irrig)) {
         Irrig = 0;
     }
 
@@ -493,7 +493,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     //Find out if there is supposed to be any data here in the first place...
 
     SeriesParams sParams;
-    if (!dataInput.getSeriesParams(cellIndex, spMinMY.year, (int)params.StartMonth, sParams)) {
+    if (!dataInput.getSeriesParams(cellIndex, params.yearPlanted + params.StartAge, (int)params.StartMonth, sParams)) {
         return;
     }
 
@@ -508,7 +508,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
 
     //write initial state of output variables
     copyVars(vars, opVarVals);
-    dataOutput.writeMonthlyOutputGrids(opVarVals, spMinMY.year, (int)params.StartMonth, spMinMY, spMaxMY, cellIndex);
+    dataOutput.writeMonthlyOutputGrids(opVarVals, params.yearPlanted + params.StartAge, (int)params.StartMonth, cellIndex);
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     step 4: determine start and end month/years
@@ -518,12 +518,12 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
     //the first is the month following the start month, since the start month state is the initial state.
 
     //start monthly/yearly iteration on StartMonth + 1 unless StartMonth is 12, then start on month 1 of the following year
-    int firstYear = ((int)params.StartMonth == 12) ? spMinMY.year + 1 : spMinMY.year;
+    int firstYear = ((int)params.StartMonth == 12) ? params.yearPlanted + params.StartAge + 1 : params.yearPlanted + params.StartAge;
     int firstMonth = ((int)params.StartMonth == 12) ? 1 : params.StartMonth + 1;
 
     //end monthly/yearly iteration on the last month and year according to spMaxMY
-    int lastYear = spMaxMY.year;
-    int lastMonth = spMaxMY.mon;
+    int lastYear = params.EndYear;
+    int lastMonth = params.StartMonth;
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     step 5: start yearly processing loop
@@ -809,11 +809,11 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 vars.cumWabv += vars.delWAG;
             }
 
-            if (!(year == spMaxMY.year && month == spMaxMY.mon)) {
+            if (!(year == params.EndYear && month == params.StartMonth)) {
                 //the !(year == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
                 //output, but rather skip it and the values are eventually written via writeOutputGrids().
                 copyVars(vars, opVarVals);
-                dataOutput.writeMonthlyOutputGrids(opVarVals, year, month, spMinMY, spMaxMY, cellIndex);
+                dataOutput.writeMonthlyOutputGrids(opVarVals, year, month, cellIndex);
             }
 
             //reset cumulative variables and run year-end calculations
@@ -857,18 +857,18 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 //get new yearly management params
                 //set fertility to management value if it exists, otherwise set to param (and set fertilityDecay flag)
                 fertilityDecay = false;
-                if (!dataInput.getManagementParam(ManagementIndex::FERTILITY, cellIndex, spMinMY.year, MinASW)) {
+                if (!dataInput.getManagementParam(ManagementIndex::FERTILITY, cellIndex, year, MinASW)) {
                     fertilityDecay = dataInput.haveAgeDepFert;
                     vars.FR = params.FRp;
                 }
 
                 //set MinASW to management value if it exists, otherwise set to param
-                if (!dataInput.getManagementParam(ManagementIndex::MINASW, cellIndex, spMinMY.year, MinASW)) {
+                if (!dataInput.getManagementParam(ManagementIndex::MINASW, cellIndex, year, MinASW)) {
                     MinASW = params.MinASWp;
                 }
 
                 //set irrigation to management value if it exists, otherwise set to 0
-                if (!dataInput.getManagementParam(ManagementIndex::IRRIGATION, cellIndex, spMinMY.year, Irrig)) {
+                if (!dataInput.getManagementParam(ManagementIndex::IRRIGATION, cellIndex, year, Irrig)) {
                     Irrig = 0;
                 }
 

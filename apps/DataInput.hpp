@@ -10,7 +10,6 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include "GDALRasterImage.hpp"
 #include "ParamStructs.hpp"
-#include "MYDate.h"
 
 struct InputParams {
 	double pFS2;
@@ -446,7 +445,6 @@ public:
 	std::unordered_map<std::string, PPPG_OP_VAR> getOpVars();
 	bool haveNetRadParam();
 	RefGridProperties getRefGrid();
-	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
 
 	bool haveSeedlingMass = false;
 	bool haveMinASWTG = false;
