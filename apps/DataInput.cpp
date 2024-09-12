@@ -773,7 +773,7 @@ bool DataInput::getInputParams(long cellIndex, InputParams& params) {
 		params.NDVI_FPAR_intercept = DataInput::getValFromInputParam("ndvi_fpar_intercept", cellIndex);
 		params.NDVI_FPAR_constant = DataInput::getValFromInputParam("ndvi_fpar_constant", cellIndex);
 
-		if (params.yearPlanted < 1 || isnan(params.yearPlanted) || params.StemNoi < 1) {
+		if (params.yearPlanted < 1 || params.StemNoi < 1) {
 			return false;
 		}
 
@@ -820,7 +820,7 @@ double DataInput::getValFromInputParam(std::string paramName, long cellIndex) {
 	//if the param is a grid, return the value at the row and column specified
 	if (param->spType == pTif) {
 		double val = param->g->GetVal(cellIndex);
-		if (isnan(val)) {
+		if (param->g->IsNoData((float)val)) {
 			throw std::runtime_error("nan");
 		}
 		else {
@@ -900,7 +900,7 @@ double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, lon
 	//get parameter value depending on whether it is scalar or grid
 	if (monthParam->spType == pTif) {
 		double val = monthParam->g->GetVal(cellIndex);
-		if (isnan(val)) {
+		if (monthParam->g->IsNoData((float)val)) {
 			throw std::runtime_error("nan");
 		}
 		else {
@@ -940,7 +940,7 @@ bool DataInput::getManagementParam(ManagementIndex index, long cellIndex, int ye
 	//get val from grid, return true if not nan
 	if (param->spType == pTif) {
 		val = param->g->GetVal(cellIndex);
-		return !isnan(val);
+		return !param->g->IsNoData((float)val);
 	}
 	
 	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
