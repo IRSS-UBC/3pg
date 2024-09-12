@@ -19,10 +19,10 @@ Use of this software assumes agreement to this condition of use
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include "GDALRasterImage.hpp"
 #include "Data_io.hpp"
 #include "The_3PG_Model.hpp"
-#include "util.hpp"
 #include <boost/program_options.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/post.hpp>
@@ -30,7 +30,6 @@ Use of this software assumes agreement to this condition of use
 #include "DataOutput.hpp"
 #include "DataInput.hpp"
 #include "ParamStructs.hpp"
-#include "util.hpp"
 
 //----------------------------------------------------------------------------------------
 std::string VERSION = "0.1";
@@ -193,7 +192,6 @@ int main(int argc, char* argv[])
     };
 
     bool spatial = 0;
-    MYDate spMinMY, spMaxMY;
     std::string defParamFile;
     std::string siteParamFile;
 
@@ -238,10 +236,7 @@ int main(int argc, char* argv[])
     // Check for a spatial run, if so open input grids and define refGrid. 
     RefGridProperties refGrid = dataInput.getRefGrid();
     DataOutput dataOutput(refGrid, outPath, dataInput.getOpVars());
-
-    // Find the over all start year and end year. 
     std::cout << "  Complete" << std::endl;
-    dataInput.findRunPeriod(spMinMY, spMaxMY);
  
     // Run the model. 
     long cellsTotal = refGrid.nRows * refGrid.nCols;
@@ -253,11 +248,11 @@ int main(int argc, char* argv[])
     Progress progress(refGrid.nRows);
 
     for (int i = 0; i < refGrid.nRows; i++) {
-        boost::asio::post(pool, [spMinMY, spMaxMY, i, refGrid, &dataInput, &dataOutput, &progress] {
+        boost::asio::post(pool, [i, refGrid, &dataInput, &dataOutput, &progress] {
             int cellIndexStart = i * refGrid.nCols;
             for (int j = 0; j < refGrid.nCols; j++) {
                 int cellIndex = cellIndexStart + j;
-                runTreeModel(spMinMY, spMaxMY, cellIndex, dataInput, dataOutput);
+                runTreeModel(cellIndex, dataInput, dataOutput);
             }
 
             dataOutput.writeRow(i);

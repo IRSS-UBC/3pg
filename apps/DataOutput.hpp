@@ -6,8 +6,6 @@
 #include <mutex>
 #include "GDALRasterImage.hpp"
 #include "ParamStructs.hpp"
-#include "MYDate.h"
-#include "util.hpp"
 
 //a class which should only be defined once that synchronizes and abstracts away the writing
 //of pixel values to GDALRasterImage output files.
@@ -48,7 +46,7 @@ public:
 	void setVal(int year, int month, std::string name, int index, float val);
 
 	int writeOutputGrids(const std::unordered_map<std::string, double>& opVarVals, long cellIndex);
-	void writeMonthlyOutputGrids(const std::unordered_map<std::string, double>& opVarVals, int calYear, int calMonth, MYDate minMY, MYDate maxMY, long cellIndex);
+	void writeMonthlyOutputGrids(const std::unordered_map<std::string, double>& opVarVals, int calYear, int calMonth, long cellIndex);
 
 	CPLErr writeRow(int row);
 };

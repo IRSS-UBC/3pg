@@ -1,5 +1,4 @@
 #include "DataInput.hpp"
-#include "util.hpp"
 
 DataInput::DataInput(std::function<void(std::string)>& log) {
 	this->log = log;
@@ -150,26 +149,14 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 		}
 	}
 
-	//try to get the value as a scalar
-	if (DataInput::getScalar(value.front(), param.get())) {
+	//try to get the value as a scalar then grid
+	if (DataInput::getScalar(value.front(), param.get()) || DataInput::getGrid(value.front(), param.get())) {
 		//remove from required params set
 		this->requiredInputParams3PGS.erase(param->id);
 		this->requiredInputParams3PG.erase(param->id);
 
 		//if gotten, add to inputParams map
 		this->inputParams.emplace(param->id, std::move(param));
-		return true;
-	}
-	
-	//try to get the value as a grid
-	if (DataInput::getGrid(value.front(), param.get())) {
-		//remove from required params set
-		this->requiredInputParams3PGS.erase(param->id);
-		this->requiredInputParams3PG.erase(param->id);
-
-		//if gotten, add to inputParams map and return
-		this->inputParams.emplace(param->id, std::move(param));
-
 		return true;
 	}
 
@@ -218,14 +205,8 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 			std::unique_ptr<PPPG_PARAM> monthlyParam = std::make_unique<PPPG_PARAM>();
 			monthlyParam->id = name + " month " + std::to_string(i);
 
-			//try to add as a scalar param
-			if (DataInput::getScalar(values[i], monthlyParam.get())) {
-				param->monthlyParams[i] = std::move(monthlyParam);
-				continue;
-			}
-
-			//try to add as a grid param
-			if (DataInput::getGrid(values[i], monthlyParam.get())) {
+			//try to add as a scalar param then grid
+			if (DataInput::getScalar(values[i], monthlyParam.get()) || DataInput::getGrid(values[i], monthlyParam.get())) {
 				param->monthlyParams[i] = std::move(monthlyParam);
 				continue;
 			}
@@ -297,14 +278,8 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 				std::unique_ptr<PPPG_PARAM> monthlyParam = std::make_unique<PPPG_PARAM>();
 				monthlyParam->id = name + " year " + sTokens.front() + " month " + std::to_string(i);
 
-				//try to add as a scalar param
-				if (DataInput::getScalar(sTokens[i + 1], monthlyParam.get())) {
-					param->monthlyParams[paramIndex] = std::move(monthlyParam);
-					continue;
-				}
-
-				//try to add as a grid param
-				if (DataInput::getGrid(sTokens[i + 1], monthlyParam.get())) {
+				//try to add as a scalar then grid param
+				if (DataInput::getScalar(sTokens[i + 1], monthlyParam.get()) || DataInput::getGrid(sTokens[i + 1], monthlyParam.get())) {
 					param->monthlyParams[paramIndex] = std::move(monthlyParam);
 					continue;
 				}
@@ -344,7 +319,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 	//ensure we have enough tokens
 	if (value.empty()) {
-		std::string outstr = "No grid name for param " + opVar.id + " on line: " + to_string(lineNo);
+		std::string outstr = "No grid name for param " + opVar.id + " on line: " + std::to_string(lineNo);
 		std::cout << outstr << std::endl;
 		this->log(outstr);
 		exit(EXIT_FAILURE);
@@ -352,7 +327,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 	//ensure we don't have too many tokens
 	if (value.size() > 5) {
-		std::string outstr = "More than 5 value elements detected for param " + opVar.id + " on line: " + to_string(lineNo);
+		std::string outstr = "More than 5 value elements detected for param " + opVar.id + " on line: " + std::to_string(lineNo);
 		std::cout << outstr << std::endl;
 		this->log(outstr);
 		exit(EXIT_FAILURE);
@@ -387,7 +362,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 			opVar.recurStart = std::stoi(value[1]);
 		}
 		catch (std::invalid_argument) {
-			std::string outstr = "Expected an integer start year in recuring output specification on line " + to_string(lineNo);
+			std::string outstr = "Expected an integer start year in recuring output specification on line " + std::to_string(lineNo);
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -395,7 +370,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 		//ensure we have an interval
 		if (value.size() < 3) {
-			std::string outstr = "Expected an integer start year in recuring output specification on line " + to_string(lineNo);
+			std::string outstr = "Expected an integer start year in recuring output specification on line " + std::to_string(lineNo);
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -406,7 +381,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 			opVar.recurYear = std::stoi(value[2]);
 		}
 		catch (std::invalid_argument) {
-			std::string outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
+			std::string outstr = "Expected an integer interval in recuring output specification on line " + std::to_string(lineNo);
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -414,7 +389,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 		//ensure interval isn't zero
 		if (opVar.recurYear == 0) {
-			std::string outstr = "Found interval of zero years in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
+			std::string outstr = "Found interval of zero years in recuring output specification on line " + std::to_string(lineNo) + ". Expected non-zero";
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -422,7 +397,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 		//ensure we have month/monthly keyword
 		if (value.size() < 4) {
-			std::string outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
+			std::string outstr = "Expected an integer interval in recuring output specification on line " + std::to_string(lineNo);
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -430,7 +405,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 		//ensure the keyword is one we can use
 		if (value[3] != "month" && value[3] != "monthly") {
-			std::string outstr = "Unrecognised keyword '" + value[3] + "' on line " + to_string(lineNo) + ". expecting 'month' or 'monthly'.";
+			std::string outstr = "Unrecognised keyword '" + value[3] + "' on line " + std::to_string(lineNo) + ". expecting 'month' or 'monthly'.";
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -442,7 +417,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 		if (opVar.recurMonthly) {
 			//ensure the user didn't add too many inputs
 			if (value.size() > 4) {
-				std::string outstr = "too many inputs were given on line " + to_string(lineNo) + ". For monthly outputs, no month needs to be given.";
+				std::string outstr = "too many inputs were given on line " + std::to_string(lineNo) + ". For monthly outputs, no month needs to be given.";
 				std::cout << outstr << std::endl;
 				this->log(outstr);
 				exit(EXIT_FAILURE);
@@ -451,7 +426,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 		else {
 			//ensure a month was given
 			if (value.size() < 5) {
-				std::string outstr = "Found 'month' keyword but no month in recuring output specification on line " + to_string(lineNo);
+				std::string outstr = "Found 'month' keyword but no month in recuring output specification on line " + std::to_string(lineNo);
 				std::cout << outstr << std::endl;
 				this->log(outstr);
 				exit(EXIT_FAILURE);
@@ -462,7 +437,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 				opVar.recurMonth = std::stoi(value[4]);
 			}
 			catch (std::invalid_argument) {
-				std::string outstr = "Expected an integer month in recuring output specification on line " + to_string(lineNo);
+				std::string outstr = "Expected an integer month in recuring output specification on line " + std::to_string(lineNo);
 				std::cout << outstr << std::endl;
 				this->log(outstr);
 				exit(EXIT_FAILURE);
@@ -470,7 +445,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 			//ensure the month isn't 0
 			if (opVar.recurMonth == 0) {
-				std::string outstr = "Found month of zero in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
+				std::string outstr = "Found month of zero in recuring output specification on line " + std::to_string(lineNo) + ". Expected non-zero";
 				std::cout << outstr << std::endl;
 				this->log(outstr);
 				exit(EXIT_FAILURE);
@@ -481,12 +456,12 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 	//log parameter
 	this->log("   variable: " + opVar.id + "   grid: " + opVar.gridName);
 	if (opVar.recurStart) {
-		string outputGridString = "      starting in " + to_string(opVar.recurStart) + ", writing every " + to_string(opVar.recurYear) + " years";
+		std::string outputGridString = "      starting in " + std::to_string(opVar.recurStart) + ", writing every " + std::to_string(opVar.recurYear) + " years";
 		if (opVar.recurMonthly) {
 			outputGridString += ", with monthly values.";
 		}
 		else if (opVar.recurMonth != 0){
-			outputGridString += ", on the " + to_string(opVar.recurMonth) + " month.";
+			outputGridString += ", on the " + std::to_string(opVar.recurMonth) + " month.";
 		}
 		this->log(outputGridString);
 	}
@@ -774,7 +749,7 @@ bool DataInput::getInputParams(long cellIndex, InputParams& params) {
 		params.NDVI_FPAR_intercept = DataInput::getValFromInputParam("ndvi_fpar_intercept", cellIndex);
 		params.NDVI_FPAR_constant = DataInput::getValFromInputParam("ndvi_fpar_constant", cellIndex);
 
-		if (params.yearPlanted < 1 || isnan(params.yearPlanted) || params.StemNoi < 1) {
+		if (params.yearPlanted < 1 || params.StemNoi < 1) {
 			return false;
 		}
 
@@ -821,7 +796,7 @@ double DataInput::getValFromInputParam(std::string paramName, long cellIndex) {
 	//if the param is a grid, return the value at the row and column specified
 	if (param->spType == pTif) {
 		double val = param->g->GetVal(cellIndex);
-		if (isnan(val)) {
+		if (param->g->IsNoData((float)val)) {
 			throw std::runtime_error("nan");
 		}
 		else {
@@ -901,7 +876,7 @@ double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, lon
 	//get parameter value depending on whether it is scalar or grid
 	if (monthParam->spType == pTif) {
 		double val = monthParam->g->GetVal(cellIndex);
-		if (isnan(val)) {
+		if (monthParam->g->IsNoData((float)val)) {
 			throw std::runtime_error("nan");
 		}
 		else {
@@ -941,7 +916,7 @@ bool DataInput::getManagementParam(ManagementIndex index, long cellIndex, int ye
 	//get val from grid, return true if not nan
 	if (param->spType == pTif) {
 		val = param->g->GetVal(cellIndex);
-		return !isnan(val);
+		return !param->g->IsNoData((float)val);
 	}
 	
 	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
@@ -949,94 +924,6 @@ bool DataInput::getManagementParam(ManagementIndex index, long cellIndex, int ye
 
 std::unordered_map<std::string, PPPG_OP_VAR> DataInput::getOpVars() {
 	return this->outputParams;
-}
-
-void DataInput::findRunPeriod(MYDate& minMY, MYDate& maxMY) {
-	//error checking
-	if (!finishedInput) {
-		throw std::exception("should NOT be able to call findRunPeriod() if input failed!");
-	}
-
-	PPPG_PARAM* yearPlantedParam = this->inputParams.at("yearplanted").get();
-	PPPG_PARAM* startAgeParam = this->inputParams.at("startage").get();
-	PPPG_PARAM* endYearParam = this->inputParams.at("endyear").get();
-	PPPG_PARAM* startMonthParam = this->inputParams.at("startmonth").get();
-
-	//get maxes and mins depending on whether they're scalar or grid parameters
-	int yearPlantedMin = (yearPlantedParam->spType == pScalar) ? static_cast<int>(yearPlantedParam->val) : static_cast<int>(yearPlantedParam->g->GetMin());
-	int startAgeMin = (startAgeParam->spType == pScalar) ? static_cast<int>(startAgeParam->val) : static_cast<int>(startAgeParam->g->GetMin());
-	int endYearMax = (endYearParam->spType == pScalar) ? static_cast<int>(endYearParam->val) : static_cast<int>(endYearParam->g->GetMax());
-	int startMonthMax = (startMonthParam->spType == pScalar) ? static_cast<int>(startMonthParam->val) : static_cast<int>(startMonthParam->g->GetMax());
-
-	/* 
-	determine minMY values 
-	*/
-	if (startAgeParam->spType != pScalar && yearPlantedParam->spType != pScalar) {
-		//if both are raster, find smallest sum of yearPlanted and startAge pixels.
-		//we do this because the minimum sum (which is the year we should start on)
-		//does not have to be at any of the pixels where yearPlanted or startAge are smallest
-		double overallMin = std::numeric_limits<double>::max();
-		for (int row = 0; row < yearPlantedParam->g->nRows; row++) {
-			for (int col = 0; col < yearPlantedParam->g->nCols; col++) {
-				//convert gotten values to double first so we don't have any overflow of floats as we add them
-				double curMin = (double)yearPlantedParam->g->GetVal(row, col) + (double)startAgeParam->g->GetVal(row, col);
-				
-				//set the overall minimum accordingly
-				overallMin = (curMin < overallMin) ? curMin : overallMin;
-			}
-		}
-
-		minMY.year = static_cast<int>(overallMin);
-	}
-	else {
-		//otherwise, just add the mins together
-		minMY.year = yearPlantedMin + startAgeMin;
-	}
-	//month isn't used so set to null
-	minMY.mon = NULL;
-
-	/* 
-	determine maxMY values
-	*/
-	if (endYearParam->spType != pScalar && startMonthParam->spType != pScalar) {
-		//find the maximum month considering only pixels that are the maximum year
-		maxMY.mon = static_cast<int>(startMonthParam->g->maxFromIndices(endYearParam->g->getIndicesWhere(endYearMax)));
-	}
-	else {
-		//otherwise, just use the start month max
-		maxMY.mon = startMonthMax;
-	}
-	//max year is just the max year
-	maxMY.year = endYearMax;
-
-	/*
-	error check on years and months
-	*/
-	//check valid month
-	if (maxMY.mon < 0 || maxMY.mon > 12) {
-		//if month isn't within the range of 0 to 12, print and log error
-		std::string errstr = "Invalid start month detected: " + std::to_string(minMY.mon);
-		std::cout << errstr << std::endl;
-		this->log(errstr);
-
-		//then exit
-		exit(EXIT_FAILURE);
-	}
-
-	//check valid years
-	if (minMY.year > maxMY.year) {
-		//if minimum year is larger than maximum year, print and log error
-		std::string errstr = "min year (" + std::to_string(minMY.year) + ") is greater than max year (" + std::to_string(maxMY.year) + ")";
-		std::cout << errstr << std::endl;
-		this->log(errstr);
-
-		//then exit
-		exit(EXIT_FAILURE);
-	}
-
-	//valid run period successfully determined
-	string runPeriodStr = "first run year = " + to_string(minMY.year) + ", last run mon/year = " + to_string(maxMY.mon) + "/" + to_string(maxMY.year);
-	this->log(runPeriodStr);
 }
 
 RefGridProperties DataInput::getRefGrid() {

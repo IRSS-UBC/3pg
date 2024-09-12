@@ -3,12 +3,6 @@
 #include "DataOutput.hpp"
 #include "DataInput.hpp"
 #include "ParamStructs.hpp"
-#include "MYDate.h" 
-
-// Management tables
-#define MT_FERTILITY  1
-#define MT_MINASW     2
-#define MT_IRRIGATION 3
 
 void setLogFunc(std::function<void(std::string)>& log);
 

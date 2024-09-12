@@ -25,7 +25,6 @@ Use of this software assumes agreement to this condition of use
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include "GDALRasterImage.hpp"
-#include "util.hpp"
 #include "Data_io.hpp"
 #include "ParamStructs.hpp"
 
@@ -64,7 +63,7 @@ void setLogFunc(std::function<void(std::string)>& log) {
 
 //----------------------------------------------------------------------------------
 
-string getOutPathTMP(const std::string& siteParamFile)
+std::string getOutPathTMP(const std::string& siteParamFile)
 {
     /**
      * Get the output path for logging.
@@ -142,7 +141,7 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
   // Look for Output directory. 
   // Allow no directory to be specified, in which case force the current directory. 
   // Check that the directory exists.
-  if (namesMatch("Output directory", pName)) {
+  if (pName.compare("Output directory") == 0) {
     if (pValue.empty()) 
     {
         std::cout << "No output directory specified." << std::endl; 
@@ -182,7 +181,7 @@ bool readOtherParam(const std::string& pName, std::vector<std::string> pValue)
     
   }
   // Model mode (Standard 3PG or 3PGS)
-  else if (namesMatch("Model mode", pName)) {
+  else if (pName.compare("Model mode") == 0) {
     if (pValue.empty()) {
       std::cout << "No model mode specified." << std::endl;
       logMessage("No model mode specified.");
@@ -303,7 +302,7 @@ void readSiteParamFile(const std::string& paramFile, DataInput& dataInput)
     else if (dataInput.tryAddManagementParam(pName, inFile, lineNo)) { continue; }
     else {
         std::cout << "Cannot read parameter in file " << paramFile << ", line: " << lineNo << ": " << pName << std::endl;
-        logMessage("Cannot read parameter in file " + paramFile + ", line: " + to_string(lineNo) + ": " + pName);
+        logMessage("Cannot read parameter in file " + paramFile + ", line: " + std::to_string(lineNo) + ": " + pName);
         exit(EXIT_FAILURE);
     }
   }
