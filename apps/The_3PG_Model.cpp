@@ -538,7 +538,6 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
         step 6: start monthly processing loop
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
         for (int month = startMonth; month <= endMonth; month++) {
-
             if (!dataInput.getSeriesParams(cellIndex, year, month, sParams)) {
                 return;
             }
