@@ -19,10 +19,10 @@ Use of this software assumes agreement to this condition of use
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include "GDALRasterImage.hpp"
 #include "Data_io.hpp"
 #include "The_3PG_Model.hpp"
-#include "util.hpp"
 #include <boost/program_options.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/post.hpp>
@@ -30,7 +30,6 @@ Use of this software assumes agreement to this condition of use
 #include "DataOutput.hpp"
 #include "DataInput.hpp"
 #include "ParamStructs.hpp"
-#include "util.hpp"
 
 //----------------------------------------------------------------------------------------
 std::string VERSION = "0.1";

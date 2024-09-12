@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
+#include <fstream>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/case_conv.hpp>

@@ -1,5 +1,4 @@
 #include "DataInput.hpp"
-#include "util.hpp"
 
 DataInput::DataInput(std::function<void(std::string)>& log) {
 	this->log = log;
@@ -344,7 +343,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 	//ensure we have enough tokens
 	if (value.empty()) {
-		std::string outstr = "No grid name for param " + opVar.id + " on line: " + to_string(lineNo);
+		std::string outstr = "No grid name for param " + opVar.id + " on line: " + std::to_string(lineNo);
 		std::cout << outstr << std::endl;
 		this->log(outstr);
 		exit(EXIT_FAILURE);
@@ -352,7 +351,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 	//ensure we don't have too many tokens
 	if (value.size() > 5) {
-		std::string outstr = "More than 5 value elements detected for param " + opVar.id + " on line: " + to_string(lineNo);
+		std::string outstr = "More than 5 value elements detected for param " + opVar.id + " on line: " + std::to_string(lineNo);
 		std::cout << outstr << std::endl;
 		this->log(outstr);
 		exit(EXIT_FAILURE);
@@ -387,7 +386,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 			opVar.recurStart = std::stoi(value[1]);
 		}
 		catch (std::invalid_argument) {
-			std::string outstr = "Expected an integer start year in recuring output specification on line " + to_string(lineNo);
+			std::string outstr = "Expected an integer start year in recuring output specification on line " + std::to_string(lineNo);
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -395,7 +394,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 		//ensure we have an interval
 		if (value.size() < 3) {
-			std::string outstr = "Expected an integer start year in recuring output specification on line " + to_string(lineNo);
+			std::string outstr = "Expected an integer start year in recuring output specification on line " + std::to_string(lineNo);
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -406,7 +405,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 			opVar.recurYear = std::stoi(value[2]);
 		}
 		catch (std::invalid_argument) {
-			std::string outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
+			std::string outstr = "Expected an integer interval in recuring output specification on line " + std::to_string(lineNo);
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -414,7 +413,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 		//ensure interval isn't zero
 		if (opVar.recurYear == 0) {
-			std::string outstr = "Found interval of zero years in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
+			std::string outstr = "Found interval of zero years in recuring output specification on line " + std::to_string(lineNo) + ". Expected non-zero";
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -422,7 +421,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 		//ensure we have month/monthly keyword
 		if (value.size() < 4) {
-			std::string outstr = "Expected an integer interval in recuring output specification on line " + to_string(lineNo);
+			std::string outstr = "Expected an integer interval in recuring output specification on line " + std::to_string(lineNo);
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -430,7 +429,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 		//ensure the keyword is one we can use
 		if (value[3] != "month" && value[3] != "monthly") {
-			std::string outstr = "Unrecognised keyword '" + value[3] + "' on line " + to_string(lineNo) + ". expecting 'month' or 'monthly'.";
+			std::string outstr = "Unrecognised keyword '" + value[3] + "' on line " + std::to_string(lineNo) + ". expecting 'month' or 'monthly'.";
 			std::cout << outstr << std::endl;
 			this->log(outstr);
 			exit(EXIT_FAILURE);
@@ -442,7 +441,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 		if (opVar.recurMonthly) {
 			//ensure the user didn't add too many inputs
 			if (value.size() > 4) {
-				std::string outstr = "too many inputs were given on line " + to_string(lineNo) + ". For monthly outputs, no month needs to be given.";
+				std::string outstr = "too many inputs were given on line " + std::to_string(lineNo) + ". For monthly outputs, no month needs to be given.";
 				std::cout << outstr << std::endl;
 				this->log(outstr);
 				exit(EXIT_FAILURE);
@@ -451,7 +450,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 		else {
 			//ensure a month was given
 			if (value.size() < 5) {
-				std::string outstr = "Found 'month' keyword but no month in recuring output specification on line " + to_string(lineNo);
+				std::string outstr = "Found 'month' keyword but no month in recuring output specification on line " + std::to_string(lineNo);
 				std::cout << outstr << std::endl;
 				this->log(outstr);
 				exit(EXIT_FAILURE);
@@ -462,7 +461,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 				opVar.recurMonth = std::stoi(value[4]);
 			}
 			catch (std::invalid_argument) {
-				std::string outstr = "Expected an integer month in recuring output specification on line " + to_string(lineNo);
+				std::string outstr = "Expected an integer month in recuring output specification on line " + std::to_string(lineNo);
 				std::cout << outstr << std::endl;
 				this->log(outstr);
 				exit(EXIT_FAILURE);
@@ -470,7 +469,7 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 
 			//ensure the month isn't 0
 			if (opVar.recurMonth == 0) {
-				std::string outstr = "Found month of zero in recuring output specification on line " + to_string(lineNo) + ". Expected non-zero";
+				std::string outstr = "Found month of zero in recuring output specification on line " + std::to_string(lineNo) + ". Expected non-zero";
 				std::cout << outstr << std::endl;
 				this->log(outstr);
 				exit(EXIT_FAILURE);
@@ -481,12 +480,12 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 	//log parameter
 	this->log("   variable: " + opVar.id + "   grid: " + opVar.gridName);
 	if (opVar.recurStart) {
-		string outputGridString = "      starting in " + to_string(opVar.recurStart) + ", writing every " + to_string(opVar.recurYear) + " years";
+		std::string outputGridString = "      starting in " + std::to_string(opVar.recurStart) + ", writing every " + std::to_string(opVar.recurYear) + " years";
 		if (opVar.recurMonthly) {
 			outputGridString += ", with monthly values.";
 		}
 		else if (opVar.recurMonth != 0){
-			outputGridString += ", on the " + to_string(opVar.recurMonth) + " month.";
+			outputGridString += ", on the " + std::to_string(opVar.recurMonth) + " month.";
 		}
 		this->log(outputGridString);
 	}

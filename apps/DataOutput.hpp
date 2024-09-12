@@ -6,7 +6,6 @@
 #include <mutex>
 #include "GDALRasterImage.hpp"
 #include "ParamStructs.hpp"
-#include "util.hpp"
 
 //a class which should only be defined once that synchronizes and abstracts away the writing
 //of pixel values to GDALRasterImage output files.

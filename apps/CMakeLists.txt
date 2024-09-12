@@ -12,8 +12,6 @@ set(SOURCE_FILES
 	ParamStructs.hpp
 	The_3PG_model.cpp
     	The_3PG_model.hpp
-	util.cpp
-    	util.hpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} 3pg.cpp )
