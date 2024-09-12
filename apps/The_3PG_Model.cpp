@@ -856,7 +856,7 @@ void runTreeModel(MYDate spMinMY, MYDate spMaxMY, long cellIndex, DataInput& dat
                 vars.cLitter = 0;
 
                 //get new yearly management params
-
+                //set fertility to management value if it exists, otherwise set to param (and set fertilityDecay flag)
                 fertilityDecay = false;
                 if (!dataInput.getManagementParam(ManagementIndex::FERTILITY, cellIndex, spMinMY.year, MinASW)) {
                     fertilityDecay = dataInput.haveAgeDepFert;

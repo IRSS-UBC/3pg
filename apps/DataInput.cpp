@@ -919,10 +919,10 @@ bool DataInput::getManagementParam(ManagementIndex index, long cellIndex, int ye
 	if (table->firstYear == -1 || year < table->firstYear) {
 		return false;
 	}
-	
+
 	//get index to management table vector for correct year
 	int yearIndex;
-	if (year - table->firstYear > table->yearToIndex.size()) {
+	if (year - table->firstYear >= table->yearToIndex.size()) {
 		yearIndex = table->yearToIndex.back();
 	}
 	else {
