@@ -261,9 +261,6 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
     double pooledSW = 0;
     double RainIntcptn = 0;
 
-    // Initialise cumulative variables
-    double cumLAI = 0;
-
     // At initialisation param file has only possible value to use.  
     double MinASW = params.MinASWp;
 
@@ -372,7 +369,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
     vars.BasArea = ((pow((vars.avDBH / 200), 2)) * Pi) * vars.StemNo;
     SLA = params.SLA1 + (params.SLA0 - params.SLA1) * exp(-ln2 * pow((StandAge / params.tSLA), 2)); //Modified StandAge
     vars.LAI = vars.WF * SLA * 0.1;
-    vars.cLAI = vars.LAI;
+    vars.cLAI = vars.LAI; // set cLAI to LAI for initial monthly output
 
     vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB)); //Modified StandAge
     Density = params.rhoMax + (params.rhoMin - params.rhoMax) * exp(-ln2 * (StandAge / params.tRho));
@@ -387,7 +384,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
     }
     
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    step 2: load management params if they exist
+    step 2: load management params for startage
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
     //set fertility to management value if it exists, otherwise set to param
@@ -432,10 +429,14 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
     copyVars(vars, opVarVals);
     dataOutput.writeMonthlyOutputGrids(opVarVals, (int)params.yearPlanted + (int)params.StartAge, (int)params.StartMonth, cellIndex);
 
+    //set cumuliative yearly LAI back to 0
+    vars.cLAI = 0;
+
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     step 4: determine start and end month/years
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+    //first year might be different than yearPlanted + startAge! (This happens if startMonth == 12)
     //calculate the starting iteration month/year using the start month.
     //the first is the month following the start month, since the start month state is the initial state.
 
@@ -456,6 +457,24 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
         int startMonth = (year == firstYear) ? firstMonth : 1;
         int endMonth = (year == lastYear) ? lastMonth : 12;
 
+        //get management params for current year
+        //set fertility to management value if it exists, otherwise set to param (and set fertilityDecay flag)
+        fertilityDecay = false;
+        if (!dataInput.getManagementParam(ManagementIndex::FERTILITY, cellIndex, year, MinASW)) {
+            fertilityDecay = dataInput.haveAgeDepFert;
+            vars.FR = params.FRp;
+        }
+
+        //set MinASW to management value if it exists, otherwise set to param
+        if (!dataInput.getManagementParam(ManagementIndex::MINASW, cellIndex, year, MinASW)) {
+            MinASW = params.MinASWp;
+        }
+
+        //set irrigation to management value if it exists, otherwise set to 0
+        if (!dataInput.getManagementParam(ManagementIndex::IRRIGATION, cellIndex, year, Irrig)) {
+            Irrig = 0;
+        }
+
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         step 6: start monthly processing loop
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -468,9 +487,12 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             //get current day length based on month
             dayLength = mDayLength[month];
 
-            // Determine the various environmental modifiers
+            /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            step 7: determine various environmental modifiers
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
             //calculate fertility using fertility decay if it applies to the current month on the current pixel
+            //ie. If we DON'T have fertility management param, and we DO have 'FRStart' 'FREnd' and 'FRDec' input params
             if (fertilityDecay && (params.FRstart <= StandAge) && (params.FRend > StandAge)) {
                 vars.FR = vars.FR - vars.FR * params.FRdec;
             }
@@ -492,7 +514,6 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
                 double dAdjMod = (params.MaxASW - params.MinASWTG) / params.MinASWTG;
                 ASWmod = pow(2.718281828459045235, dAdjMod);
             }
-
             MoistRatio = ASWmod * vars.ASW / params.MaxASW;
             vars.fSW = 1 / (1 + pow(((1 - MoistRatio) / SWconst), SWpower));
 
@@ -512,10 +533,12 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
                 vars.fAge = (1 / (1 + pow((RelAge / params.rAge), params.nAge)));
             }
 
-            // PhysMod is the physiological modifier to be applied to canopy conductance
-            // and APARu. It is the lesser of the soil-water and VPD modifier, times the
-            // age modifier:
+            // calculate physiological modifier applied to conductance and alpha
             vars.PhysMod = std::min(vars.fVPD, vars.fSW) * vars.fAge;
+
+            /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            step 8: determine gross and net biomass production
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
             // canopy cover and light interception.
             CanCover = 1;
@@ -524,8 +547,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             }
             lightIntcptn = (1 - (exp(-params.k * vars.LAI / CanCover)));
 
-            // 3PGS. 
-            // Calculate FPAR_AVH and LAI from NDVI data. 
+            // Calculate FPAR_AVH and LAI from NDVI data if in 3PGS mode 
             if (modelMode3PGS) {
                 // Initial value of FPAR_AVH from linear fit. 
                 FPAR_AVH = (sParams.NDVI_AVH * params.NDVI_FPAR_constant) + params.NDVI_FPAR_intercept;
@@ -547,16 +569,9 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
                 }
             }
 
-            // Calculate PAR, APAR, APARu and GPP
-            //   APARu, "utilisable PAR", is intercepted PAR multiplied by the physiological
-            //     modifier applied to conductance (PhysMod).
-            //   alphaC is alpha, the nominal "canopy qunatum efficiency", multiplied by
-            //     modifiers to take into account effects of nutrition, temperature and
-            //     frost on photosynthetic rate
-            RAD = sParams.SolarRad * DaysInMonth[month];        // MJ/m^2
-            PAR = RAD * params.molPAR_MJ;                      // mol/m^2
-
-            // 3PGS
+            // Calculate PAR, APAR, and APARu. Use FPAR_AVG if in 3PGS mode
+            RAD = sParams.SolarRad * DaysInMonth[month];
+            PAR = RAD * params.molPAR_MJ;
             if (modelMode3PGS) {
                 vars.APAR = PAR * FPAR_AVH;
             }
@@ -565,11 +580,16 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             }
             vars.APARu = vars.APAR * vars.PhysMod;
 
-            vars.alphaC = params.alpha * vars.fNutr * vars.fT * vars.fFrost * vars.PhysMod;   //22-07-02 for Excel March beta consis.
+            //calculate NPP
+            vars.alphaC = params.alpha * vars.fNutr * vars.fT * vars.fFrost * vars.PhysMod;
             epsilon = params.gDM_mol * params.molPAR_MJ * vars.alphaC;
             RADint = RAD * lightIntcptn * CanCover;
-            vars.GPP = epsilon * RADint / 100;               // tDM/ha
-            vars.NPP = vars.GPP * params.y;                            // assumes respiratory rate is constant
+            vars.GPP = epsilon * RADint / 100;
+            vars.NPP = vars.GPP * params.y;
+
+            /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            step 9: determine water balance
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
             // calculate canopy conductance
             double gC;
@@ -616,6 +636,10 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
                 vars.WUE = 100 * vars.NPP / vars.EvapTransp;
             }
                    
+            /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            step 10: determine biomass increments and losses
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
             // calculate partitioning coefficients
             m = params.m0 + (1 - params.m0) * vars.FR;
             pFS = pfsConst * pow(vars.avDBH, pfsPower);
@@ -642,12 +666,13 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
                 vars.TotalLitter = vars.TotalLitter + delLitter;
             }
 
+            //increment stand age with yearly unit
             StandAge = StandAge + 1.0 / 12.0;
 
+            /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            step 11: update tree and stand data
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
             if (!modelMode3PGS) {
-
-                // Update tree and stand data
-
                 //Calculate mortality
                 wSmax = params.wSx1000 * pow((1000 / vars.StemNo), params.thinPower);
                 AvStemMass = vars.WS * 1000 / vars.StemNo;
@@ -668,13 +693,13 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
                 Density = params.rhoMax + (params.rhoMin - params.rhoMax) * exp(-ln2 * (StandAge / params.tRho));
                 gammaF = getGammaFoliage(params, StandAge);
 
-                //update stsand characteristics
+                //update stand characteristics
                 vars.LAI = vars.WF * SLA * 0.1;
                 vars.avDBH = pow((AvStemMass / params.StemConst), (1 / params.StemPower));
                 vars.BasArea = (pow((vars.avDBH / 200), 2) * Pi) * vars.StemNo;
                 vars.StandVol = vars.WS * (1 - vars.fracBB) / Density;
 
-                vars.CVI =  vars.StandVol - oldVol;       //Added 16/07/02 
+                vars.CVI =  vars.StandVol - oldVol;
                 oldVol = vars.StandVol;
 
                 vars.MAI = 0;
@@ -694,53 +719,71 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
 
                 // Accumulate biomass increments and LAI
                 vars.cumWabv = vars.cumWabv + delWF + delWS - delLitter;  // ANL - PROBLEM?  
-            }
 
-            // 3PGS
-            if (modelMode3PGS) {
+                vars.MAI = 0;
+                if (StandAge > 0) {
+                    vars.MAI = vars.StandVol / StandAge;
+                }
+
+                // Update accumulated totals
+                vars.cGPP += vars.GPP;
+                vars.cNPP += vars.NPP;
+                vars.cCVI += vars.CVI;
+                vars.cLitter += delLitter;
+                vars.cTransp += vars.Transp;
+                vars.cEvapTransp += vars.EvapTransp;
+                vars.cWUE = 100 * vars.cNPP / vars.cEvapTransp;
+                vars.cLAI +=  vars.LAI / 12;
+                vars.cumWabv += delWF + delWS - delLitter;
+            }
+            else {
+                // 3PGS
                 vars.delWAG = vars.NPP * (1 - pR);
                 vars.cumWabv += vars.delWAG;
             }
 
+            /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            step 12: write monthly output if not in final month
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
             if (!(year == params.EndYear && month == params.StartMonth)) {
-                //the !(year == maxMY.year && calMonth == maxMY.mon) is so that at the last iteration we don't write to a monthly
-                //output, but rather skip it and the values are eventually written via writeOutputGrids().
                 copyVars(vars, opVarVals);
                 dataOutput.writeMonthlyOutputGrids(opVarVals, year, month, cellIndex);
             }
 
-            //reset cumulative variables and run year-end calculations
+            /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            step 13: reset cumulative variables and run year-end calculations.
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
             if (month == params.StartMonth) {
                 //year end calculations, run after the model has run for 12 months -- NOT on December every year
 
                 // Update some stand characteristics
-                vars.LAI = cumLAI / 12.0;
                 vars.fracBB = params.fracBB1 + (params.fracBB0 - params.fracBB1) * exp(-ln2 * (StandAge / params.tBB));  //Modified StandAge
                 vars.StandVol = vars.WS * (1 - vars.fracBB) / Density;
-
                 vars.MAI = 0;
                 if (StandAge > 0) {
-                    vars.MAI = vars.StandVol / StandAge;   //Modified StandAge
+                    vars.MAI = vars.StandVol / StandAge;
                 }
 
+
                 // Determine peak LAI & MAI and age at peaks
-                if (vars.LAI > vars.LAIx) {
-                    vars.LAIx = vars.LAI;
-                    vars.ageLAIx = StandAge;  //Modified StandAge
+                // 
+                //cLAI is the average LAI across the year. This is how the excel 
+                //VBA code does it (which is our reference) so that's how I'm doing it
+                // - Joe
+                if (vars.cLAI > vars.LAIx) {
+                    vars.LAIx = vars.cLAI;
+                    vars.ageLAIx = StandAge;
                 }
                 if (vars.MAI > vars.MAIx) {
                     vars.MAIx = vars.MAI;
-                    vars.ageMAIx = StandAge;  //Modified StandAge
+                    vars.ageMAIx = StandAge;
                 }
 
                 // Restore LAI
                 vars.LAI = vars.WF * SLA * 0.1;
 
                 // reset cumulative variables
-                cumLAI = 0;
-                vars.cumWabv = 0;            //Now known as cumWabvgrnd
-
-                //Initialise output step cumulative variables
+                vars.cumWabv = 0;
                 vars.cLAI = 0;
                 vars.cCVI = 0;
                 vars.cNPP = 0;
@@ -748,30 +791,8 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
                 vars.cTransp = 0;
                 vars.cEvapTransp = 0;
                 vars.cLitter = 0;
-
-                //get new yearly management params
-                //set fertility to management value if it exists, otherwise set to param (and set fertilityDecay flag)
-                fertilityDecay = false;
-                if (!dataInput.getManagementParam(ManagementIndex::FERTILITY, cellIndex, year, MinASW)) {
-                    fertilityDecay = dataInput.haveAgeDepFert;
-                    vars.FR = params.FRp;
-                }
-
-                //set MinASW to management value if it exists, otherwise set to param
-                if (!dataInput.getManagementParam(ManagementIndex::MINASW, cellIndex, year, MinASW)) {
-                    MinASW = params.MinASWp;
-                }
-
-                //set irrigation to management value if it exists, otherwise set to 0
-                if (!dataInput.getManagementParam(ManagementIndex::IRRIGATION, cellIndex, year, Irrig)) {
-                    Irrig = 0;
-                }
             }
         }
-
-        // Restore LAI here too... (this is how the model worked before so I'm keeping it -- Joe)
-        vars.LAI = vars.WF * SLA * 0.1;
-
     }
     copyVars(vars, opVarVals);
     dataOutput.writeOutputGrids(opVarVals, cellIndex);
