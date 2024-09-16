@@ -5,12 +5,12 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
+#include <fstream>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include "GDALRasterImage.hpp"
 #include "ParamStructs.hpp"
-#include "MYDate.h"
 
 struct InputParams {
 	double pFS2;
@@ -100,7 +100,6 @@ struct SeriesParams {
 };
 
 typedef enum {
-	NONE = -1,
 	TMAX = 0,
 	TMIN = 1,
 	TAVG = 2,
@@ -112,9 +111,15 @@ typedef enum {
 	VPD = 8,
 } SeriesIndex;
 
+typedef enum {
+	FERTILITY = 0,
+	MINASW = 1,
+	IRRIGATION = 2,
+} ManagementIndex;
+
 class DataInput {
 private:
-	//maps and sets for dealing with input parameters
+	//data structures for dealing with input parameters
 	std::unordered_map<std::string, std::string> inputParamNames = {
 		{"foliage:stem partitioning ratio @ d=2 cm", "pfs2"},
 		{"foliage:stem partitioning ratio @ d=20 cm", "pfs20"},
@@ -185,7 +190,7 @@ private:
 		{"minimum basic density - for young trees", "rhomin"},
 		{"maximum basic density - for older trees", "rhomax"},
 		{"age at which rho = (rhomin+rhomax)/2", "trho"},
-		{"year Planted", "yearplanted"},
+		{"year planted", "yearplanted"},
 		{"atmospheric co2", "co2"},
 		{"assimialtion enhancement factor at 700 ppm", "fcalpha700"},
 		{"canopy conductance enhancement factor at 700 ppm", "fcg700"},
@@ -307,9 +312,9 @@ private:
 		"startmonth",
 		"laimaxintcptn",
 	};
-	std::unordered_map<std::string, PPPG_PARAM> inputParams;
+	std::unordered_map<std::string, std::unique_ptr<PPPG_PARAM>> inputParams;
 
-	//maps and sets for dealing with series parameters
+	//data structures for dealing with series parameters
 	std::unordered_map<std::string, SeriesIndex> seriesParamNameMap = {
 		{"tmax", SeriesIndex::TMAX},
 		{"tmin", SeriesIndex::TMIN},
@@ -317,41 +322,143 @@ private:
 		{"rain", SeriesIndex::RAIN},
 		{"solar radtn", SeriesIndex::SOLAR_RAD},
 		{"frost", SeriesIndex::FROST_DAYS},
+		{"frost days", SeriesIndex::FROST_DAYS},
 		{"ndvi_avh", SeriesIndex::NDVI_AVH},
 		{"net radtn", SeriesIndex::NET_RAD},
 		{"vpd", SeriesIndex::VPD},
 	};
 	PPPG_SERIES_PARAM seriesParams[9];
 	std::unordered_set<std::string> acquiredSeriesParams;
-	//std::unordered_map<std::string, std::unordered_map<int, std::vector<PPPG_PARAM>>> seriesParams;
+	
+	//data structures for dealing with output paramenters
+	std::unordered_map<std::string, std::string> outputParamNames = {
+		{"stocking density","stemno"},
+		{"weight of foliage","wf" },
+		{"weight of roots","wr"},
+		{"weight of stems","ws"},
+		{"total weight","totalw"},
+		{"mean annual increment","mai"},
+		{"average dbh","avdbh"},
+		{"basal area","basarea"},
+		{"stand volume","standvol"},
+		{"transpiration","transp"},
+		{"available soil water","asw"},
+		{"gross primary production (tdm/ha)","gpp"},
+		{"change in aboveground boimass (tdm/ha)","delwag"},
+		{"accumulated aboveground biomass (tdm/ha)","cumwabv"},
+		{"net primary production (tdm/ha)","npp"},
+		{"leaf area index","lai"},
+		{"frout","fr"},
+	};
+	std::unordered_set<std::string> allOutputParams = {
+		"stemno",
+		"wf",
+		"wr",
+		"ws",
+		"totalw",
+		"mai",
+		"avdbh",
+		"basarea",
+		"standvol",
+		"transp",
+		"ctransp",
+		"asw",
+		"evaptransp",
+		"cevaptransp",
+		"laix",
+		"agelaix",
+		"gpp",
+		"cgpp",
+		"totallitter",
+		"clitter",
+		"delwag",
+		"cumwabv",
+		"npp",
+		"cnpp",
+		"lai",
+		"clai",
+		"fr",
+		"physmod",
+		"alphac",
+		"fage",
+		"fracbb",
+		"wue",
+		"cwue",
+		"cvi",
+		"ccvi",
+		"fsw",
+		"fvpd",
+		"ft",
+		"fnutr",
+		"ffrost",
+		"apar",
+		"aparu",
+		"maix",
+		"agemaix"
+	};
+	std::unordered_set<std::string> only3PG = {
+		"stemno",
+		"wf",
+		"wr",
+		"ws",
+		"totalw",
+		"mai",
+		"avdbh",
+		"basarea",
+		"standvol",
+		"transp",
+		"ctransp",
+		"asw",
+		"evaptransp",
+		"cevaptransp",
+		"laix",
+		"agelaix",
+		"gpp",
+		"cgpp",
+		"totallitter",
+		"clitter" };
+	std::unordered_set<std::string> only3PGS = {
+		"delwag",
+		"cumwabv" 
+	};
+	bool allow3PG = true;
+	bool allow3PGS = true;
+	std::unordered_map<std::string, PPPG_OP_VAR> outputParams;
+	std::function<void(std::string)> log;
 
-	bool haveTavg;
-	bool haveVPD;
-	bool haveNDVI;
-	bool haveNetRad;
+	//data structures for dealing with
+	PPPG_MT_PARAM managementTables[3];
 
-	GDALRasterImage* refGrid;
+	bool haveTavg = false;
+	bool haveVPD = false;
+	bool haveNDVI = false;
+	bool haveNetRad = false;
+
+	RefGridProperties refGrid;
 	bool finishedInput = false;
 
-	bool getScalar(std::string value, PPPG_PARAM& param);
-	bool getGrid(std::string value, PPPG_PARAM& param);
+	bool getScalar(std::string value, PPPG_PARAM* param);
+	bool getGrid(std::string value, PPPG_PARAM* param);
 	double getValFromInputParam(std::string paramName, long cellIndex);
 	double getValFromSeriesParam(int paramIndex, int year, int month, long cellIndex);
-	bool openCheckGrid(std::string path, GDALRasterImage*& grid);
+	bool openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>& grid);
 public:
-	DataInput();
-	~DataInput();
-	bool tryAddInputParam(std::string pname, std::vector<std::string> value);
+	DataInput(std::function<void(std::string)>& log);
+	DataInput();//for no logger
+	bool tryAddInputParam(std::string name, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
+	bool tryAddOutputParam(std::string name, std::vector<std::string> value, int lineno);
+	bool tryAddManagementParam(std::string name, std::ifstream& inFile, int& lineNo);
 	bool inputFinished(bool modelMode3PGS);
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
+	bool getManagementParam(ManagementIndex index, long cellIndex, int year, double& val);
+	std::unordered_map<std::string, PPPG_OP_VAR> getOpVars();
 	bool haveNetRadParam();
 	std::vector<std::string> missingParams(bool modelMode3PGS);
-	GDALRasterImage* getRefGrid();
-	void findRunPeriod(MYDate& minMY, MYDate& maxMY);
+	RefGridProperties getRefGrid();
 
-	bool haveSeedlingMass;
-	bool haveMinASWTG;
-	bool haveAgeDepFert;
+	bool haveSeedlingMass = false;
+	bool haveMinASWTG = false;
+	bool haveAgeDepFert = false;
 };

@@ -11,14 +11,18 @@ Use of this software assumes agreement to this condition of use
 */
 
 // static char rcsid[] = "$Id: 3pg.cpp,v 1.10 2001/08/02 06:34:10 lou026 Exp $";
+//
+// 
+// target Windows 7 and above
+#define _WIN32_WINNT 0x0601
 
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include "GDALRasterImage.hpp"
 #include "Data_io.hpp"
 #include "The_3PG_Model.hpp"
-#include "util.hpp"
 #include <boost/program_options.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/post.hpp>
@@ -26,9 +30,6 @@ Use of this software assumes agreement to this condition of use
 #include "DataOutput.hpp"
 #include "DataInput.hpp"
 #include "ParamStructs.hpp"
-
-// Maximum file path length. 
-#define MAXFILE 1000
 
 //----------------------------------------------------------------------------------------
 std::string VERSION = "0.1";
@@ -43,8 +44,6 @@ std::string COPYMSG = "This version of 3-PG has been revised by:\n"
                         "--------------------------------------\n";
 
 extern bool modelMode3PGS;
-
-Logger logger("logfile.txt");
 
 class InputParser {
 public:
@@ -78,15 +77,22 @@ private:
     int rowsTotal;
     int rowsDone;
     std::mutex progressMutex;
-public:
-    Progress(int rowsTotal) {
-        this->rowsTotal = rowsTotal;
-        this->rowsDone = 0;
-        this->progress = 0;
-        this->lastProgress = 0;
+    std::string prefix;
+    const int outputWidth;
 
-        std::cout << "Completed 0%\r";
+    void printProgress() {
+        std::cout << '\r' << std::string(outputWidth, ' ') << '\r';
+        std::cout << prefix << ' ' << std::setw(3) << progress << "% complete" << std::flush;
     }
+
+public:
+    Progress(int rowsTotal, const std::string& prefix = "Running 3PG model...")
+        : rowsTotal(rowsTotal), rowsDone(0), progress(0), lastProgress(0),
+        prefix(prefix), outputWidth(static_cast<int>(prefix.length()) + 25)
+    {  
+        printProgress();
+    }
+
     void rowCompleted() {
         //lock mutex
         this->progressMutex.lock();
@@ -99,7 +105,7 @@ public:
 
         //if percentage has incremented, display
         if (this->progress > this->lastProgress) {
-            std::cout << std::format("Completed {}%\r", this->progress);
+            printProgress();
             this->lastProgress = this->progress;
         }
 
@@ -110,16 +116,84 @@ public:
 
 //----------------------------------------------------------------------------------------
 
+class Logger {
+private:
+    std::string logName;
+    std::string logLoc;
+    std::ofstream log;
+    bool logging = false;
+public:
+    Logger(const std::string& filename) {
+        logName = filename;
+    }
+
+    ~Logger() {
+        if (log.is_open())
+        {
+            log.close();
+        }
+    }
+
+    void StartLog(const std::string& outPath) {
+        this->logging = true;
+        logLoc = outPath;
+        log.open(logLoc + logName, std::ios::trunc);
+        std::string currDate = GetCurrentDate();
+        std::string currTime = GetCurrentTime();
+        log << "-------------------\n";
+        log << "OS date: " << std::setw(20) << currDate << "\n";
+        log << "OS time: " << std::setw(20) << currTime << "\n";
+        log << "-------------------\n";
+        log.close();
+    }
+
+    std::string GetCurrentDate() {
+        if (!this->logging) {
+            return "ERROR logger not started";
+        }
+        auto now = std::chrono::system_clock::now();
+        auto local_time = std::chrono::current_zone()->to_local(now);
+        return std::format("{:%d-%m-%Y}", local_time);
+    }
+
+    std::string GetCurrentTime() {
+        if (!this->logging) {
+            return "ERROR logger not started";
+        }
+        auto now = std::chrono::system_clock::now();
+        auto local_time = std::chrono::current_zone()->to_local(now);
+        return std::format("{:%H:%M:%S}", local_time);
+    }
+
+    void Log(const std::string& logMsg){
+        if (!this->logging) {
+            return;
+        }
+        log.open(logLoc + logName, std::ios::app);
+        log << logMsg + "\n";
+        log.close();
+    }
+
+};
+
+//----------------------------------------------------------------------------------------
+
 int main(int argc, char* argv[])
 {
-    GDALRasterImage* refGrid; // Pointer variable refGrid pointing to GDALRasterImage 
-    DataOutput* dataOutput; //thread safe data output class
+    //lambda function of logger, to be passed as parameter to other parts of program that log
+    //I'm doing this because every other way I tried resulted in some encredibly bizzare build errors.
+    //
+    //A potential long term goal would be to have the logging class become a private member of the dataInput
+    //class, although this seems to work for now.
+    std::string filename = "logfile.txt";
+    Logger logger(filename);
+    std::function<void(std::string)> log = [&logger](std::string message) {
+        logger.Log(message);
+    };
+
     bool spatial = 0;
-    long nrows, ncols;
-    MYDate spMinMY, spMaxMY;
     std::string defParamFile;
     std::string siteParamFile;
-    std::unordered_map<std::string, PPPG_OP_VAR> opVars;
 
     /* Parse command line args */
     InputParser input(argc, argv);
@@ -140,66 +214,53 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
+    setLogFunc(log);
     std::string outPath = getOutPathTMP(siteParamFile);
     logger.StartLog(outPath);
-    DataInput *dataInput = new DataInput();
+    DataInput dataInput(log);
 
     /* Copyright */
     std::cout << COPYMSG << std::endl;
     logger.Log(COPYMSG);
 
     // Load the parameters
+    std::cout << "Loading and validating parameters...";
     readSpeciesParamFile(defParamFile, dataInput);
-    opVars = readSiteParamFile(siteParamFile, dataInput);
+    readSiteParamFile(siteParamFile, dataInput);
 
     //check that we have all the correct parameters
-    if (!dataInput->inputFinished(modelMode3PGS)) {
+    if (!dataInput.inputFinished(modelMode3PGS)) {
         exit(EXIT_FAILURE);
     }
 
     // Check for a spatial run, if so open input grids and define refGrid. 
-    openInputGrids();
-    refGrid = dataInput->getRefGrid();
-
-    nrows = refGrid->nRows;
-    ncols = refGrid->nCols;
-
-    //initialize dataOutput class
-    initDataOutput(refGrid);
-
-    // Find the over all start year and end year. 
-    // TODO: findRunPeriod reads the entire input grid, which is unnecessary. Find some modern way to do this.
-    std::cout << "Finding run period..." << std::endl;
-    dataInput->findRunPeriod(spMinMY, spMaxMY);
+    RefGridProperties refGrid = dataInput.getRefGrid();
+    DataOutput dataOutput(refGrid, outPath, dataInput.getOpVars());
+    std::cout << "  Complete" << std::endl;
  
     // Run the model. 
-    long cellsTotal = nrows * ncols;
-    std::cout << "Processing..." << cellsTotal << " cells... " << std::endl;
-    logger.Log("Processing..." + to_string(cellsTotal) + " cells... ");
+    long cellsTotal = refGrid.nRows * refGrid.nCols;
 
     //unsigned int numThreads = std::thread::hardware_concurrency();
     int nthreads = 4;
     boost::asio::thread_pool pool(nthreads);
 
-    Progress progress(refGrid->nRows);
+    Progress progress(refGrid.nRows);
 
-    for (int i = 0; i < nrows; i++) {
-        boost::asio::post(pool, [opVars, spMinMY, spMaxMY, i, ncols, dataInput, &progress] {
-            int cellIndexStart = i * ncols;
-            for (int j = 0; j < ncols; j++) {
+    for (int i = 0; i < refGrid.nRows; i++) {
+        boost::asio::post(pool, [i, refGrid, &dataInput, &dataOutput, &progress] {
+            int cellIndexStart = i * refGrid.nCols;
+            for (int j = 0; j < refGrid.nCols; j++) {
                 int cellIndex = cellIndexStart + j;
-                runTreeModel(opVars, spMinMY, spMaxMY, cellIndex, dataInput);
+                runTreeModel(cellIndex, dataInput, dataOutput);
             }
 
-            writeRowDataOutput(i);
+            dataOutput.writeRow(i);
             progress.rowCompleted();
         });
     }
 
     pool.join();
-
-    deleteDataOutput();
-    delete dataInput;
 
     return EXIT_SUCCESS;
 }

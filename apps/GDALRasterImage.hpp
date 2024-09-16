@@ -4,6 +4,19 @@
 #include <gdal_priv.h>
 #pragma once
 
+struct RefGridProperties {
+	std::string name = "empty";
+	int nRows;
+	int nCols;
+	double xMin;
+	double xMax;
+	double yMin;
+	double yMax;
+	double noData;
+	double datasetTransform[6];
+	const char* crs;
+};
+
 // from: https://gis.stackexchange.com/questions/393549
 class GDALRasterImage {
 
@@ -26,23 +39,18 @@ public:
 	double yMax { 0 };
 
 	GDALRasterImage(std::string filename);
-	GDALRasterImage(std::string filename, GDALRasterImage* refGrid);
+	GDALRasterImage(std::string filename, RefGridProperties& refGrid);
 	~GDALRasterImage();
-	std::tuple<int, int> XYfrom(double lat, double lon);
-	int IndexFrom(double lat, double lon);
 	std::tuple<int, int> IndexToXY(int index);
 	float GetVal(int x, int y);
 	float GetVal(int index);
 	bool IsNoData(float val);
-	void Create(std::string fname);
 	bool Exists(std::string fname);
 	float GetMin();
 	float GetMax();
 	void Close();
-	std::vector<std::pair<int, int>> getIndicesWhere(const double& value);
-	double minFromIndices(const std::vector<std::pair<int, int>>& indices);
-	double maxFromIndices(const std::vector<std::pair<int, int>>& indices);
 	CPLErr writeRow(int row, float* buffer);
+	RefGridProperties getRefGrid();
 
 };
 

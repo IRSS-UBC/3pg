@@ -521,21 +521,21 @@ TEST(DataInputTests, gridValues) {
 	std::string testFile2 = "test_files/DataInputTests/test2.tif";
 	std::string testFile3 = "test_files/DataInputTests/test3.tif";
  
-	GDALRasterImage* testTif1 = new GDALRasterImage(testFile1);
-	GDALRasterImage* testTif2 = new GDALRasterImage(testFile2);
-	GDALRasterImage* testTif3 = new GDALRasterImage(testFile3);
-	GDALRasterImage* frostTif1 = new GDALRasterImage(frost1);
-	GDALRasterImage* frostTif2 = new GDALRasterImage(frost2);
-	GDALRasterImage* frostTif3 = new GDALRasterImage(frost3);
-	GDALRasterImage* frostTif4 = new GDALRasterImage(frost4);
-	GDALRasterImage* frostTif5 = new GDALRasterImage(frost5);
-	GDALRasterImage* frostTif6 = new GDALRasterImage(frost6);
-	GDALRasterImage* frostTif7 = new GDALRasterImage(frost7);
-	GDALRasterImage* frostTif8 = new GDALRasterImage(frost8);
-	GDALRasterImage* frostTif9 = new GDALRasterImage(frost9);
-	GDALRasterImage* frostTif10 = new GDALRasterImage(frost10);
-	GDALRasterImage* frostTif11 = new GDALRasterImage(frost11);
-	GDALRasterImage* frostTif12 = new GDALRasterImage(frost12);
+	std::unique_ptr<GDALRasterImage> testTif1 = std::make_unique<GDALRasterImage>(testFile1);
+	std::unique_ptr<GDALRasterImage> testTif2 = std::make_unique<GDALRasterImage>(testFile2);
+	std::unique_ptr<GDALRasterImage> testTif3 = std::make_unique<GDALRasterImage>(testFile3);
+	std::unique_ptr<GDALRasterImage> frostTif1 = std::make_unique<GDALRasterImage>(frost1);
+	std::unique_ptr<GDALRasterImage> frostTif2 = std::make_unique<GDALRasterImage>(frost2);
+	std::unique_ptr<GDALRasterImage> frostTif3 = std::make_unique<GDALRasterImage>(frost3);
+	std::unique_ptr<GDALRasterImage> frostTif4 = std::make_unique<GDALRasterImage>(frost4);
+	std::unique_ptr<GDALRasterImage> frostTif5 = std::make_unique<GDALRasterImage>(frost5);
+	std::unique_ptr<GDALRasterImage> frostTif6 = std::make_unique<GDALRasterImage>(frost6);
+	std::unique_ptr<GDALRasterImage> frostTif7 = std::make_unique<GDALRasterImage>(frost7);
+	std::unique_ptr<GDALRasterImage> frostTif8 = std::make_unique<GDALRasterImage>(frost8);
+	std::unique_ptr<GDALRasterImage> frostTif9 = std::make_unique<GDALRasterImage>(frost9);
+	std::unique_ptr<GDALRasterImage> frostTif10 = std::make_unique<GDALRasterImage>(frost10);
+	std::unique_ptr<GDALRasterImage> frostTif11 = std::make_unique<GDALRasterImage>(frost11);
+	std::unique_ptr<GDALRasterImage> frostTif12 = std::make_unique<GDALRasterImage>(frost12);
 
 	DataInput* dataInput = new DataInput();
 	std::ifstream paramFp("");
@@ -672,21 +672,6 @@ TEST(DataInputTests, gridValues) {
  
 	//clean up
 	delete dataInput;
-	delete testTif1;
-	delete testTif2;
-	delete testTif3;
-	delete frostTif1; 
-	delete frostTif2; 
-	delete frostTif3; 
-	delete frostTif4; 
-	delete frostTif5; 
-	delete frostTif6; 
-	delete frostTif7; 
-	delete frostTif8; 
-	delete frostTif9; 
-	delete frostTif10;
-	delete frostTif11;
-	delete frostTif12;
 }
 
 //test bad grids
@@ -695,9 +680,9 @@ TEST(DataInputTests, badGrids) {
 	std::string differentLocationFile = "test_files/DataInputTests/differentLocation.tif";
 	std::string differentDimensionsFile = "test_files/DataInputTests/differentDimensions.tif";
 
-	GDALRasterImage* testTif = new GDALRasterImage(testFile);
-	GDALRasterImage* difLocationTif = new GDALRasterImage(differentLocationFile);
-	GDALRasterImage* difDimensionsTif = new GDALRasterImage(differentDimensionsFile);
+	std::unique_ptr<GDALRasterImage> testTif = std::make_unique<GDALRasterImage>(testFile);
+	std::unique_ptr<GDALRasterImage> difLocationTif = std::make_unique<GDALRasterImage>(differentLocationFile);
+	std::unique_ptr<GDALRasterImage> difDimensionsTif = std::make_unique<GDALRasterImage>(differentDimensionsFile);
 
 	DataInput* dataInput = new DataInput();
 	std::ifstream paramFp("");
@@ -715,9 +700,6 @@ TEST(DataInputTests, badGrids) {
 
 	//clean up
 	delete dataInput;
-	delete testTif;
-	delete difLocationTif;
-	delete difDimensionsTif;
 }
 
 //test required parameters
@@ -1048,232 +1030,20 @@ void addRequiredParamsExcludingRunPeriod(DataInput* dataInput) {
 	ASSERT_FALSE(dataInput->inputFinished(false));
 }
 
-std::string startAge1 = "test_files//DataInputTests//runPeriod//StartAge1.tif";
-std::string startAgeVariable = "test_files//DataInputTests//runPeriod//StartAgeVariable.tif";
-std::string startMonth1 = "test_files//DataInputTests//runPeriod//StartMonth1.tif";
-std::string startMonthVariable = "test_files//DataInputTests//runPeriod//StartMonthVariable.tif";
-std::string endYear1872 = "test_files//DataInputTests//runPeriod//EndYear1872.tif";
-std::string endYearVariable = "test_files//DataInputTests//runPeriod//EndYearVariable.tif";
-std::string yearPlanted1869 = "test_files//DataInputTests//runPeriod//yearPlanted1869.tif";
-std::string yearPlantedVariable = "test_files//DataInputTests//runPeriod//yearPlantedVariable.tif";
-
-TEST(DataInputTests, runPeriod1) {
-	//add required params except run period params
-	DataInput* dataInput = new DataInput();
-	addRequiredParamsExcludingRunPeriod(dataInput);
-
-	//add run period params
-	dataInput->tryAddInputParam("StartAge", { "1" });
-	dataInput->tryAddInputParam("EndYear", { "1872" });
-	dataInput->tryAddInputParam("StartMonth", { "1" });
-	dataInput->tryAddInputParam("yearPlanted", { "1869" });
-
-	//finish input
-	ASSERT_TRUE(dataInput->inputFinished(false));
-
-	//get run period
-	MYDate min;
-	MYDate max;
-	dataInput->findRunPeriod(min, max);
-
-	//test run period outputs
-	EXPECT_EQ(min.mon, NULL);
-	EXPECT_EQ(min.year, 1870);
-	EXPECT_EQ(max.mon, 1);
-	EXPECT_EQ(max.year, 1872);
-
-	//clean up
-	delete dataInput;
-}
-
-TEST(DataInputTests, runPeriod2) {
-	//add required params except run period params
-	DataInput* dataInput = new DataInput();
-	addRequiredParamsExcludingRunPeriod(dataInput);
-
-	//add run period params
-	dataInput->tryAddInputParam("StartAge", { startAge1 });
-	dataInput->tryAddInputParam("EndYear", { "1872" });
-	dataInput->tryAddInputParam("StartMonth", { startMonth1 });
-	dataInput->tryAddInputParam("yearPlanted", { "1869" });
-
-	//finish input
-	ASSERT_TRUE(dataInput->inputFinished(false));
-
-	//get run period
-	MYDate min;
-	MYDate max;
-	dataInput->findRunPeriod(min, max);
-
-	//test run period outputs
-	EXPECT_EQ(min.mon, NULL);
-	EXPECT_EQ(min.year, 1870);
-	EXPECT_EQ(max.mon, 1);
-	EXPECT_EQ(max.year, 1872);
-
-	//clean up
-	delete dataInput;
-}
-
-TEST(DataInputTests, runPeriod3) {
-	//add required params except run period params
-	DataInput* dataInput = new DataInput();
-	addRequiredParamsExcludingRunPeriod(dataInput);
-
-	//add run period params
-	dataInput->tryAddInputParam("StartAge", { startAge1 });
-	dataInput->tryAddInputParam("EndYear", { endYear1872 });
-	dataInput->tryAddInputParam("StartMonth", { startMonth1 });
-	dataInput->tryAddInputParam("yearPlanted", { yearPlanted1869 });
-
-	//finish input
-	ASSERT_TRUE(dataInput->inputFinished(false));
-
-	//get run period
-	MYDate min;
-	MYDate max;
-	dataInput->findRunPeriod(min, max);
-
-	//test run period outputs
-	EXPECT_EQ(min.mon, NULL);
-	EXPECT_EQ(min.year, 1870);
-	EXPECT_EQ(max.mon, 1);
-	EXPECT_EQ(max.year, 1872);
-
-	//clean up
-	delete dataInput;
-}
-
-TEST(DataInputTests, runPeriod4) {
-	//add required params except run period params
-	DataInput* dataInput = new DataInput();
-	addRequiredParamsExcludingRunPeriod(dataInput);
-
-	//add run period params
-	dataInput->tryAddInputParam("StartAge", { "1" });
-	dataInput->tryAddInputParam("EndYear", { endYear1872 });
-	dataInput->tryAddInputParam("StartMonth", { "1" });
-	dataInput->tryAddInputParam("yearPlanted", { yearPlanted1869 });
-
-	//finish input
-	ASSERT_TRUE(dataInput->inputFinished(false));
-
-	//get run period
-	MYDate min;
-	MYDate max;
-	dataInput->findRunPeriod(min, max);
-
-	//test run period outputs
-	EXPECT_EQ(min.mon, NULL);
-	EXPECT_EQ(min.year, 1870);
-	EXPECT_EQ(max.mon, 1);
-	EXPECT_EQ(max.year, 1872);
-
-	//clean up
-	delete dataInput;
-}
-
-TEST(DataInputTests, runPeriod5) {
-	//add required params except run period params
-	DataInput* dataInput = new DataInput();
-	addRequiredParamsExcludingRunPeriod(dataInput);
-
-	//add run period params
-	dataInput->tryAddInputParam("StartAge", { startAgeVariable });
-	dataInput->tryAddInputParam("EndYear", { endYearVariable });
-	dataInput->tryAddInputParam("StartMonth", { startMonthVariable });
-	dataInput->tryAddInputParam("yearPlanted", { yearPlantedVariable });
-
-	//finish input
-	ASSERT_TRUE(dataInput->inputFinished(false));
-
-	//get run period
-	MYDate min;
-	MYDate max;
-	dataInput->findRunPeriod(min, max);
-
-	//test run period outputs
-	EXPECT_EQ(min.mon, NULL);
-	EXPECT_EQ(min.year, 1870);
-	EXPECT_EQ(max.mon, 3);
-	EXPECT_EQ(max.year, 1874);
-
-	//clean up
-	delete dataInput;
-}
-
-TEST(DataInputTests, runPeriod6) {
-	//add required params except run period params
-	DataInput* dataInput = new DataInput();
-	addRequiredParamsExcludingRunPeriod(dataInput);
-
-	//add run period params
-	dataInput->tryAddInputParam("StartAge", { startAge1 });
-	dataInput->tryAddInputParam("EndYear", { endYearVariable });
-	dataInput->tryAddInputParam("StartMonth", { startMonth1 });
-	dataInput->tryAddInputParam("yearPlanted", { yearPlantedVariable });
-
-	//finish input
-	ASSERT_TRUE(dataInput->inputFinished(false));
-
-	//get run period
-	MYDate min;
-	MYDate max;
-	dataInput->findRunPeriod(min, max);
-
-	//test run period outputs
-	EXPECT_EQ(min.mon, NULL);
-	EXPECT_EQ(min.year, 1870);
-	EXPECT_EQ(max.mon, 1);
-	EXPECT_EQ(max.year, 1874);
-
-	//clean up
-	delete dataInput;
-}
-
-TEST(DataInputTests, runPeriod7) {
-	//add required params except run period params
-	DataInput* dataInput = new DataInput();
-	addRequiredParamsExcludingRunPeriod(dataInput);
-
-	//add run period params
-	dataInput->tryAddInputParam("StartAge", { startAgeVariable });
-	dataInput->tryAddInputParam("EndYear", { endYear1872 });
-	dataInput->tryAddInputParam("StartMonth", { startMonthVariable });
-	dataInput->tryAddInputParam("yearPlanted", { yearPlanted1869 });
-
-	//finish input
-	ASSERT_TRUE(dataInput->inputFinished(false));
-
-	//get run period
-	MYDate min;
-	MYDate max;
-	dataInput->findRunPeriod(min, max);
-
-	//test run period outputs
-	EXPECT_EQ(min.mon, NULL);
-	EXPECT_EQ(min.year, 1870);
-	EXPECT_EQ(max.mon, 3);
-	EXPECT_EQ(max.year, 1872);
-
-	//clean up
-	delete dataInput;
-}
-
 //test different input method for series params
 TEST(DataInputTests, seriesParamInputFormat) {
-	GDALRasterImage* frostTif1 = new GDALRasterImage(frost1);
-	GDALRasterImage* frostTif2 = new GDALRasterImage(frost2);
-	GDALRasterImage* frostTif3 = new GDALRasterImage(frost3);
-	GDALRasterImage* frostTif4 = new GDALRasterImage(frost4);
-	GDALRasterImage* frostTif5 = new GDALRasterImage(frost5);
-	GDALRasterImage* frostTif6 = new GDALRasterImage(frost6);
-	GDALRasterImage* frostTif7 = new GDALRasterImage(frost7);
-	GDALRasterImage* frostTif8 = new GDALRasterImage(frost8);
-	GDALRasterImage* frostTif9 = new GDALRasterImage(frost9);
-	GDALRasterImage* frostTif10 = new GDALRasterImage(frost10);
-	GDALRasterImage* frostTif11 = new GDALRasterImage(frost11);
-	GDALRasterImage* frostTif12 = new GDALRasterImage(frost12);
+	std::unique_ptr<GDALRasterImage> frostTif1 = std::make_unique<GDALRasterImage>(frost1);
+	std::unique_ptr<GDALRasterImage> frostTif2 = std::make_unique<GDALRasterImage>(frost2);
+	std::unique_ptr<GDALRasterImage> frostTif3 = std::make_unique<GDALRasterImage>(frost3);
+	std::unique_ptr<GDALRasterImage> frostTif4 = std::make_unique<GDALRasterImage>(frost4);
+	std::unique_ptr<GDALRasterImage> frostTif5 = std::make_unique<GDALRasterImage>(frost5);
+	std::unique_ptr<GDALRasterImage> frostTif6 = std::make_unique<GDALRasterImage>(frost6);
+	std::unique_ptr<GDALRasterImage> frostTif7 = std::make_unique<GDALRasterImage>(frost7);
+	std::unique_ptr<GDALRasterImage> frostTif8 = std::make_unique<GDALRasterImage>(frost8);
+	std::unique_ptr<GDALRasterImage> frostTif9 = std::make_unique<GDALRasterImage>(frost9);
+	std::unique_ptr<GDALRasterImage> frostTif10 = std::make_unique<GDALRasterImage>(frost10);
+	std::unique_ptr<GDALRasterImage> frostTif11 = std::make_unique<GDALRasterImage>(frost11);
+	std::unique_ptr<GDALRasterImage> frostTif12 = std::make_unique<GDALRasterImage>(frost12);
 
 	DataInput* dataInput = new DataInput();
 	std::ifstream paramFp("test_files//DataInputTests//formatTest.txt");
@@ -1408,16 +1178,92 @@ TEST(DataInputTests, seriesParamInputFormat) {
 
 	//clean up
 	delete dataInput;
-	delete frostTif1; 
-	delete frostTif2; 
-	delete frostTif3; 
-	delete frostTif4; 
-	delete frostTif5; 
-	delete frostTif6; 
-	delete frostTif7; 
-	delete frostTif8; 
-	delete frostTif9; 
-	delete frostTif10;
-	delete frostTif11;
-	delete frostTif12;
+}
+
+//test management table functionality
+TEST(DataInputTests, managementTable) {
+	DataInput *dataInput = new DataInput();
+	std::ifstream paramFp1("test_files//DataInputTests//manageTableTest1.txt");
+	std::ifstream paramFp2("test_files//DataInputTests//manageTableTest2.txt");
+	std::ifstream paramFp3("test_files//DataInputTests//manageTableTest3.txt");
+	int lineNo1 = 0;
+	int lineNo2 = 0;
+	int lineNo3 = 0;
+
+	ASSERT_TRUE(dataInput->tryAddManagementParam("Management: irrigation", paramFp1, lineNo1));
+	ASSERT_TRUE(dataInput->tryAddManagementParam("management: minasw", paramFp2, lineNo2));
+	ASSERT_TRUE(dataInput->tryAddManagementParam("management: FERTILITY", paramFp3, lineNo3));
+
+	double val;
+	
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~
+	Irrigation
+	~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1993, val));
+
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1994, val));
+	EXPECT_EQ(val, 8);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1995, val));
+	EXPECT_EQ(val, 8);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1996, val));
+	EXPECT_EQ(val, 8);
+
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1997, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 1, 1997, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 2, 1997, val)); //false because nan
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 3, 1997, val));
+	EXPECT_EQ(val, 3);
+
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1999, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 1, 1999, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 2, 1999, val)); //false because nan
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 3, 1999, val));
+	EXPECT_EQ(val, 3);
+
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 2000, val));
+	EXPECT_EQ(val, 5);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 2001, val));
+	EXPECT_EQ(val, 5);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 5000, val));
+	EXPECT_EQ(val, 5);
+
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~
+	MinASW
+	~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1994, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1995, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1996, val));
+	EXPECT_EQ(val, 3);
+
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~
+	Fertility
+	~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, 1, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 1, 1, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 2, 1, val)); //false because nan
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 3, 1, val));
+	EXPECT_EQ(val, 3);
+	
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, 2999, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 1, 2999, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 2, 2999, val)); //false because nan
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 3, 2999, val));
+	EXPECT_EQ(val, 3);
+	
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, 3000, val));
+	EXPECT_EQ(val, .0005);
+	
+	val = -1;
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, std::numeric_limits<int>::max(), val));
+	EXPECT_EQ(val, .0005);
 }

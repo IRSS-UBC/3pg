@@ -7,13 +7,6 @@
 
 typedef enum { pNull, pScalar, pTif } ParamSpatial;
 
-struct PPPG_VVAL {
-	ParamSpatial spType = pNull;                   // Scalar, grid, or null
-	double sval;                           // Scalar value. 
-	std::string gridName;                        // ptr to grid file name
-	GDALRasterImage* g;                               // ptr to grid value
-};
-
 typedef struct PPPG_PARAM {
 	//variable name
 	std::string id = "";
@@ -25,23 +18,29 @@ typedef struct PPPG_PARAM {
 	double val;
 	
 	//grid reference
-	GDALRasterImage* g;
+	std::unique_ptr<GDALRasterImage> g;
 } PPPG_PARAM;
 
 // 3PG output variables. In spatial mode output variables may be written 
 // repeatedly, on a time step defined by recurStart, recurYear, and recurMonthly. 
 typedef struct PPPG_OP_VAR {
-	std::string id;                       // String version of the variable name. 
-	double v;                    // The address of the model variable. 
-	ParamSpatial spType;            // If its a spatial parameter and what grid type. 
-	std::string gridName;  // The gridname, in spatial mode. 
-	//GDALRasterImage *g;                        // The final output grid, in spatial mode. 
-	bool write; // Whether the variable is wanted. 
-	int recurStart;                 // First year to write regular output. 
-	int recurYear = -1;                  // Interval on which to write regular output. 
-	int recurMonth;                 // Single month number we want output in. 
-	bool recurMonthly;              // Whether to write every month in an output year. 
-	//std::vector<GDALRasterImage*> RO;                      // The output tifs for regular output. 
+	//variable name
+	std::string id; 
+
+	//file name if given file
+	std::string gridName;
+
+	//first year to write regular output
+	int recurStart;
+
+	// Interval on which to write regular output. 
+	int recurYear = -1;
+
+	// Single month number we want output in. 
+	int recurMonth;    
+
+	// Whether to write every month in an output year. 
+	bool recurMonthly;              
 } PPPG_OP_VAR;
  
 typedef struct PPPG_SERIES_PARAM {
@@ -55,13 +54,18 @@ typedef struct PPPG_SERIES_PARAM {
 	//unless first year is set to -1 indicating there are only 12 elements.
 	int lastYear = 0;
 
-	//vector containing monthl params
-	std::vector<PPPG_PARAM> monthlyParams;
+	//vector containing monthly params
+	std::vector<std::unique_ptr<PPPG_PARAM>> monthlyParams;
 } PPPG_SERIES_PARAM;
 
-// 3PG 'management table' parameters.  Only one value per year is allowed.  
+// 3PG 'management table' parameters. 
 typedef struct PPPG_MT_PARAM {
-	int year;                                   // Calendar year
-	bool got = 0;
-	PPPG_VVAL data;
+	//start year of the yearlyParams vector. The year that a yearlyParams entry represents is the vector index + firstYear
+	int firstYear = -1;
+
+	//converts a year to an index in the yearlyParams vector
+	std::vector<int> yearToIndex;
+
+	//management params by year
+	std::vector<std::unique_ptr<PPPG_PARAM>> yearlyParams;
 } PPPG_MT_PARAM;
