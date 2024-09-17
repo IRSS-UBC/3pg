@@ -455,7 +455,6 @@ public:
 	bool getManagementParam(ManagementIndex index, long cellIndex, int year, double& val);
 	std::unordered_map<std::string, PPPG_OP_VAR> getOpVars();
 	bool haveNetRadParam();
-	std::vector<std::string> missingParams(bool modelMode3PGS);
 	RefGridProperties getRefGrid();
 
 	bool haveSeedlingMass = false;
