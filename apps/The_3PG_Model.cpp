@@ -280,6 +280,9 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
     double pfsPower = log(params.pFS20 / params.pFS2) / log(10);
     double pfsConst = params.pFS2 / pow(2, pfsPower);
 
+    double fCalphax = params.fCalpha700 / (2 - params.fCalpha700);
+    double fCg0 = params.fCg700 / (2 * params.fCg700 - 1);
+
     double Interception;         // Proportion of rainfall intercepted by canopy (used to be assigned 0.15 in assignDefaultParameters)
     double Density;              // Basic density (t/m3) (used to be assigned 0.5 in assignDefaultParameters)
 
@@ -314,6 +317,9 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
 
     // monthly met data
     double dayLength;
+
+    // co2 modifiers
+    double fCalpha, fCg;
 
     // 3PGS - variables for 3PGS
     double FPAR_AVH;
@@ -526,6 +532,10 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             // calculate frost modifier
             vars.fFrost = 1 - params.kF * (sParams.FrostDays / 30.0);
 
+            // calculate co2 modifiers
+            fCalpha = fCalphax * params.CO2 / (350 * (fCalphax - 1) + params.CO2);
+            fCg = fCg0 / (1 + (fCg0 - 1) * params.CO2 / 350);
+
             // calculate age modifier
             vars.fAge = 1;
             if (!modelMode3PGS) {
@@ -581,7 +591,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             vars.APARu = vars.APAR * vars.PhysMod;
 
             //calculate NPP
-            vars.alphaC = params.alpha * vars.fNutr * vars.fT * vars.fFrost * vars.PhysMod;
+            vars.alphaC = params.alpha * vars.fNutr * vars.fT * vars.fFrost * vars.PhysMod * fCalpha;   //22-07-02 for Excel March beta consis.
             epsilon = params.gDM_mol * params.molPAR_MJ * vars.alphaC;
             RADint = RAD * lightIntcptn * CanCover;
             vars.GPP = epsilon * RADint / 100;
@@ -599,7 +609,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             else {
                 gC = params.MaxCond;
             }
-            CanCond = gC * vars.PhysMod;
+            CanCond = gC * vars.PhysMod * fCg;
 
             // calculate transpiration from Penman-Monteith (mm/day converted to mm/month)
             vars.Transp = CanopyTranspiration(

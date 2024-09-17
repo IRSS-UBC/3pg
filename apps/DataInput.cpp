@@ -748,6 +748,9 @@ bool DataInput::getInputParams(long cellIndex, InputParams& params) {
 		params.MinASWTG = DataInput::getValFromInputParam("minaswtg", cellIndex);
 		params.NDVI_FPAR_intercept = DataInput::getValFromInputParam("ndvi_fpar_intercept", cellIndex);
 		params.NDVI_FPAR_constant = DataInput::getValFromInputParam("ndvi_fpar_constant", cellIndex);
+		params.CO2 = DataInput::getValFromInputParam("co2", cellIndex);
+		params.fCalpha700 = DataInput::getValFromInputParam("fcalpha700", cellIndex);
+		params.fCg700 = DataInput::getValFromInputParam("fcg700", cellIndex);
 
 		if (params.yearPlanted < 1 || params.StemNoi < 1) {
 			return false;
