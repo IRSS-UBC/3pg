@@ -237,7 +237,7 @@ void copyVars(Vars vars, std::unordered_map<std::string, double>& opVarVals) {
 }
 
 // This is the main routine for the 3PG model
-void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput, const RunPeriod& runPeriod)
+void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
 {
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     step 1: initialize variables
@@ -251,6 +251,9 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput, 
     if (!dataInput.getInputParams(cellIndex, params)) {
         return;
     }
+
+    //get the overall run period (not just of this pixel)
+    RunPeriod runPeriod = dataInput.getRunPeriod();
 
     double Irrig;                            // current annual irrigation (ML/y)
 
@@ -319,7 +322,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput, 
     double dayLength;
 
     // co2 modifiers
-    double Co2Slope, Co2Year, fCalpha, fCg;
+    double Co2Slope, curYearCo2, fCalpha, fCg;
 
     // 3PGS - variables for 3PGS
     double FPAR_AVH;
@@ -390,8 +393,6 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput, 
     }
         
     // Compute slope of CO2 growth over the run period
-    // NOTE: CO2Slope will be the same for all calls to `runTreeModel` calls.
-    // so this could be computed earlier in the program.
     Co2Slope = (params.CO2End - params.CO2Start) / (runPeriod.EndYear - runPeriod.StartYear);
     
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -486,7 +487,8 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput, 
             Irrig = 0;
         }
 
-        Co2Year = runPeriod.StartYear + Co2Slope * (year - runPeriod.EndYear);
+        //calculate the co2 for the current year
+        curYearCo2 = params.CO2Start + Co2Slope * (year - runPeriod.StartYear);
 
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         step 6: start monthly processing loop
@@ -540,8 +542,8 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput, 
             vars.fFrost = 1 - params.kF * (sParams.FrostDays / 30.0);
 
             // calculate co2 modifiers
-            fCalpha = fCalphax * Co2Year / (350 * (fCalphax - 1) + Co2Year);
-            fCg = fCg0 / (1 + (fCg0 - 1) * Co2Year / 350);
+            fCalpha = fCalphax * curYearCo2 / (350 * (fCalphax - 1) + curYearCo2);
+            fCg = fCg0 / (1 + (fCg0 - 1) * curYearCo2 / 350);
 
             // calculate age modifier
             vars.fAge = 1;

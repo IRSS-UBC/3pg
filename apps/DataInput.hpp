@@ -103,7 +103,7 @@ struct SeriesParams {
 struct RunPeriod {
 	int StartYear;
 	int EndYear;
-}
+};
 
 typedef enum {
 	TMAX = 0,
@@ -430,8 +430,7 @@ private:
 		"cumwabv" 
 	};
 
-	std::optional<int> RPStartYear;
-	std::optional<int> RPEndYear;
+	RunPeriod runPeriod;
 	bool allow3PG = true;
 	bool allow3PGS = true;
 	std::unordered_map<std::string, PPPG_OP_VAR> outputParams;
@@ -453,11 +452,12 @@ private:
 	double getValFromInputParam(std::string paramName, long cellIndex);
 	double getValFromSeriesParam(int paramIndex, int year, int month, long cellIndex);
 	bool openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>& grid);
+	void findRunPeriod();
 	
 public:
 	DataInput(std::function<void(std::string)>& log);
 	DataInput();//for no logger
-	RunPeriod getRunPeriod();
+	
 	bool tryAddInputParam(std::string name, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
 	bool tryAddOutputParam(std::string name, std::vector<std::string> value, int lineno);
@@ -466,6 +466,7 @@ public:
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
 	bool getManagementParam(ManagementIndex index, long cellIndex, int year, double& val);
+	RunPeriod getRunPeriod();
 	std::unordered_map<std::string, PPPG_OP_VAR> getOpVars();
 	bool haveNetRadParam();
 	RefGridProperties getRefGrid();

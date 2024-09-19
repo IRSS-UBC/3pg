@@ -665,6 +665,8 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	this->haveVPD = haveVPD;
 	this->haveTavg = haveTavg;
 
+	this->findRunPeriod();
+
 	finishedInput = true;
 	return true;
 }
@@ -938,63 +940,58 @@ bool DataInput::haveNetRadParam() {
 	return this->haveNetRad;
 }
 
-RunPeriod DataInput::getRunPeriod() {
-	RunPeriod runPeriod;
-	// don't re-compute the run period if it's already been found
-	if (RPStartYear.has_value() || RPEndYear.has_value()) {
-		runPeriod.StartYear = RPStartYear;
-		runPeriod.EndYear = RPEndYear;
-		return runPeriod
+void DataInput::findRunPeriod() {
+	PPPG_PARAM* yearPlantedParam = this->inputParams.at("yearplanted").get();
+	PPPG_PARAM* startAgeParam = this->inputParams.at("startage").get();
+	PPPG_PARAM* endYearParam = this->inputParams.at("endyear").get();
+
+	//get maxes and mins depending on whether they're scalar or grid parameters
+	int yearPlantedMin = (yearPlantedParam->spType == pScalar) ? static_cast<int>(yearPlantedParam->val) : static_cast<int>(yearPlantedParam->g->GetMin());
+	int startAgeMin = (startAgeParam->spType == pScalar) ? static_cast<int>(startAgeParam->val) : static_cast<int>(startAgeParam->g->GetMin());
+	int endYearMax = (endYearParam->spType == pScalar) ? static_cast<int>(endYearParam->val) : static_cast<int>(endYearParam->g->GetMax());
+
+	/* 
+	determine start year of the run period
+	*/
+	if (startAgeParam->spType != pScalar && yearPlantedParam->spType != pScalar) {
+		//if both are raster, find smallest sum of yearPlanted and startAge pixels.
+		//we do this because the minimum sum (which is the year we should start on)
+		//does not have to be at any of the pixels where yearPlanted or startAge are smallest
+		double overallMin = std::numeric_limits<double>::max();
+		for (int row = 0; row < yearPlantedParam->g->nRows; row++) {
+			for (int col = 0; col < yearPlantedParam->g->nCols; col++) {
+				//convert gotten values to double first so we don't have any overflow of floats as we add them
+				double curMin = (double)yearPlantedParam->g->GetVal(row, col) + (double)startAgeParam->g->GetVal(row, col);
+				
+				//set the overall minimum accordingly
+				overallMin = (curMin < overallMin) ? curMin : overallMin;
+			}
+		}
+		this->runPeriod.StartYear = static_cast<int>(overallMin);
 	}
 	else {
-		PPPG_PARAM* yearPlantedParam = this->inputParams.at("yearplanted").get();
-		PPPG_PARAM* startAgeParam = this->inputParams.at("startage").get();
-		PPPG_PARAM* endYearParam = this->inputParams.at("endyear").get();
-		PPPG_PARAM* startMonthParam = this->inputParams.at("startmonth").get();
-		//get maxes and mins depending on whether they're scalar or grid parameters
-		int yearPlantedMin = (yearPlantedParam->spType == pScalar) ? static_cast<int>(yearPlantedParam->val) : static_cast<int>(yearPlantedParam->g->GetMin());
-		int startAgeMin = (startAgeParam->spType == pScalar) ? static_cast<int>(startAgeParam->val) : static_cast<int>(startAgeParam->g->GetMin());
-		int endYearMax = (endYearParam->spType == pScalar) ? static_cast<int>(endYearParam->val) : static_cast<int>(endYearParam->g->GetMax());
-		int startMonthMax = (startMonthParam->spType == pScalar) ? static_cast<int>(startMonthParam->val) : static_cast<int>(startMonthParam->g->GetMax());
-		/* 
-		determine start year of the run period
-		*/
-		if (startAgeParam->spType != pScalar && yearPlantedParam->spType != pScalar) {
-			//if both are raster, find smallest sum of yearPlanted and startAge pixels.
-			//we do this because the minimum sum (which is the year we should start on)
-			//does not have to be at any of the pixels where yearPlanted or startAge are smallest
-			double overallMin = std::numeric_limits<double>::max();
-			for (int row = 0; row < yearPlantedParam->g->nRows; row++) {
-				for (int col = 0; col < yearPlantedParam->g->nCols; col++) {
-					//convert gotten values to double first so we don't have any overflow of floats as we add them
-					double curMin = (double)yearPlantedParam->g->GetVal(row, col) + (double)startAgeParam->g->GetVal(row, col);
-					
-					//set the overall minimum accordingly
-					overallMin = (curMin < overallMin) ? curMin : overallMin;
-				}
-			}
-			runPeriod.StartYear = static_cast<int>(overallMin);
-		}
-		else {
-			//otherwise, just add the mins together
-			runPeriod.StartYear = yearPlantedMin + startAgeMin;
-		}
-		//max year is just the max year
-		runPeriod.EndYear = endYearMax;
-		/*
-		error check on years
-		*/
-		if (runPeriod.StartYear > runPeriod.EndYear) {
-			//if minimum year is larger than maximum year, print and log error
-			std::string errstr = "min year (" + std::to_string(runPeriod.StartYear) + ") is greater than max year (" + std::to_string(runPeriod.EndYear) + ")";
-			std::cout << errstr << std::endl;
-			this->log(errstr);
-			//then exit
-			exit(EXIT_FAILURE);
-		}
-		//valid run period successfully determined
+		//otherwise, just add the mins together
+		this->runPeriod.StartYear = yearPlantedMin + startAgeMin;
 	}
-	string runPeriodStr = "first run year = " + to_string(runPeriod.StartYear) + ", last run year = " + to_string(runPeriod.EndYear);
+	//max year is just the max year
+	this->runPeriod.EndYear = endYearMax;
+	/*
+	error check on years
+	*/
+	if (this->runPeriod.StartYear > this->runPeriod.EndYear) {
+		//if minimum year is larger than maximum year, print and log error
+		std::string errstr = "min year (" + std::to_string(runPeriod.StartYear) + ") is greater than max year (" + std::to_string(runPeriod.EndYear) + ")";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
+		//then exit
+		exit(EXIT_FAILURE);
+	}
+	//valid run period successfully determined
+	
+	std::string runPeriodStr = "first run year = " + std::to_string(runPeriod.StartYear) + ", last run year = " + std::to_string(runPeriod.EndYear);
 	this->log(runPeriodStr);
-	return runPeriod;
+}
+
+RunPeriod DataInput::getRunPeriod() {
+	return this->runPeriod;
 }
