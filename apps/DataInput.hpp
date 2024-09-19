@@ -84,7 +84,8 @@ struct InputParams {
 	double MinASWTG;
 	double NDVI_FPAR_intercept;
 	double NDVI_FPAR_constant;
-	double CO2;
+	double CO2Start;
+	double CO2End;
 	double fCalpha700;
 	double fCg700;
 };
@@ -191,7 +192,8 @@ private:
 		{"maximum basic density - for older trees", "rhomax"},
 		{"age at which rho = (rhomin+rhomax)/2", "trho"},
 		{"year planted", "yearplanted"},
-		{"atmospheric co2", "co2"},
+		{"atmospheric co2 - start of run period", "co2start"},
+		{"atmospheric co2 - end of run period", "co2end"},
 		{"assimialtion enhancement factor at 700 ppm", "fcalpha700"},
 		{"canopy conductance enhancement factor at 700 ppm", "fcg700"},
 	};
@@ -267,7 +269,8 @@ private:
 		"minaswtg",
 		"ndvi_fpar_intercept",
 		"ndvi_fpar_constant",
-		"co2",
+		"co2start",
+		"co2end",
 		"fcalpha700",
 		"fcg700"
 	};
@@ -293,7 +296,7 @@ private:
 		"startmonth",
 		"laimaxintcptn",
 		"thinpower", "mf", "mr", "ms",
-		"co2", "fcalpha700", "fcg700"
+		"co2start", "co2end", "fcalpha700", "fcg700"
 	};
 	std::unordered_set<std::string> requiredInputParams3PGS = {
 		"growthtmin", "growthtopt", "growthtmax",
