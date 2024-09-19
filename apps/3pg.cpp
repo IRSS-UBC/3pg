@@ -236,6 +236,7 @@ int main(int argc, char* argv[])
     // Check for a spatial run, if so open input grids and define refGrid. 
     RefGridProperties refGrid = dataInput.getRefGrid();
     DataOutput dataOutput(refGrid, outPath, dataInput.getOpVars());
+    RunPeriod runPeriod = dataInput.getRunPeriod();
     std::cout << "  Complete" << std::endl;
  
     // Run the model. 
@@ -252,7 +253,7 @@ int main(int argc, char* argv[])
             int cellIndexStart = i * refGrid.nCols;
             for (int j = 0; j < refGrid.nCols; j++) {
                 int cellIndex = cellIndexStart + j;
-                runTreeModel(cellIndex, dataInput, dataOutput);
+                runTreeModel(cellIndex, dataInput, dataOutput, runPeriod);
             }
 
             dataOutput.writeRow(i);

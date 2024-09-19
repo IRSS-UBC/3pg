@@ -237,7 +237,7 @@ void copyVars(Vars vars, std::unordered_map<std::string, double>& opVarVals) {
 }
 
 // This is the main routine for the 3PG model
-void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
+void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput, const RunPeriod& runPeriod)
 {
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     step 1: initialize variables
@@ -319,7 +319,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
     double dayLength;
 
     // co2 modifiers
-    double fCalpha, fCg;
+    double Co2Slope, Co2Year, fCalpha, fCg;
 
     // 3PGS - variables for 3PGS
     double FPAR_AVH;
@@ -388,6 +388,11 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
     if (StandAge > 0) {
         vars.MAI = vars.StandVol / StandAge;    //UnModified StandAge
     }
+        
+    // Compute slope of CO2 growth over the run period
+    // NOTE: CO2Slope will be the same for all calls to `runTreeModel` calls.
+    // so this could be computed earlier in the program.
+    Co2Slope = (params.CO2End - params.CO2Start) / (runPeriod.EndYear - runPeriod.StartYear);
     
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     step 2: load management params for startage
@@ -481,6 +486,8 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             Irrig = 0;
         }
 
+        Co2Year = runPeriod.StartYear + Co2Slope * (year - runPeriod.EndYear);
+
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         step 6: start monthly processing loop
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -533,8 +540,8 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             vars.fFrost = 1 - params.kF * (sParams.FrostDays / 30.0);
 
             // calculate co2 modifiers
-            fCalpha = fCalphax * params.CO2 / (350 * (fCalphax - 1) + params.CO2);
-            fCg = fCg0 / (1 + (fCg0 - 1) * params.CO2 / 350);
+            fCalpha = fCalphax * Co2Year / (350 * (fCalphax - 1) + Co2Year);
+            fCg = fCg0 / (1 + (fCg0 - 1) * Co2Year / 350);
 
             // calculate age modifier
             vars.fAge = 1;
