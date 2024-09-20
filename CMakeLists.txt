@@ -8,7 +8,7 @@ if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif()
 
-project ("3pg2")
+project ("3pg")
 
 # Include sub-projects.
 include_directories("include")
