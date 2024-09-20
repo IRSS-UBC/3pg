@@ -80,7 +80,7 @@ bool DataInput::openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>
 	try {
 		grid = std::make_unique<GDALRasterImage>(path);
 	}
-	catch (const std::exception& e) {
+	catch (const std::runtime_error& e) {
 		std::string errstr = "failed to open " + path + "\n" + e.what();
 		std::cout << errstr << std::endl;
 		this->log(errstr);
@@ -605,11 +605,23 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 
 	//if we're using 3PGS, ensure we have all required 3PGS parameters
 	if (modelMode3PGS && this->requiredInputParams3PGS.size() != 0) {
+		std::string errstr = "missing 3PGS required input params:";
+		for (auto it = this->requiredInputParams3PGS.begin(); it != this->requiredInputParams3PGS.end(); it++) {
+			errstr += "\n"  + *it;
+		}
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 
 	//if we're using 3PG (not 3PGS), ensure we have all required 3PG parameters
 	if (!modelMode3PGS && this->requiredInputParams3PG.size() != 0) {
+		std::string errstr = "missing 3PG required input params:";
+		for (auto it = this->requiredInputParams3PG.begin(); it != this->requiredInputParams3PG.end(); it++) {
+			errstr += "\n" + *it;
+		}
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 
@@ -626,37 +638,49 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	
 	//check Tavg
 	if (!haveTavg && (!haveTmax || !haveTmin)) {
-		std::cout << "must have both Tmax and Tmin if lacking Tavg" << std::endl;
+		std::string errstr = "must have both Tmax and Tmin if lacking Tavg";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 	
 	//check VPD
 	if (!haveVPD && (!haveTmax || !haveTmin)) {
-		std::cout << "must have both Tmax and Tmin if lacking VPD" << std::endl;
+		std::string errstr = "must have both Tmax and Tmin if lacking VPD";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 	
 	//check rain
 	if (!haveRain) {
-		std::cout << "must have Rain" << std::endl;
+		std::string errstr = "must have Rain";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 	
 	//check solar radation
 	if (!haveSolarRad) {
-		std::cout << "must have Solar Radiation" << std::endl;
+		std::string errstr = "must have Solar Radiation";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 	
 	//check frost
 	if (!haveFrost) {
-		std::cout << "must have Frost" << std::endl;
+		std::string errstr = "must have Frost";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 
 	//check model mode which requires NDVI series parameters
 	if (modelMode3PGS && !haveNDVI) {
-		std::cout << "3PGS mode should have NDVI series parameters" << std::endl;
+		std::string errstr = "3PGS mode should have NDVI series parameters";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 

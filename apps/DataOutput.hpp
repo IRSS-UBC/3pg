@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <mutex>
+#include <functional>
 #include "GDALRasterImage.hpp"
 #include "ParamStructs.hpp"
 
@@ -37,8 +38,16 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<varMap>> imageBuffers;
 	std::mutex imageBuffersMutex;
 
+	//logger function
+	std::function<void(std::string)> log;
+
 public:
-	DataOutput(RefGridProperties& refGrid, std::string outpath, std::unordered_map<std::string, PPPG_OP_VAR> vars);
+	DataOutput(
+		RefGridProperties& refGrid, 
+		std::string outpath, 
+		std::unordered_map<std::string, PPPG_OP_VAR> vars, 
+		std::function<void(std::string)>& log
+	);
 
 	//determine the filepath of the output given year, month, name.
 	//call getImageBuffer() to get the associated wrapper.

@@ -199,6 +199,7 @@ int main(int argc, char* argv[])
     InputParser input(argc, argv);
     if (!input.cmdOptionExists("-d")) {
         std::cout << "Missing species definition file. Pass path with -d flag." << std::endl;
+        exit(EXIT_FAILURE);
     }
     defParamFile = input.getCmdOption("-d");
     if (defParamFile.empty()) {
@@ -207,6 +208,7 @@ int main(int argc, char* argv[])
     }
     if (!input.cmdOptionExists("-s")) {
         std::cout << "Missing site parameter file. Pass path with -s flag." << std::endl;
+        exit(EXIT_FAILURE);
     }
     siteParamFile = input.getCmdOption("-s");
     if (siteParamFile.empty()) {
@@ -235,7 +237,7 @@ int main(int argc, char* argv[])
 
     // Check for a spatial run, if so open input grids and define refGrid. 
     RefGridProperties refGrid = dataInput.getRefGrid();
-    DataOutput dataOutput(refGrid, outPath, dataInput.getOpVars());
+    DataOutput dataOutput(refGrid, outPath, dataInput.getOpVars(), log);
     std::cout << "  Complete" << std::endl;
  
     // Run the model. 
