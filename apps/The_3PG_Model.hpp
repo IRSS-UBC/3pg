@@ -1,4 +1,5 @@
 // 3PG model run routine.
-#include "Data_io.hpp"
+#include "DataInput.hpp"
+#include "DataOutput.hpp"
 
 void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput);

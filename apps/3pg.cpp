@@ -21,7 +21,6 @@ Use of this software assumes agreement to this condition of use
 #include <iostream>
 #include <fstream>
 #include "GDALRasterImage.hpp"
-#include "Data_io.hpp"
 #include "The_3PG_Model.hpp"
 #include <boost/program_options.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -42,8 +41,6 @@ std::string COPYMSG = "This version of 3-PG has been revised by:\n"
                         "Revisions based on Siggins' 2.53 version\n\n"
                         "Better message TBD. Enjoy!\n"
                         "--------------------------------------\n";
-
-extern bool modelMode3PGS;
 
 class InputParser {
 public:
@@ -178,6 +175,74 @@ public:
 
 //----------------------------------------------------------------------------------------
 
+//get the output path for logging
+bool getOutPath(std::string siteParamString, std::string& outpath)
+{
+
+    std::string line;
+    std::ifstream siteParamFile(siteParamString);
+    while (std::getline(siteParamFile, line))
+    {
+        //stop this iteration if the line is empty of commented
+        if (line.empty() || (line[0] == '/' && line[1] == '/')) {
+            continue;
+        }
+
+        //split line by comma and trim
+        std::vector<std::string> tokens;
+        boost::split(tokens, line, boost::is_any_of(","), boost::token_compress_on);
+        for (int i = 0; i < tokens.size(); i++) {
+            boost::trim(tokens[i]);
+        }
+
+        //stop this iteration if the parameter name isn't output directory
+        std::string name = tokens.front();
+        boost::trim_if(name, boost::is_any_of("\""));
+        boost::algorithm::to_lower(name);
+        if (name != "output directory") {
+            continue;
+        }
+
+        //split the rest of the line into tokens
+        std::vector<std::string> values;
+        boost::split(values, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+
+        //exit if no output directory given
+        if (values.empty()) {
+            std::cout << "No output directory specified." << std::endl;
+            return false;
+        }
+
+        //exit if multiple output directories were given
+        if (values.size() > 1) {
+            std::cout << "More than one value element detected in output directory specification." << std::endl;
+            return false;
+        }
+        
+        //get path string
+        std::string path = values.front();
+
+        //add trailing backshlashes ifnecessary
+        if (path.back() != '\\') {
+            path += '\\';
+        }
+        
+        //ensure path exists
+        if (!std::filesystem::exists(path)) {
+            std::cout << "output directory " << path << " does not exist." << std::endl;
+            return false;
+        }
+
+        outpath = path;
+        return true;
+    }
+
+    std::cout << "'output directory' parameter not given." << std::endl;
+    return false;
+}
+
+//----------------------------------------------------------------------------------------
+
 int main(int argc, char* argv[])
 {
     //lambda function of logger, to be passed as parameter to other parts of program that log
@@ -192,8 +257,8 @@ int main(int argc, char* argv[])
     };
 
     bool spatial = 0;
-    std::string defParamFile;
-    std::string siteParamFile;
+    std::string defParamString;
+    std::string siteParamString;
 
     /* Parse command line args */
     InputParser input(argc, argv);
@@ -201,8 +266,8 @@ int main(int argc, char* argv[])
         std::cout << "Missing species definition file. Pass path with -d flag." << std::endl;
         exit(EXIT_FAILURE);
     }
-    defParamFile = input.getCmdOption("-d");
-    if (defParamFile.empty()) {
+    defParamString = input.getCmdOption("-d");
+    if (defParamString.empty()) {
         std::cout << "Path to species definition file is empty. Exiting... " << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -210,34 +275,34 @@ int main(int argc, char* argv[])
         std::cout << "Missing site parameter file. Pass path with -s flag." << std::endl;
         exit(EXIT_FAILURE);
     }
-    siteParamFile = input.getCmdOption("-s");
-    if (siteParamFile.empty()) {
+    siteParamString = input.getCmdOption("-s");
+    if (siteParamString.empty()) {
         std::cout << "Path to site parameter file is empty. Exiting... " << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    setLogFunc(log);
-    std::string outPath = getOutPathTMP(siteParamFile);
-    logger.StartLog(outPath);
-    DataInput dataInput(log);
+    //get output path
+    std::string outPath;
+    if (!getOutPath(siteParamString, outPath)) {
+        exit(EXIT_FAILURE);
+    }
 
-    /* Copyright */
+    //start logger at output path
+    logger.StartLog(outPath);
+
+    //log and print copywrite message
     std::cout << COPYMSG << std::endl;
     logger.Log(COPYMSG);
 
-    // Load the parameters
     std::cout << "Loading and validating parameters...";
-    readSpeciesParamFile(defParamFile, dataInput);
-    readSiteParamFile(siteParamFile, dataInput);
 
-    //check that we have all the correct parameters
-    if (!dataInput.inputFinished(modelMode3PGS)) {
-        exit(EXIT_FAILURE);
-    }
+    //initialize DataInput class using param files
+    DataInput dataInput(defParamString, siteParamString, log);
 
     // Check for a spatial run, if so open input grids and define refGrid. 
     RefGridProperties refGrid = dataInput.getRefGrid();
     DataOutput dataOutput(refGrid, outPath, dataInput.getOpVars(), log);
+
     std::cout << "  Complete" << std::endl;
  
     // Run the model. 

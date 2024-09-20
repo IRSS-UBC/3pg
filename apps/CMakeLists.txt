@@ -1,8 +1,6 @@
 find_package(GDAL CONFIG REQUIRED)
 
 set(SOURCE_FILES
-	Data_io.cpp
-    	Data_io.hpp
 	DataInput.cpp
 	DataInput.hpp
 	DataOutput.cpp

@@ -11,7 +11,6 @@ Use of this software assumes agreement to this condition of use
 #include <iostream>
 #include <math.h>
 #include <stdio.h>
-#include "Data_io.hpp"
 #include "The_3PG_Model.hpp"
 //____________________________________
 //
@@ -30,8 +29,7 @@ Use of this software assumes agreement to this condition of use
 // Controls and counters
 int DaysInMonth[13] = {                  // array for days in months 
   0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-};
-bool modelMode3PGS = false;                         
+};                        
 
 //-----------------------------------------------------------------------------
 
@@ -538,7 +536,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
 
             // calculate age modifier
             vars.fAge = 1;
-            if (!modelMode3PGS) {
+            if (!dataInput.modelMode3PGS) {
                 double RelAge = StandAge / params.MaxAge;  //Modified StandAge
                 vars.fAge = (1 / (1 + pow((RelAge / params.rAge), params.nAge)));
             }
@@ -558,7 +556,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             lightIntcptn = (1 - (exp(-params.k * vars.LAI / CanCover)));
 
             // Calculate FPAR_AVH and LAI from NDVI data if in 3PGS mode 
-            if (modelMode3PGS) {
+            if (dataInput.modelMode3PGS) {
                 // Initial value of FPAR_AVH from linear fit. 
                 FPAR_AVH = (sParams.NDVI_AVH * params.NDVI_FPAR_constant) + params.NDVI_FPAR_intercept;
 
@@ -582,7 +580,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             // Calculate PAR, APAR, and APARu. Use FPAR_AVG if in 3PGS mode
             RAD = sParams.SolarRad * DaysInMonth[month];
             PAR = RAD * params.molPAR_MJ;
-            if (modelMode3PGS) {
+            if (dataInput.modelMode3PGS) {
                 vars.APAR = PAR * FPAR_AVH;
             }
             else {
@@ -668,7 +666,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             delRloss = params.Rttover * vars.WR;
 
             // Calculate end-of-month biomass
-            if (!modelMode3PGS) {
+            if (!dataInput.modelMode3PGS) {
                 vars.WF = vars.WF + delWF - delLitter;
                 vars.WR = vars.WR + delWR - delRloss;
                 vars.WS = vars.WS + delWS;
@@ -682,7 +680,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             step 11: update tree and stand data
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-            if (!modelMode3PGS) {
+            if (!dataInput.modelMode3PGS) {
                 //Calculate mortality
                 wSmax = params.wSx1000 * pow((1000 / vars.StemNo), params.thinPower);
                 AvStemMass = vars.WS * 1000 / vars.StemNo;
