@@ -13,14 +13,14 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 	const GDALAccess eAccess = GA_ReadOnly;
 	dataset = GDALDataset::FromHandle(GDALOpen(filename.c_str(), eAccess));
 	if (!dataset) {
-		throw std::invalid_argument("File cannot be opened.");
+		throw std::runtime_error("File cannot be opened.");
 	}
 
 	name = filename;
 	// Assume there is only one band in the raster source and use that
 	if (dataset->GetRasterCount() != 1) {
 		GDALClose(GDALDataset::ToHandle(dataset));
-		throw std::invalid_argument("TIF must have only one band.");
+		throw std::runtime_error("TIF must have only one band.");
 	}
 	band = dataset->GetRasterBand(1);
 
@@ -38,7 +38,7 @@ GDALRasterImage::GDALRasterImage(std::string filename) {
 	crs = dataset->GetProjectionRef();
 	if (crs == NULL) {
 		GDALClose(GDALDataset::ToHandle(dataset));
-		throw std::invalid_argument("CRS is not defined.");
+		throw std::runtime_error("CRS is not defined.");
 	}
 
 	noData = band->GetNoDataValue();
@@ -58,7 +58,7 @@ GDALRasterImage::GDALRasterImage(std::string filename, RefGridProperties& refGri
 	GDALAllRegister();
 	CPLPushErrorHandler(CPLQuietErrorHandler); // suppress error messages that Exists() throws for non-existent files
 	if (Exists(filename)) {
-		throw std::invalid_argument("File already exists.");
+		throw std::runtime_error("File already exists.");
 	};
 	GDALDriver* driver = GetGDALDriverManager()->GetDriverByName("GTiff");
 	dataset = driver->Create(filename.c_str(), refGrid.nCols, refGrid.nRows, 1, GDT_Float32, NULL);
@@ -76,7 +76,7 @@ GDALRasterImage::GDALRasterImage(std::string filename, RefGridProperties& refGri
 	dataset->GetGeoTransform(datasetTransform);
 	if (GDALInvGeoTransform(datasetTransform, inverseTransform) == false) {
 		GDALClose(GDALDataset::ToHandle(dataset));
-		throw std::invalid_argument("Cannot get inverse transform.");
+		throw std::runtime_error("Cannot get inverse transform.");
 	}
 	crs = dataset->GetProjectionRef();
 	noData = band->GetNoDataValue();

@@ -1,7 +1,153 @@
 #include "DataInput.hpp"
 
-DataInput::DataInput(std::function<void(std::string)>& log) {
+DataInput::DataInput(
+	const std::string& speciesStr, 
+	const std::string& siteStr, 
+	std::function<void(std::string)>& log
+) {
+	//set log file
 	this->log = log;
+
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	read species param file
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	std::ifstream speciesFile(speciesStr);
+	this->log("Reading species parameter from file '" + speciesStr + "'...");
+
+	std::string line;
+	int lineNo = 0;
+	while (std::getline(speciesFile, line)) {
+		lineNo++;
+
+		//skip empty or comment lines
+		if (line.empty() || (line[0] == '/' && line[1] == '/')) {
+			continue; 
+		}
+		
+		//tokenize
+		std::vector<std::string> tokens;
+		boost::split(tokens, line, boost::is_any_of(","), boost::token_compress_on);
+		for (int i = 0; i < tokens.size(); i++) {
+			boost::trim(tokens[i]);
+		}
+
+		//trim name
+		std::string name = tokens.front();
+		boost::trim_if(name, boost::is_any_of("\""));
+		boost::algorithm::to_lower(name);
+
+		//error check token size
+		if (tokens.size() < 2) {
+			std::string errstr = "no parameter value given for " + name;
+			std::cout << errstr << std::endl;
+			this->log(errstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//get remaining line values from second token
+		std::vector<std::string> values;
+		boost::split(values, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+
+		//try adding parameter
+		if (this->tryAddInputParam(name, values)) {
+			continue;
+		}
+		else {
+			std::cout << "Invalid site parameter: " << name << std::endl;
+			this->log("Invalid site parameter: " + name);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	read site param file
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	std::ifstream siteFile(siteStr);
+	this->log("Reading site parameter from file '" + siteStr + "'...");
+
+	lineNo = 0;
+	while (std::getline(siteFile, line)) {
+		lineNo++;
+
+		//skip empty or comment lines
+		if (line.empty() || (line[0] == '/' && line[1] == '/')) {
+			continue;
+		}
+
+		//tokenize
+		std::vector<std::string> tokens;
+		boost::split(tokens, line, boost::is_any_of(","), boost::token_compress_on);
+		for (int i = 0; i < tokens.size(); i++) {
+			boost::trim(tokens[i]);
+		}
+
+		//trim name
+		std::string name = tokens.front();
+		boost::trim_if(name, boost::is_any_of("\""));
+		boost::algorithm::to_lower(name);
+
+		//we read output directory before this
+		if (name == "output directory") {
+			continue;
+		}
+
+		//get remaining line values from second token
+		std::vector<std::string> values;
+		if (tokens.size() > 1) {
+			boost::split(values, tokens.at(1), boost::is_any_of(" \t"), boost::token_compress_on);
+		}
+
+		//try adding parameter
+		
+		if (this->tryAddInputParam(name, values)) {
+			continue;
+		}
+		else if (this->tryAddOutputParam(name, values, lineNo)) {
+			continue;
+		}
+		else if (this->tryAddSeriesParam(name, values, siteFile, lineNo)) {
+			continue;
+		}
+		else if (this->tryAddManagementParam(name, siteFile, lineNo)) {
+			continue;
+		}
+		else if (name == "model mode") {
+			//ensure model mode isn't empty
+			if (values.empty()) {
+				std::string errstr = "No model mode specified.";
+				std::cout << errstr << std::endl;
+				this->log(errstr);
+				exit(EXIT_FAILURE);
+			}
+
+			//ensure only one value
+			if (values.size() > 1) {
+				std::string errstr = "More than one value element detected in model mode specification.";
+				std::cout << errstr << std::endl;
+				this->log(errstr);
+				exit(EXIT_FAILURE);
+			}
+
+			//ensure valid model mode given
+			std::string mode = values.front();
+			if (mode != "3PGS" && mode != "3PG") {
+				std::string errstr = "Invalid value for parameter 'Model mode': " + mode + ". Expecting '3PG' or '3PGS'.";
+				std::cout << errstr << std::endl;
+				this->log(errstr);
+				exit(EXIT_FAILURE);
+			}
+
+			this->modelMode3PGS = (mode == "3PGS");
+		}
+		else {
+			std::string errstr = "Invalid site parameter: " + name;
+			std::cout << errstr << std::endl;
+			this->log("Invalid site parameter: " + name);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	this->inputFinished(this->modelMode3PGS);
 }
 
 DataInput::DataInput() {
@@ -80,7 +226,7 @@ bool DataInput::openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>
 	try {
 		grid = std::make_unique<GDALRasterImage>(path);
 	}
-	catch (const std::exception& e) {
+	catch (const std::runtime_error& e) {
 		std::string errstr = "failed to open " + path + "\n" + e.what();
 		std::cout << errstr << std::endl;
 		this->log(errstr);
@@ -112,10 +258,7 @@ bool DataInput::openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>
 }
 
 bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> value) {
-	//convert to lowercase for comparision
-	boost::algorithm::to_lower(name);
-
-	//TODO: actual 3pg doesn't care about case (I don't think), make sure that is reflected here
+	//create parameter
 	std::unique_ptr<PPPG_PARAM> param = std::make_unique<PPPG_PARAM>();
 
 	//if the string isn't the exact parameter name, see if it is in the parameter name map
@@ -166,9 +309,6 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 }
 
 bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> values, std::ifstream& paramFp, int& lineNo) {
-	//convert to lowercase for comparision
-	boost::algorithm::to_lower(name);
-
 	//if the name does not have a corrosponding series param, return
 	if (!this->seriesParamNameMap.contains(name)) {
 		return false;
@@ -296,8 +436,6 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 }
 
 bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> value, int lineNo) {
-	boost::algorithm::to_lower(name);
-
 	PPPG_OP_VAR opVar;
 
 	//fr is a possible output param, although it's also an input param. The fr output param is indicated by frout, not fr.
@@ -475,9 +613,6 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 }
 
 bool DataInput::tryAddManagementParam(std::string name, std::ifstream& inFile, int& lineNo) {
-	//convert to lowercase for comparision
-	boost::algorithm::to_lower(name);
-
 	int index;
 	if (name.compare("management: fertility") == 0) {
 		index = ManagementIndex::FERTILITY;
@@ -565,9 +700,9 @@ bool DataInput::tryAddManagementParam(std::string name, std::ifstream& inFile, i
 	return true;
 }
 
-bool DataInput::inputFinished(bool modelMode3PGS) {
-	if (modelMode3PGS && !this->allow3PGS || !modelMode3PGS && !this->allow3PG) {
-		std::string mode = modelMode3PGS ? "3PGS" : "3PG";
+bool DataInput::inputFinished(bool modelModeSpatial) {
+	if (modelModeSpatial && !this->allow3PGS || !modelModeSpatial && !this->allow3PG) {
+		std::string mode = modelModeSpatial ? "3PGS" : "3PG";
 		std::string errstr = "output parameters selected are not compatable with " + mode + " mode.";
 
 		std::cout << errstr << std::endl;
@@ -604,12 +739,24 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 
 
 	//if we're using 3PGS, ensure we have all required 3PGS parameters
-	if (modelMode3PGS && this->requiredInputParams3PGS.size() != 0) {
+	if (modelModeSpatial && this->requiredInputParams3PGS.size() != 0) {
+		std::string errstr = "missing 3PGS required input params:";
+		for (auto it = this->requiredInputParams3PGS.begin(); it != this->requiredInputParams3PGS.end(); it++) {
+			errstr += "\n"  + *it;
+		}
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 
 	//if we're using 3PG (not 3PGS), ensure we have all required 3PG parameters
-	if (!modelMode3PGS && this->requiredInputParams3PG.size() != 0) {
+	if (!modelModeSpatial && this->requiredInputParams3PG.size() != 0) {
+		std::string errstr = "missing 3PG required input params:";
+		for (auto it = this->requiredInputParams3PG.begin(); it != this->requiredInputParams3PG.end(); it++) {
+			errstr += "\n" + *it;
+		}
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 
@@ -626,37 +773,49 @@ bool DataInput::inputFinished(bool modelMode3PGS) {
 	
 	//check Tavg
 	if (!haveTavg && (!haveTmax || !haveTmin)) {
-		std::cout << "must have both Tmax and Tmin if lacking Tavg" << std::endl;
+		std::string errstr = "must have both Tmax and Tmin if lacking Tavg";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 	
 	//check VPD
 	if (!haveVPD && (!haveTmax || !haveTmin)) {
-		std::cout << "must have both Tmax and Tmin if lacking VPD" << std::endl;
+		std::string errstr = "must have both Tmax and Tmin if lacking VPD";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 	
 	//check rain
 	if (!haveRain) {
-		std::cout << "must have Rain" << std::endl;
+		std::string errstr = "must have Rain";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 	
 	//check solar radation
 	if (!haveSolarRad) {
-		std::cout << "must have Solar Radiation" << std::endl;
+		std::string errstr = "must have Solar Radiation";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 	
 	//check frost
 	if (!haveFrost) {
-		std::cout << "must have Frost" << std::endl;
+		std::string errstr = "must have Frost";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 
 	//check model mode which requires NDVI series parameters
-	if (modelMode3PGS && !haveNDVI) {
-		std::cout << "3PGS mode should have NDVI series parameters" << std::endl;
+	if (modelModeSpatial && !haveNDVI) {
+		std::string errstr = "3PGS mode should have NDVI series parameters";
+		std::cout << errstr << std::endl;
+		this->log(errstr);
 		return false;
 	}
 

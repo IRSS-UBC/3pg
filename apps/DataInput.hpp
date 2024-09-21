@@ -447,22 +447,27 @@ private:
 	RefGridProperties refGrid;
 	bool finishedInput = false;
 
+	std::string outPath;
+
 	bool getScalar(std::string value, PPPG_PARAM* param);
 	bool getGrid(std::string value, PPPG_PARAM* param);
 	double getValFromInputParam(std::string paramName, long cellIndex);
 	double getValFromSeriesParam(int paramIndex, int year, int month, long cellIndex);
 	bool openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>& grid);
 	void findRunPeriod();
-	
+
 public:
-	DataInput(std::function<void(std::string)>& log);
+	DataInput(const std::string& speciesFile, 
+		const std::string& siteFile, 
+		std::function<void(std::string)>& log
+	);
 	DataInput();//for no logger
 	
 	bool tryAddInputParam(std::string name, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
 	bool tryAddOutputParam(std::string name, std::vector<std::string> value, int lineno);
 	bool tryAddManagementParam(std::string name, std::ifstream& inFile, int& lineNo);
-	bool inputFinished(bool modelMode3PGS);
+	bool inputFinished(bool modelModeSpatial);
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
 	bool getManagementParam(ManagementIndex index, long cellIndex, int year, double& val);
@@ -474,4 +479,6 @@ public:
 	bool haveSeedlingMass = false;
 	bool haveMinASWTG = false;
 	bool haveAgeDepFert = false;
+
+	bool modelMode3PGS = false;
 };

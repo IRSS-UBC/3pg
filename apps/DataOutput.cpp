@@ -51,10 +51,11 @@ CPLErr DataOutput::ImageBuffer::writeRow(int row) {
 	return retval;
 }
 
-DataOutput::DataOutput(RefGridProperties& refGrid, std::string outpath, std::unordered_map<std::string, PPPG_OP_VAR> vars) {
+DataOutput::DataOutput(RefGridProperties& refGrid, std::string outpath, std::unordered_map<std::string, PPPG_OP_VAR> vars, std::function<void(std::string)>& log) {
 	this->vars = vars;
 	this->refGrid = refGrid;
 	this->outpath = outpath;
+	this->log = log;
 }
 
 void DataOutput::setVal(int year, int month, std::string name, int index, float val) {
@@ -97,7 +98,16 @@ void DataOutput::setVal(int year, int month, std::string name, int index, float 
 			else {
 				filepath = this->outpath + name + std::to_string(year) + std::to_string(month) + ".tif";
 			}
-			varImages->emplace(searchInt, std::make_unique<ImageBuffer>(filepath, this->refGrid));
+
+			try {
+				varImages->emplace(searchInt, std::make_unique<ImageBuffer>(filepath, this->refGrid));
+			}
+			catch (const std::runtime_error& e) {
+				std::string errstr = "failed to open " + filepath + "\n" + e.what();
+				std::cout << errstr << std::endl;
+				this->log(errstr);
+				exit(EXIT_FAILURE);
+			}
 		}
 
 		//release lock before continuing
