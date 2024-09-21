@@ -84,7 +84,8 @@ struct InputParams {
 	double MinASWTG;
 	double NDVI_FPAR_intercept;
 	double NDVI_FPAR_constant;
-	double CO2;
+	double CO2Start;
+	double CO2End;
 	double fCalpha700;
 	double fCg700;
 };
@@ -97,6 +98,11 @@ struct SeriesParams {
 	double NDVI_AVH;
 	double NetRad;
 	double VPD;
+};
+
+struct RunPeriod {
+	int StartYear;
+	int EndYear;
 };
 
 typedef enum {
@@ -191,7 +197,8 @@ private:
 		{"maximum basic density - for older trees", "rhomax"},
 		{"age at which rho = (rhomin+rhomax)/2", "trho"},
 		{"year planted", "yearplanted"},
-		{"atmospheric co2", "co2"},
+		{"atmospheric co2 - start of run period", "co2start"},
+		{"atmospheric co2 - end of run period", "co2end"},
 		{"assimialtion enhancement factor at 700 ppm", "fcalpha700"},
 		{"canopy conductance enhancement factor at 700 ppm", "fcg700"},
 	};
@@ -267,7 +274,8 @@ private:
 		"minaswtg",
 		"ndvi_fpar_intercept",
 		"ndvi_fpar_constant",
-		"co2",
+		"co2start",
+		"co2end",
 		"fcalpha700",
 		"fcg700"
 	};
@@ -293,7 +301,7 @@ private:
 		"startmonth",
 		"laimaxintcptn",
 		"thinpower", "mf", "mr", "ms",
-		"co2", "fcalpha700", "fcg700"
+		"co2start", "co2end", "fcalpha700", "fcg700"
 	};
 	std::unordered_set<std::string> requiredInputParams3PGS = {
 		"growthtmin", "growthtopt", "growthtmax",
@@ -421,6 +429,8 @@ private:
 		"delwag",
 		"cumwabv" 
 	};
+
+	RunPeriod runPeriod;
 	bool allow3PG = true;
 	bool allow3PGS = true;
 	std::unordered_map<std::string, PPPG_OP_VAR> outputParams;
@@ -444,6 +454,7 @@ private:
 	double getValFromInputParam(std::string paramName, long cellIndex);
 	double getValFromSeriesParam(int paramIndex, int year, int month, long cellIndex);
 	bool openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>& grid);
+	void findRunPeriod();
 
 public:
 	DataInput(const std::string& speciesFile, 
@@ -451,6 +462,7 @@ public:
 		std::function<void(std::string)>& log
 	);
 	DataInput();//for no logger
+	
 	bool tryAddInputParam(std::string name, std::vector<std::string> value);
 	bool tryAddSeriesParam(std::string name, std::vector<std::string> value, std::ifstream& paramFp, int& lineNo);
 	bool tryAddOutputParam(std::string name, std::vector<std::string> value, int lineno);
@@ -459,6 +471,7 @@ public:
 	bool getInputParams(long cellIndex, InputParams& params);
 	bool getSeriesParams(long cellIndex, int year, int month, SeriesParams& params);
 	bool getManagementParam(ManagementIndex index, long cellIndex, int year, double& val);
+	RunPeriod getRunPeriod();
 	std::unordered_map<std::string, PPPG_OP_VAR> getOpVars();
 	bool haveNetRadParam();
 	RefGridProperties getRefGrid();

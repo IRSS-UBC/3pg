@@ -250,6 +250,9 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
         return;
     }
 
+    //get the overall run period (not just of this pixel)
+    RunPeriod runPeriod = dataInput.getRunPeriod();
+
     double Irrig;                            // current annual irrigation (ML/y)
 
     //various necessary variables (hopefully better comment to come)
@@ -317,7 +320,7 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
     double dayLength;
 
     // co2 modifiers
-    double fCalpha, fCg;
+    double Co2Slope, curYearCo2, fCalpha, fCg;
 
     // 3PGS - variables for 3PGS
     double FPAR_AVH;
@@ -386,6 +389,9 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
     if (StandAge > 0) {
         vars.MAI = vars.StandVol / StandAge;    //UnModified StandAge
     }
+        
+    // Compute slope of CO2 growth over the run period
+    Co2Slope = (params.CO2End - params.CO2Start) / (runPeriod.EndYear - runPeriod.StartYear);
     
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     step 2: load management params for startage
@@ -479,6 +485,9 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             Irrig = 0;
         }
 
+        //calculate the co2 for the current year
+        curYearCo2 = params.CO2Start + Co2Slope * (year - runPeriod.StartYear);
+
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         step 6: start monthly processing loop
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -531,8 +540,8 @@ void runTreeModel(long cellIndex, DataInput& dataInput, DataOutput& dataOutput)
             vars.fFrost = 1 - params.kF * (sParams.FrostDays / 30.0);
 
             // calculate co2 modifiers
-            fCalpha = fCalphax * params.CO2 / (350 * (fCalphax - 1) + params.CO2);
-            fCg = fCg0 / (1 + (fCg0 - 1) * params.CO2 / 350);
+            fCalpha = fCalphax * curYearCo2 / (350 * (fCalphax - 1) + curYearCo2);
+            fCg = fCg0 / (1 + (fCg0 - 1) * curYearCo2 / 350);
 
             // calculate age modifier
             vars.fAge = 1;
