@@ -55,8 +55,3 @@ build/*
 # Vscode 
 .vscode/*
 .vs/*
-
- enc_temp_folder/*
-
-#user should install themselves
-include/boost/*
