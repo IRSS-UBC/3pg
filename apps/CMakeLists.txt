@@ -8,11 +8,11 @@ set(SOURCE_FILES
 	GDALRasterImage.cpp 
 	GDALRasterImage.hpp
 	ParamStructs.hpp
-	The_3PG_model.cpp
-    	The_3PG_model.hpp
+	3pgModel.cpp
+    	3pgModel.hpp
 )
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES} 3pg.cpp )
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} main.cpp )
 target_link_libraries(${PROJECT_NAME} PRIVATE GDAL::GDAL)
 
 #statically link

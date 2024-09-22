@@ -20,15 +20,15 @@ Use of this software assumes agreement to this condition of use
 #include <cstring>
 #include <iostream>
 #include <fstream>
-#include "GDALRasterImage.hpp"
-#include "The_3PG_Model.hpp"
+#include <thread>
 #include <boost/program_options.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/post.hpp>
-#include <thread>
 #include "DataOutput.hpp"
 #include "DataInput.hpp"
 #include "ParamStructs.hpp"
+#include "GDALRasterImage.hpp"
+#include "3pgModel.hpp"
 
 //----------------------------------------------------------------------------------------
 std::string VERSION = "0.1";

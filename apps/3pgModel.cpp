@@ -11,7 +11,7 @@ Use of this software assumes agreement to this condition of use
 #include <iostream>
 #include <math.h>
 #include <stdio.h>
-#include "The_3PG_Model.hpp"
+#include "3pgModel.hpp"
 //____________________________________
 //
 // The code for 3PG - July, 2024
