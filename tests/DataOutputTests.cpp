@@ -11,6 +11,8 @@ std::string outDir = "test_files/DataOutputTests/outputs/";
 GDALRasterImage img(refGridDir);
 RefGridProperties refGrid = img.getRefGrid();
 std::unordered_map<std::string, PPPG_OP_VAR> emptyVars;
+std::function<void(std::string)> fake_log = [](std::string message) {};
+
 
 TEST(DataOutputTests, filenames) {
 	//get output path
@@ -46,7 +48,7 @@ TEST(DataOutputTests, filenames) {
 	testOutput3 /= name3 + std::to_string(year3) + std::to_string(month3) + ".tif";
 
 	//create dataOutput, set and write values
-	DataOutput dataOutput(refGrid, outDir, emptyVars);
+	DataOutput dataOutput(refGrid, outDir, emptyVars, fake_log);
 	dataOutput.setVal(year1, month1, name1, 0, 0);
 	dataOutput.setVal(year2, month2, name2, 0, 0);
 	dataOutput.setVal(year3, month3, name3, 0, 0);
@@ -85,7 +87,7 @@ TEST(DataOutputTests, nans) {
 	std::filesystem::path nan2path = outDir;
 	nan2path /= nan2Name + std::to_string(nan2Year) + std::to_string(nan2Month) + ".tif";
 
-	std::unique_ptr<DataOutput> dataOutput = std::make_unique<DataOutput>(refGrid, outDir, emptyVars);
+	std::unique_ptr<DataOutput> dataOutput = std::make_unique<DataOutput>(refGrid, outDir, emptyVars, fake_log);
 	//only set nan1 values in vertical pattern:
 	dataOutput->setVal(nan1Year, nan1Month, nan1Name, 0, 1); //row 0 column 0 = 1
 	dataOutput->setVal(nan1Year, nan1Month, nan1Name, 2, 1); //row 1 column 0 = 1
@@ -146,7 +148,7 @@ TEST(DataOutputTests, extremes) {
 	float smallNeg = static_cast<float>(-.000001);
 
 	//create dataOutput, set and write values
-	std::unique_ptr<DataOutput> dataOutput = std::make_unique<DataOutput>(refGrid, outDir, emptyVars);
+	std::unique_ptr<DataOutput> dataOutput = std::make_unique<DataOutput>(refGrid, outDir, emptyVars, fake_log);
 	dataOutput->setVal(year, month, name, 0, std::numeric_limits<float>::max());
 	dataOutput->setVal(year, month, name, 1, std::numeric_limits<float>::min());
 	dataOutput->setVal(year, month, name, 2, smallPos);

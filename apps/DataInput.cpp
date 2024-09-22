@@ -34,7 +34,6 @@ DataInput::DataInput(
 		//trim name
 		std::string name = tokens.front();
 		boost::trim_if(name, boost::is_any_of("\""));
-		boost::algorithm::to_lower(name);
 
 		//error check token size
 		if (tokens.size() < 2) {
@@ -111,40 +110,41 @@ DataInput::DataInput(
 		else if (this->tryAddManagementParam(name, siteFile, lineNo)) {
 			continue;
 		}
-		else if (name == "model mode") {
-			//ensure model mode isn't empty
-			if (values.empty()) {
-				std::string errstr = "No model mode specified.";
-				std::cout << errstr << std::endl;
-				this->log(errstr);
-				exit(EXIT_FAILURE);
-			}
-
-			//ensure only one value
-			if (values.size() > 1) {
-				std::string errstr = "More than one value element detected in model mode specification.";
-				std::cout << errstr << std::endl;
-				this->log(errstr);
-				exit(EXIT_FAILURE);
-			}
-
-			//ensure valid model mode given
-			std::string mode = values.front();
-			if (mode != "3PGS" && mode != "3PG") {
-				std::string errstr = "Invalid value for parameter 'Model mode': " + mode + ". Expecting '3PG' or '3PGS'.";
-				std::cout << errstr << std::endl;
-				this->log(errstr);
-				exit(EXIT_FAILURE);
-			}
-
-			this->modelMode3PGS = (mode == "3PGS");
-		}
-		else {
+		
+		//parameter is either model mode or invalid
+		if (name != "model mode") {
 			std::string errstr = "Invalid site parameter: " + name;
 			std::cout << errstr << std::endl;
 			this->log("Invalid site parameter: " + name);
 			exit(EXIT_FAILURE);
 		}
+
+		//ensure model mode isn't empty
+		if (values.empty()) {
+			std::string errstr = "No model mode specified.";
+			std::cout << errstr << std::endl;
+			this->log(errstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//ensure only one value
+		if (values.size() > 1) {
+			std::string errstr = "More than one value element detected in model mode specification.";
+			std::cout << errstr << std::endl;
+			this->log(errstr);
+			exit(EXIT_FAILURE);
+		}
+
+		//ensure valid model mode given
+		std::string mode = values.front();
+		if (mode != "3PGS" && mode != "3PG") {
+			std::string errstr = "Invalid value for parameter 'Model mode': " + mode + ". Expecting '3PG' or '3PGS'.";
+			std::cout << errstr << std::endl;
+			this->log(errstr);
+			exit(EXIT_FAILURE);
+		}
+
+		this->modelMode3PGS = (mode == "3PGS");
 	}
 
 	this->inputFinished(this->modelMode3PGS);
@@ -258,6 +258,8 @@ bool DataInput::openCheckGrid(std::string path, std::unique_ptr<GDALRasterImage>
 }
 
 bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> value) {
+	boost::algorithm::to_lower(name);
+
 	//create parameter
 	std::unique_ptr<PPPG_PARAM> param = std::make_unique<PPPG_PARAM>();
 
@@ -309,6 +311,8 @@ bool DataInput::tryAddInputParam(std::string name, std::vector<std::string> valu
 }
 
 bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> values, std::ifstream& paramFp, int& lineNo) {
+	boost::algorithm::to_lower(name);
+
 	//if the name does not have a corrosponding series param, return
 	if (!this->seriesParamNameMap.contains(name)) {
 		return false;
@@ -436,6 +440,7 @@ bool DataInput::tryAddSeriesParam(std::string name, std::vector<std::string> val
 }
 
 bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> value, int lineNo) {
+	boost::algorithm::to_lower(name);
 	PPPG_OP_VAR opVar;
 
 	//fr is a possible output param, although it's also an input param. The fr output param is indicated by frout, not fr.
@@ -613,6 +618,8 @@ bool DataInput::tryAddOutputParam(std::string name, std::vector<std::string> val
 }
 
 bool DataInput::tryAddManagementParam(std::string name, std::ifstream& inFile, int& lineNo) {
+	boost::algorithm::to_lower(name);
+
 	int index;
 	if (name.compare("management: fertility") == 0) {
 		index = ManagementIndex::FERTILITY;

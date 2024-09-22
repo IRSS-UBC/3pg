@@ -265,7 +265,7 @@ TEST(DataInputTests, scalarValues) {
 	dataInput->tryAddInputParam("MaxASW", { "57" });
 	dataInput->tryAddInputParam("MinASWp", { "58" });
 	dataInput->tryAddInputParam("StartAge", { "59" });
-	dataInput->tryAddInputParam("EndYear", { "60" });
+	dataInput->tryAddInputParam("EndYear", { "125" }); //121 instead of 60 because it must be larger than startAge(59) + yearPlanted(62)
 	dataInput->tryAddInputParam("StartMonth", { "61" });
 	dataInput->tryAddInputParam("yearPlanted", { "62" });
 	dataInput->tryAddInputParam("CO2Start", { "63" });
@@ -362,7 +362,7 @@ TEST(DataInputTests, scalarValues) {
 	EXPECT_EQ(params.MaxASW, (double)57);
 	EXPECT_EQ(params.MinASWp, (double)58);
 	EXPECT_EQ(params.StartAge, (double)59);
-	EXPECT_EQ(params.EndYear, (double)60);
+	EXPECT_EQ(params.EndYear, (double)125);
 	EXPECT_EQ(params.StartMonth, (double)61);
 	EXPECT_EQ(params.yearPlanted, (double)62);
 	EXPECT_EQ(params.CO2Start, (double)63);
@@ -569,7 +569,7 @@ TEST(DataInputTests, gridValues) {
 	dataInput->tryAddInputParam("MaxASW", { "1" }); 
 	dataInput->tryAddInputParam("MinASWp", { "1" });
 	dataInput->tryAddInputParam("StartAge", { "1" }); 
-	dataInput->tryAddInputParam("EndYear", { "1" });
+	dataInput->tryAddInputParam("EndYear", { "3" }); //3 because EndYear must be greater than StartAge(1) + yearPlanted(1)
 	dataInput->tryAddInputParam("yearPlanted", { "1" });
 	dataInput->tryAddInputParam("NDVI_FPAR_intercept", { "1" }); 
 	dataInput->tryAddInputParam("NDVI_FPAR_constant", { "1" });
@@ -879,7 +879,12 @@ TEST(DataInputTests, requiredParameters3PG) {
 	int lineNo;
 
 	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
-		dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		if (requiredInputParams3PG[i] == "EndYear") {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "3" });
+		}
+		else {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		}
 	}
 	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
 		dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
@@ -894,7 +899,7 @@ TEST(DataInputTests, requiredParameters3PG) {
 }
 
 TEST(DataInputTests, requiredParameters3PGS) {
-	//check that we fail when missing each required 3PG input parameter
+	//check that we fail when missing each required 3PGS input parametergit 
 	for (int exclude = 0; exclude < requiredInputParams3PGS.size(); exclude++) {
 		DataInput* dataInput = new DataInput();
 		std::ifstream paramFp("");
@@ -905,7 +910,12 @@ TEST(DataInputTests, requiredParameters3PGS) {
 				continue;
 			}
 
-			dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "1" });
+			if (requiredInputParams3PGS[i] == "EndYear") {
+				dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "3" });
+			}
+			else {
+				dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "1" });
+			}
 		}
 		dataInput->tryAddInputParam("SeedlingMass", { "1" });
 
@@ -928,7 +938,12 @@ TEST(DataInputTests, requiredParameters3PGS) {
 		int lineNo;
 
 		for (int i = 0; i < requiredInputParams3PGS.size(); i++) {
-			dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "1" });
+			if (requiredInputParams3PGS[i] == "EndYear") {
+				dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "3" });
+			}
+			else {
+				dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "1" });
+			}
 		}
 		dataInput->tryAddInputParam("SeedlingMass", { "1" });
 
@@ -954,7 +969,12 @@ TEST(DataInputTests, requiredParameters3PGS) {
 	int lineNo;
 
 	for (int i = 0; i < requiredInputParams3PGS.size(); i++) {
-		dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "1" });
+		if (requiredInputParams3PGS[i] == "EndYear") {
+			dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "3" });
+		}
+		else {
+			dataInput->tryAddInputParam(requiredInputParams3PGS[i], { "1" });
+		}
 	}
 	for (int i = 0; i < requiredSeriesParams3PGS.size(); i++) {
 		dataInput->tryAddSeriesParam(requiredSeriesParams3PGS[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
@@ -975,7 +995,12 @@ TEST(DataInputTests, requiredParametersEdgeCases) {
 	int lineNo;
 
 	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
-		dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		if (requiredInputParams3PG[i] == "EndYear") {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "3" });
+		}
+		else {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		}
 	}
 	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
 		dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
@@ -996,7 +1021,12 @@ TEST(DataInputTests, requiredParametersEdgeCases) {
 
 	//series param VPD and Tavg which require Tmin and Tmax
 	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
-		dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		if (requiredInputParams3PG[i] == "EndYear") {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "3" });
+		}
+		else {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		}
 	}
 	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
 		dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
@@ -1010,30 +1040,6 @@ TEST(DataInputTests, requiredParametersEdgeCases) {
 
 	//clean up
 	delete dataInput;
-}
-
-//test run period
-void addRequiredParamsExcludingRunPeriod(DataInput* dataInput) {
-	std::ifstream paramFp("");
-	int lineNo;
-
-	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
-		std::string curParam = requiredInputParams3PG[i];
-		if (
-			curParam != "yearPlanted" &&
-			curParam != "StartAge" &&
-			curParam != "EndYear" &&
-			curParam != "StartMonth") {
-			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
-		}
-	}
-	dataInput->tryAddInputParam("SeedlingMass", { "1" });
-	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
-		dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
-	}
-	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
-	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
-	ASSERT_FALSE(dataInput->inputFinished(false));
 }
 
 //test different input method for series params
@@ -1082,7 +1088,7 @@ TEST(DataInputTests, seriesParamInputFormat) {
 	// add parameter
 	ASSERT_TRUE(dataInput->tryAddSeriesParam("Frost", {}, paramFp, lineNo));
 
-	//add run period parameters for spcific years of test
+	//add run period parameters for specific years of test
 	dataInput->tryAddInputParam("StartAge", { "1" });
 	dataInput->tryAddInputParam("StartMonth", { "1" });
 	dataInput->tryAddInputParam("EndYear", { "1872" });
@@ -1272,4 +1278,202 @@ TEST(DataInputTests, managementTable) {
 	val = -1;
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, std::numeric_limits<int>::max(), val));
 	EXPECT_EQ(val, .0005);
+}
+
+std::string startAge1 = "test_files//DataInputTests//runPeriod//StartAge1.tif";
+std::string startAgeVariable = "test_files//DataInputTests//runPeriod//StartAgeVariable.tif";
+std::string endYear1872 = "test_files//DataInputTests//runPeriod//EndYear1872.tif";
+std::string endYearVariable = "test_files//DataInputTests//runPeriod//EndYearVariable.tif";
+std::string yearPlanted1869 = "test_files//DataInputTests//runPeriod//yearPlanted1869.tif";
+std::string yearPlantedVariable = "test_files//DataInputTests//runPeriod//yearPlantedVariable.tif";
+
+//test run period
+void addRequiredParamsExcludingRunPeriod(DataInput* dataInput) {
+	std::ifstream paramFp("");
+	int lineNo;
+
+	for (int i = 0; i < requiredInputParams3PG.size(); i++) {
+		std::string curParam = requiredInputParams3PG[i];
+		if (
+			curParam != "yearPlanted" &&
+			curParam != "StartAge" &&
+			curParam != "EndYear") {
+			dataInput->tryAddInputParam(requiredInputParams3PG[i], { "1" });
+		}
+	}
+	dataInput->tryAddInputParam("SeedlingMass", { "1" });
+	for (int i = 0; i < requiredSeriesParams3PG.size(); i++) {
+		dataInput->tryAddSeriesParam(requiredSeriesParams3PG[i], { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	}
+	dataInput->tryAddSeriesParam("Tavg", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	dataInput->tryAddSeriesParam("VPD", { "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1" }, paramFp, lineNo);
+	ASSERT_FALSE(dataInput->inputFinished(false));
+}
+
+TEST(DataInputTests, runPeriod1) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { "1" });
+	dataInput->tryAddInputParam("EndYear", { "1872" });
+	dataInput->tryAddInputParam("yearPlanted", { "1869" });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	RunPeriod runPeriod = dataInput->getRunPeriod();
+
+	//test run period outputs
+	EXPECT_EQ(runPeriod.StartYear, 1870);
+	EXPECT_EQ(runPeriod.EndYear, 1872);
+
+	//clean up
+	delete dataInput;
+}
+
+TEST(DataInputTests, runPeriod2) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAge1 });
+	dataInput->tryAddInputParam("EndYear", { "1872" });
+	dataInput->tryAddInputParam("yearPlanted", { "1869" });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	RunPeriod runPeriod = dataInput->getRunPeriod();
+
+	//test run period outputs
+	EXPECT_EQ(runPeriod.StartYear, 1870);
+	EXPECT_EQ(runPeriod.EndYear, 1872);
+
+	//clean up
+	delete dataInput;
+}
+
+TEST(DataInputTests, runPeriod3) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAge1 });
+	dataInput->tryAddInputParam("EndYear", { endYear1872 });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlanted1869 });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	RunPeriod runPeriod = dataInput->getRunPeriod();
+
+	//test run period outputs
+	EXPECT_EQ(runPeriod.StartYear, 1870);
+	EXPECT_EQ(runPeriod.EndYear, 1872);
+
+	//clean up
+	delete dataInput;
+}
+
+TEST(DataInputTests, runPeriod4) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { "1" });
+	dataInput->tryAddInputParam("EndYear", { endYear1872 });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlanted1869 });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	RunPeriod runPeriod = dataInput->getRunPeriod();
+
+	//test run period outputs
+	EXPECT_EQ(runPeriod.StartYear, 1870);
+	EXPECT_EQ(runPeriod.EndYear, 1872);
+
+	//clean up
+	delete dataInput;
+}
+
+TEST(DataInputTests, runPeriod5) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAgeVariable });
+	dataInput->tryAddInputParam("EndYear", { endYearVariable });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlantedVariable });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	RunPeriod runPeriod = dataInput->getRunPeriod();
+
+	//test run period outputs
+	EXPECT_EQ(runPeriod.StartYear, 1870);
+	EXPECT_EQ(runPeriod.EndYear, 1874);
+
+	//clean up
+	delete dataInput;
+}
+
+TEST(DataInputTests, runPeriod6) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAge1 });
+	dataInput->tryAddInputParam("EndYear", { endYearVariable });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlantedVariable });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	RunPeriod runPeriod = dataInput->getRunPeriod();
+
+	//test run period outputs
+	EXPECT_EQ(runPeriod.StartYear, 1870);
+	EXPECT_EQ(runPeriod.EndYear, 1874);
+
+	//clean up
+	delete dataInput;
+}
+
+TEST(DataInputTests, runPeriod7) {
+	//add required params except run period params
+	DataInput* dataInput = new DataInput();
+	addRequiredParamsExcludingRunPeriod(dataInput);
+
+	//add run period params
+	dataInput->tryAddInputParam("StartAge", { startAgeVariable });
+	dataInput->tryAddInputParam("EndYear", { endYear1872 });
+	dataInput->tryAddInputParam("yearPlanted", { yearPlanted1869 });
+
+	//finish input
+	ASSERT_TRUE(dataInput->inputFinished(false));
+
+	//get run period
+	RunPeriod runPeriod = dataInput->getRunPeriod();
+
+	//test run period outputs
+	EXPECT_EQ(runPeriod.StartYear, 1870);
+	EXPECT_EQ(runPeriod.EndYear, 1872);
+
+	//clean up
+	delete dataInput;
 }
