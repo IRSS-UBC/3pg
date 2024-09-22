@@ -308,15 +308,31 @@ int main(int argc, char* argv[])
     // Run the model. 
     long cellsTotal = refGrid.nRows * refGrid.nCols;
 
-    //unsigned int numThreads = std::thread::hardware_concurrency();
-    int nthreads = 4;
-    boost::asio::thread_pool pool(nthreads);
+    //hardware_concurrency reflects the number of cpu cores.
+    //performance loss seems to occur at more than hardware_concurrency() / 2 threads.
+    //Despite this, 'hardware_concurrency()' is just a hint, and can sometimes be inaccurate, as per the documentation:
+    // https://en.cppreference.com/w/cpp/thread/thread/hardware_concurrency
+    // 
+    //I'm assuming that most processors will benefit from at least 4 threads.
+    //-Joe
+    unsigned int nThreads = std::max(std::thread::hardware_concurrency() / 2, (unsigned int)4);
 
+    //create thread pool
+    boost::asio::thread_pool pool(nThreads);
+
+    //create progress class to print progress
     Progress progress(refGrid.nRows);
 
     for (int i = 0; i < refGrid.nRows; i++) {
         boost::asio::post(pool, [i, refGrid, &dataInput, &dataOutput, &progress] {
             int cellIndexStart = i * refGrid.nCols;
+
+            //Note: the DataOutput class RELIES on multiple threads NOT having access to the same row.
+            // 
+            //In other words, errors will occur if multiple threads are 
+            //operating on DIFFERENT pixels on the SAME ROW at the same time
+            // 
+            //do not try to thread on a per-pixel basis, ONLY on a per-row basis.
             for (int j = 0; j < refGrid.nCols; j++) {
                 int cellIndex = cellIndexStart + j;
                 runTreeModel(cellIndex, dataInput, dataOutput);
