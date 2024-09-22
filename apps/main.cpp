@@ -31,16 +31,16 @@ Use of this software assumes agreement to this condition of use
 #include "3pgModel.hpp"
 
 //----------------------------------------------------------------------------------------
-std::string VERSION = "0.1";
-std::string COPYMSG = "This version of 3-PG has been revised by:\n"
-                        //"Nicholas Coops [Nicholas.Coops@csiro.au],\n"
-                        //"Anders Siggins [Anders.Siggins@csiro.au],\n"
-                        //"and Andrew Loughhead.\n"
-                        "Sarah (Vaughan) and Joe\n"
-                        "Version: " + VERSION + "\n"
-                        "Revisions based on Siggins' 2.53 version\n\n"
-                        "Better message TBD. Enjoy!\n"
-                        "--------------------------------------\n";
+std::string VERSION = "3.0";
+std::string COPYMSG = 
+"This version of 3-PG has been revised by:\n"
+"Francois du Toit and Nicholas Coops\n\n"
+"and developed by:\n"
+"Sarah (Vaughan) and Joe Meyer\n\n"
+"Version: " + VERSION + "\n"
+"Revisions based on Siggins' 2.53 version\n"
+"and the Excel VBA version.\n"
+"--------------------------------------\n";
 
 class InputParser {
 public:
