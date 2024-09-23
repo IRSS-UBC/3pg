@@ -33,14 +33,34 @@ Use of this software assumes agreement to this condition of use
 //----------------------------------------------------------------------------------------
 std::string VERSION = "3.0";
 std::string COPYMSG = 
-"This version of 3-PG has been revised by:\n"
-"Francois du Toit and Nicholas Coops\n\n"
-"and developed by:\n"
-"Sarah (Vaughan) and Joe Meyer\n\n"
-"Version: " + VERSION + "\n"
-"Revisions based on Siggins' 2.53 version\n"
-"and the Excel VBA version.\n"
-"--------------------------------------\n";
+"3-PG: A Forest Growth Model for Natural Climate Solutions\n"
+"Developed for use by BP\n\n"
+"For more information, please see: \n" 
+"Website: https://francoisdt14.github.io/3PG-Help/\n"
+"Repository: https://github.com/IRSS-UBC/3pg\n"
+"---------------------------------------------------------------------\n"
+"This version of 3-PG has been developed by:\n"
+"Integrated Remote Sensing Studio,\n"
+"Faculty of Forestry, University of British Columbia\n"
+"2424 Main Mall, Vancouver, BC, Canada, V6T 1Z4\n"
+"Developers: Nicholas Coops, Francois du Toit, Sarah Zwiep, and Joe Meyer\n"
+"Contact: nicholas.coops@ubc.ca\n\n"
+"Revision: " + VERSION + "\n"
+"Date: SEPTEMBER 2024\n\n"
+"3-PG is based on work by Anders Siggins and CSIRO Australia\n"
+"---------------------------------------------------------------------\n"
+"DISCLAIMER\n"
+"IRSS accepts no responsibility for the use of the model 3-PG in\n"
+"the form supplied or as subsequently modified by third parties. IRSS disclaims\n"
+"liability for all losses, damages and costs incurred by any person as a result\n"
+"of relying on this software. Use of this software assumes agreement to this\n"
+"condition of use.\n\n"
+
+"Removal of this statement violates the spirit in which 3-PG was released by\n"
+"IRSS/CSIRO Australia.\n"
+
+"Licensed under CC BY 4.0\n"
+"---------------------------------------------------------------------\n";
 
 class InputParser {
 public:
