@@ -1,4 +1,1 @@
-1 C:\Users\jmeyer03\Github\3pg2_main\tests\test_files\DataInputTests\irr1997.tif
-3000 .0005
-
-
+{to be written to by test code}

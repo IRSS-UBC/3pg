@@ -1195,64 +1195,100 @@ TEST(DataInputTests, seriesParamInputFormat) {
 //test management table functionality
 TEST(DataInputTests, managementTable) {
 	DataInput *dataInput = new DataInput();
-	std::ifstream paramFp1("test_files//DataInputTests//manageTableTest1.txt");
-	std::ifstream paramFp2("test_files//DataInputTests//manageTableTest2.txt");
-	std::ifstream paramFp3("test_files//DataInputTests//manageTableTest3.txt");
+
+	std::filesystem::path imagePath = std::filesystem::current_path();
+	imagePath /= "test_files";
+	imagePath /= "dataInputTests";
+	imagePath /= "irr1997.tif";
+	std::cout << imagePath.string() << std::endl;
+
+	std::ofstream mgmtTest1("test_files//DataInputTests//manageTableTest1.txt");
+	std::string line1 = "1994            8\n";
+	std::string line2 = "1997 " + imagePath.string() + "\n";
+	std::string line3 = "2000 5\n";
+	mgmtTest1.write(line1.c_str(), line1.length());
+	mgmtTest1.write(line2.c_str(), line2.length());
+	mgmtTest1.write(line3.c_str(), line3.length());
+
+	std::ofstream mgmtTest2("test_files//DataInputTests//manageTableTest2.txt");
+	line1 = "1994	1\n";
+	line2 = "	1995	2\n";
+	line3 = "1996	3\n";
+	mgmtTest2.write(line1.c_str(), line1.length());
+	mgmtTest2.write(line2.c_str(), line2.length());
+	mgmtTest2.write(line3.c_str(), line3.length());
+
+	std::ofstream mgmtTest3("test_files//DataInputTests//manageTableTest3.txt");
+	line1 = "    2 " + imagePath.string() + "\n";
+	line2 = "3000 .0005\n";
+	mgmtTest3.write(line1.c_str(), line1.length());
+	mgmtTest3.write(line2.c_str(), line2.length());
+	
+	mgmtTest1.close();
+	mgmtTest2.close();
+	mgmtTest3.close();
+
 	int lineNo1 = 0;
 	int lineNo2 = 0;
 	int lineNo3 = 0;
+	
+	std::ifstream paramFp1("test_files//DataInputTests//manageTableTest1.txt");
+	std::ifstream paramFp2("test_files//DataInputTests//manageTableTest2.txt");
+	std::ifstream paramFp3("test_files//DataInputTests//manageTableTest3.txt");
 
 	ASSERT_TRUE(dataInput->tryAddManagementParam("Management: irrigation", paramFp1, lineNo1));
 	ASSERT_TRUE(dataInput->tryAddManagementParam("management: minasw", paramFp2, lineNo2));
 	ASSERT_TRUE(dataInput->tryAddManagementParam("management: FERTILITY", paramFp3, lineNo3));
-
+	
 	double val;
 	
 	/* ~~~~~~~~~~~~~~~~~~~~~~~~~
 	Irrigation
 	~~~~~~~~~~~~~~~~~~~~~~~~~ */
-	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1993, val));
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1, val));
+	EXPECT_EQ(val, 8);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1993, val));
+	EXPECT_EQ(val, 8);
 
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1994, val));
-	EXPECT_EQ(val, 8);
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1995, val));
-	EXPECT_EQ(val, 8);
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 1, 1994, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 2, 1994, val)); //nan
+	EXPECT_EQ(val, 8); //nan should go to previous value
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 3, 1994, val));
+	EXPECT_EQ(val, 3);
+	
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1996, val));
-	EXPECT_EQ(val, 8);
-
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 1, 1996, val));
+	EXPECT_EQ(val, 2);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 2, 1996, val)); //nan
+	EXPECT_EQ(val, 8); //nan should go to previous value
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 3, 1996, val));
+	EXPECT_EQ(val, 3);
+	
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1997, val));
-	EXPECT_EQ(val, 1);
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 1, 1997, val));
-	EXPECT_EQ(val, 2);
-	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 2, 1997, val)); //false because nan
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 3, 1997, val));
-	EXPECT_EQ(val, 3);
-
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 1999, val));
-	EXPECT_EQ(val, 1);
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 1, 1999, val));
-	EXPECT_EQ(val, 2);
-	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 2, 1999, val)); //false because nan
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 3, 1999, val));
-	EXPECT_EQ(val, 3);
-
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 2000, val));
 	EXPECT_EQ(val, 5);
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 2001, val));
 	EXPECT_EQ(val, 5);
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::IRRIGATION, 0, 5000, val));
 	EXPECT_EQ(val, 5);
-
+	
 	/* ~~~~~~~~~~~~~~~~~~~~~~~~~
 	MinASW
 	~~~~~~~~~~~~~~~~~~~~~~~~~ */
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1994, val));
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1, val));
 	EXPECT_EQ(val, 1);
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1995, val));
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1993, val));
+	EXPECT_EQ(val, 1);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1994, val));
 	EXPECT_EQ(val, 2);
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1995, val));
+	EXPECT_EQ(val, 3);
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::MINASW, 999, 1996, val));
 	EXPECT_EQ(val, 3);
-
+	
 	/* ~~~~~~~~~~~~~~~~~~~~~~~~~
 	Fertility
 	~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -1264,18 +1300,10 @@ TEST(DataInputTests, managementTable) {
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 3, 1, val));
 	EXPECT_EQ(val, 3);
 	
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, 2999, val));
-	EXPECT_EQ(val, 1);
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 1, 2999, val));
-	EXPECT_EQ(val, 2);
-	EXPECT_FALSE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 2, 2999, val)); //false because nan
-	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 3, 2999, val));
-	EXPECT_EQ(val, 3);
-	
+	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, 2, val));
+	EXPECT_EQ(val, .0005);
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, 3000, val));
 	EXPECT_EQ(val, .0005);
-	
-	val = -1;
 	EXPECT_TRUE(dataInput->getManagementParam(ManagementIndex::FERTILITY, 0, std::numeric_limits<int>::max(), val));
 	EXPECT_EQ(val, .0005);
 }

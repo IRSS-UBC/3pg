@@ -163,7 +163,7 @@ bool DataInput::getScalar(std::string value, PPPG_PARAM* param) {
 		param->val = val;
 
 		//mark the data as scalar
-		param->spType = pScalar;
+		param->spType = ParamSpatial::pScalar;
 
 		//log input param acquired
 		std::string output = "    " + param->id + "        constant: " + std::to_string(param->val);
@@ -199,7 +199,7 @@ bool DataInput::getGrid(std::string value, PPPG_PARAM* param) {
 		}
 
 		//set data type
-		param->spType = pTif;
+		param->spType = ParamSpatial::pTif;
 
 		//try opening the grid and compare to the refgrid (or create the refgrid)
 		if (!openCheckGrid(filePath.string(), param->g)) {
@@ -649,7 +649,10 @@ bool DataInput::tryAddManagementParam(std::string name, std::ifstream& inFile, i
 		//tokenize line
 		std::vector<std::string> tokens;
 		boost::split(tokens, line, boost::is_any_of(", \n\t"), boost::token_compress_on);
-	
+
+		//remove "" entries in vector
+		tokens.erase(std::remove(tokens.begin(), tokens.end(), ""), tokens.end());
+		
 		//ensure line has exactly 2 tokens
 		if (tokens.size() != 2) {
 			//print and log error
@@ -670,7 +673,7 @@ bool DataInput::tryAddManagementParam(std::string name, std::ifstream& inFile, i
 		}
 		catch (std::invalid_argument const&) {
 			//print and log error
-			std::string errstr = "expected aninteger year in management table at line " + std::to_string(lineNo);
+			std::string errstr = "expected an integer year in management table at line " + std::to_string(lineNo);
 			std::cout << errstr << std::endl;
 			this->log(errstr);
 	
@@ -679,23 +682,20 @@ bool DataInput::tryAddManagementParam(std::string name, std::ifstream& inFile, i
 		}
 	
 		if (DataInput::getScalar(tokens[1], param.get()) || DataInput::getGrid(tokens[1], param.get())) {
-			//if this is the first entry in the management table, set the initial year
 			if (table->firstYear == -1) {
-				table->firstYear = year;
+				table->firstYear = year - 1;
 			}
-	
-			//if years were skipped in the management table, fill in those years with the same index as the last element
-			if (year > table->firstYear + table->yearToIndex.size()) {
-				while (year > table->firstYear + table->yearToIndex.size()) {
-					table->yearToIndex.push_back(table->yearToIndex.back());
-				}
-			}
-	
-			//add new param to the back of the yearlyParams table, and add the index to the index table
+
+			//add new param to the back of the yearlyParams table
 			table->yearlyParams.emplace_back();
 			table->yearlyParams.back() = std::move(param);
-			table->yearToIndex.push_back((int)table->yearlyParams.size() - 1);
-			
+			int yearIndex = static_cast<int>(table->yearlyParams.size()) - 1;
+
+			//add entries from the last existing year until the year before the year specified by the parameter
+			while (year - table->firstYear > table->yearToIndex.size()) {
+				table->yearToIndex.push_back(yearIndex);
+			}
+
 			//keep iterating
 			continue;
 		}
@@ -961,12 +961,12 @@ double DataInput::getValFromInputParam(std::string paramName, long cellIndex) {
 	PPPG_PARAM* param = this->inputParams.at(paramName).get();
 
 	//if the param is scalar, return it's value
-	if (param->spType == pScalar) {
+	if (param->spType == ParamSpatial::pScalar) {
 		return param->val;
 	}
 
 	//if the param is a grid, return the value at the row and column specified
-	if (param->spType == pTif) {
+	if (param->spType == ParamSpatial::pTif) {
 		double val = param->g->GetVal(cellIndex);
 		if (param->g->IsNoData((float)val)) {
 			throw std::runtime_error("nan");
@@ -1041,12 +1041,12 @@ double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, lon
 	//get the monthly parameter
 	PPPG_PARAM* monthParam = param->monthlyParams[monthIndex].get();
 
-	if (monthParam->spType == pScalar) {
+	if (monthParam->spType == ParamSpatial::pScalar) {
 		return monthParam->val;
 	}
 
 	//get parameter value depending on whether it is scalar or grid
-	if (monthParam->spType == pTif) {
+	if (monthParam->spType == ParamSpatial::pTif) {
 		double val = monthParam->g->GetVal(cellIndex);
 		if (monthParam->g->IsNoData((float)val)) {
 			throw std::runtime_error("nan");
@@ -1061,37 +1061,48 @@ double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, lon
 
 bool DataInput::getManagementParam(ManagementIndex index, long cellIndex, int year, double& val) {
 	PPPG_MT_PARAM* table = &this->managementTables[index];
-	
+
 	//if management parameter doesn't exist, return false
-	if (table->firstYear == -1 || year < table->firstYear) {
+	if (table->firstYear == -1) {
 		return false;
 	}
 
 	//get index to management table vector for correct year
 	int yearIndex;
-	if (year - table->firstYear >= table->yearToIndex.size()) {
+	if (year <= table->firstYear){
+		yearIndex = 0;
+	}
+	else if (year - table->firstYear > table->yearToIndex.size() - 1) {
 		yearIndex = table->yearToIndex.back();
 	}
 	else {
 		yearIndex = table->yearToIndex[year - table->firstYear];
 	}
-	
-	//get parameter
-	PPPG_PARAM* param = table->yearlyParams[yearIndex].get();
 
-	//get val if scalar and return true
-	if (param->spType == pScalar) {
-		val = param->val;
-		return true;
+	while (yearIndex >= 0) {
+		//get parameter
+		PPPG_PARAM* param = table->yearlyParams[yearIndex].get();
+
+		//get val if scalar and return true
+		if (param->spType == ParamSpatial::pScalar) {
+			val = param->val;
+			return true;
+		}
+
+		//get val from grid, return true if not nan
+		if (param->spType == ParamSpatial::pTif) {
+			val = param->g->GetVal(cellIndex);
+
+			//if the param hit a nodata pixel, use previous yearly params
+			if (!param->g->IsNoData((float)val)) {
+				return true;
+			}
+		}
+
+		yearIndex--;
 	}
 	
-	//get val from grid, return true if not nan
-	if (param->spType == pTif) {
-		val = param->g->GetVal(cellIndex);
-		return !param->g->IsNoData((float)val);
-	}
-	
-	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
+	return false;
 }
 
 std::unordered_map<std::string, PPPG_OP_VAR> DataInput::getOpVars() {
@@ -1112,14 +1123,14 @@ void DataInput::findRunPeriod() {
 	PPPG_PARAM* endYearParam = this->inputParams.at("endyear").get();
 
 	//get maxes and mins depending on whether they're scalar or grid parameters
-	int yearPlantedMin = (yearPlantedParam->spType == pScalar) ? static_cast<int>(yearPlantedParam->val) : static_cast<int>(yearPlantedParam->g->GetMin());
-	int startAgeMin = (startAgeParam->spType == pScalar) ? static_cast<int>(startAgeParam->val) : static_cast<int>(startAgeParam->g->GetMin());
-	int endYearMax = (endYearParam->spType == pScalar) ? static_cast<int>(endYearParam->val) : static_cast<int>(endYearParam->g->GetMax());
+	int yearPlantedMin = (yearPlantedParam->spType == ParamSpatial::pScalar) ? static_cast<int>(yearPlantedParam->val) : static_cast<int>(yearPlantedParam->g->GetMin());
+	int startAgeMin = (startAgeParam->spType == ParamSpatial::pScalar) ? static_cast<int>(startAgeParam->val) : static_cast<int>(startAgeParam->g->GetMin());
+	int endYearMax = (endYearParam->spType == ParamSpatial::pScalar) ? static_cast<int>(endYearParam->val) : static_cast<int>(endYearParam->g->GetMax());
 
 	/* 
 	determine start year of the run period
 	*/
-	if (startAgeParam->spType != pScalar && yearPlantedParam->spType != pScalar) {
+	if (startAgeParam->spType != ParamSpatial::pScalar && yearPlantedParam->spType != ParamSpatial::pScalar) {
 		//if both are raster, find smallest sum of yearPlanted and startAge pixels.
 		//we do this because the minimum sum (which is the year we should start on)
 		//does not have to be at any of the pixels where yearPlanted or startAge are smallest

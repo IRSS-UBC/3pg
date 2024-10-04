@@ -5,7 +5,11 @@
 #include <string>
 #include "GDALRasterImage.hpp"
 
-typedef enum { pNull, pScalar, pTif } ParamSpatial;
+typedef enum { 
+	pNull = 0, 
+	pScalar = 1, 
+	pTif = 2 
+} ParamSpatial;
 
 typedef struct PPPG_PARAM {
 	//variable name
