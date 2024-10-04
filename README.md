@@ -1,6 +1,14 @@
-### Overview
-3PG with 3PGSpatial, now parallelized and using .tif instead of .flt images. This repository is currently being maintained by the Integrated Remote Sensing Studio (IRSS), Faculty of Forestry, University of British Columbia. For documentation, see https://francoisdt14.github.io/3PG-Help/.
+# Overview
+3-PG with 3-PGSpatial, now parallelized and using .tif instead of .flt images. This repository is currently being maintained by the Integrated Remote Sensing Studio (IRSS), Faculty of Forestry, University of British Columbia. For documentation, see https://francoisdt14.github.io/3PG-Help/.
 
+If you notice a bug, or have an idea for a feature request, please use GitHub issues.
+
+# running 3-PG
+download and unzip the latest release from GitHub. Then, run using the run.bat script in the release folder. 
+
+Alternatively, you may run the executable directly. If you do this, ensure that the PROJ_DATA environment variable has been set to the 'proj' folder. Runtime warnings indicating 'proj.db' not found will occur if this is not done. This is necessary because 'proj' is a dependency of GDAL, which this new version of 3-PG utilizing .tif images relies on.
+
+# developing 3-PG
 ### Prerequisistes
 * [Visual Studio 2022](https://visualstudio.microsoft.com/vs/) with the C++ workload installed
 * [CMake](https://cmake.org/download/) (3.15 or higher)
@@ -43,7 +51,7 @@ unit tests. Running ./make_build.bat will build only the project.
  - if you see any 'missing *.dll' errors, see the 'missing dll errors' section of this readme for how to fix.
 
 ### debugging the project
- - Microsoft Visual Studio should open, and there should be a box 'solution explorer' open. In 'solution explorer' right click on the '3pg' project and select 'set as startup project'.
+ - Open 3pg.sln in the buid folder using Microsoft Visual Studio. There should be a box 'solution explorer' open. In 'solution explorer' right click on the '3pg' project and select 'set as startup project'.
  - Press f5 to build & debug.
  -  If you see any 'missing *.dll' errors, see the 'missing dll errors' section of this readme for how to fix.
 
@@ -60,4 +68,4 @@ unit tests. Running ./make_build.bat will build only the project.
 
 ### testing
  - Unit testing: there are unit tests which test the correctness of the DataInput, and DataOuptut classes essential to this version of 3PG's usage. GoogleTest is used as a testing framework. The unit tests can be ran using the run_tests.bat batch file.
- - Model testing: There are python tests which test the correctness of the model, using previously verified outputs. The python tests, since they rely on relatively large images to run, are not included in the repository.
+ - Model testing: There are python tests which test the correctness of the model, using previously verified outputs. The python tests, since they rely on relatively large images to run, are not included in this repository.
