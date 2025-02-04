@@ -30,6 +30,13 @@ Use of this software assumes agreement to this condition of use
 #include "GDALRasterImage.hpp"
 #include "3pgModel.hpp"
 
+// OS-dependent path separator
+#ifdef _WIN32
+    const char PATH_SEPARATOR = '\\';
+#else
+    const char PATH_SEPARATOR = '/';
+#endif
+
 //----------------------------------------------------------------------------------------
 std::string VERSION = "3.0";
 std::string COPYMSG = 
@@ -242,9 +249,9 @@ bool getOutPath(std::string siteParamString, std::string& outpath)
         //get path string
         std::string path = values.front();
 
-        //add trailing backshlashes ifnecessary
-        if (path.back() != '\\') {
-            path += '\\';
+        //add trailing backshlashes if necessary
+        if (path.back() != PATH_SEPARATOR) {
+            path += PATH_SEPARATOR;
         }
         
         //ensure path exists
