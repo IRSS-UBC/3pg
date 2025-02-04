@@ -12,11 +12,11 @@ To compile 3-PG from source in release mode, first check the prerequisistes, the
 ```
 # Windows
 cmake -D CMAKE_BUILD_TYPE=Release -B build
-cmake --build build
+cmake --build build -j 4
 
 # Ubuntu
 cmake -G "Unix Makefiles" -D CMAKE_BUILD_TYPE=Release -B build
-cmake --build build
+cmake --build build -j 4
 ```
 
 # Developing 3-PG
