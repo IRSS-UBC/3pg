@@ -1,4 +1,4 @@
 "Frost",
 1870 1 2 3 4 5 6 7 8 9 10 11 12
 1871 13 14 15 16 17 18 19 20 21 22 23 24
-1872 test_files\DataInputTests\NFFD01.tif test_files\DataInputTests\NFFD02.tif test_files\DataInputTests\NFFD03.tif test_files\DataInputTests\NFFD04.tif test_files\DataInputTests\NFFD05.tif test_files\DataInputTests\NFFD06.tif test_files\DataInputTests\NFFD07.tif test_files\DataInputTests\NFFD08.tif test_files\DataInputTests\NFFD09.tif test_files\DataInputTests\NFFD10.tif test_files\DataInputTests\NFFD11.tif test_files\DataInputTests\NFFD12.tif
+1872 test_files/DataInputTests/NFFD01.tif test_files/DataInputTests/NFFD02.tif test_files/DataInputTests/NFFD03.tif test_files/DataInputTests/NFFD04.tif test_files/DataInputTests/NFFD05.tif test_files/DataInputTests/NFFD06.tif test_files/DataInputTests/NFFD07.tif test_files/DataInputTests/NFFD08.tif test_files/DataInputTests/NFFD09.tif test_files/DataInputTests/NFFD10.tif test_files/DataInputTests/NFFD11.tif test_files/DataInputTests/NFFD12.tif

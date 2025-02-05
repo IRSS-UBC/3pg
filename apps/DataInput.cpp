@@ -869,7 +869,7 @@ bool DataInput::inputFinished(bool modelModeSpatial) {
 bool DataInput::getInputParams(long cellIndex, InputParams& params) {
 	//error checking
 	if (!finishedInput) {
-		throw std::exception("should NOT be able to call getInputParams() if input failed!");
+		throw std::runtime_error("should NOT be able to call getInputParams() if input failed!");
 	}
 
 	//declare, copy values into, then return an instance of InputParams
@@ -1005,13 +1005,13 @@ double DataInput::getValFromInputParam(std::string paramName, long cellIndex) {
 		}
 	}
 
-	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
+	throw std::runtime_error("a parameter has been set incorrectly as neither a scalar or a grid.");
 }
 
 bool DataInput::getSeriesParams(long cellIndex, int year, int month, SeriesParams& params) {
 	//error checking
 	if (!finishedInput) {
-		throw std::exception("should NOT be able to call getInputParams() if input failed!");
+		throw std::runtime_error("should NOT be able to call getInputParams() if input failed!");
 	}
 
 	//if one of the calls to getValFromSeriesParams() throws an std::runtime_error
@@ -1085,7 +1085,7 @@ double DataInput::getValFromSeriesParam(int paramIndex, int year, int month, lon
 		}
 	}
 
-	throw std::exception("a parameter has been set incorrectly as neither a scalar or a grid.");
+	throw std::runtime_error("a parameter has been set incorrectly as neither a scalar or a grid.");
 }
 
 bool DataInput::getManagementParam(ManagementIndex index, long cellIndex, int year, double& val) {

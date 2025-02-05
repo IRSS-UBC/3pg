@@ -1198,7 +1198,7 @@ TEST(DataInputTests, managementTable) {
 
 	std::filesystem::path imagePath = std::filesystem::current_path();
 	imagePath /= "test_files";
-	imagePath /= "dataInputTests";
+	imagePath /= "DataInputTests";
 	imagePath /= "irr1997.tif";
 	std::cout << imagePath.string() << std::endl;
 

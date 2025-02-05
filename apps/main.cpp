@@ -17,18 +17,25 @@ Use of this software assumes agreement to this condition of use
 #define _WIN32_WINNT 0x0601
 
 #include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include <format>
+#include <chrono>
 #include <boost/program_options.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/post.hpp>
 #include "DataOutput.hpp"
 #include "DataInput.hpp"
-#include "ParamStructs.hpp"
 #include "GDALRasterImage.hpp"
 #include "3pgModel.hpp"
+
+// OS-dependent path separator
+#ifdef _WIN32
+    const char PATH_SEPARATOR = '\\';
+#else
+    const char PATH_SEPARATOR = '/';
+#endif
 
 //----------------------------------------------------------------------------------------
 std::string VERSION = "3.0";
@@ -242,9 +249,9 @@ bool getOutPath(std::string siteParamString, std::string& outpath)
         //get path string
         std::string path = values.front();
 
-        //add trailing backshlashes ifnecessary
-        if (path.back() != '\\') {
-            path += '\\';
+        //add trailing backshlashes if necessary
+        if (path.back() != PATH_SEPARATOR) {
+            path += PATH_SEPARATOR;
         }
         
         //ensure path exists
