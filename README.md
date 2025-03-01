@@ -55,12 +55,6 @@ cd vcpkg
 ```
 .\vcpkg install gtest
 ```
-```
-.\vcpkg install boost
-```
-- note: installing boost will take a while, for me it took 1.7 hours.
-- go to the vcpkg folder and navigate to vcpkg/installed/x64-windows/include/ (note: x64-windows may be a different folder on your installation).
-- within that folder, there should be a folder called 'boost'. Copy the whole folder and paste it into the 3pg/include directory.
 
 **On Linux**:
 - gcc-14 is only available on Ubuntu 24.04 and higher from official repositories, so if you're using an older distribution you can compile it from source
