@@ -1,7 +1,3 @@
-IF(BUILD_SHARED_LIBS)
-	find_package(GDAL CONFIG REQUIRED)
-endif()	
-
 set(SOURCE_FILES
 	DataInput.cpp
 	DataInput.hpp
@@ -17,18 +13,12 @@ set(SOURCE_FILES
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} main.cpp)
 
 if(WIN32)
-	set(BOOST_INCLUDE_LIBRARIES algorithm asio program_options)
-	set(BOOST_ENABLE_CMAKE ON)
-	FetchContent_Declare(
-		Boost
-		GIT_REPOSITORY https://github.com/boostorg/boost.git
-		GIT_TAG boost-1.87.0
-	)
-	FetchContent_MakeAvailable(Boost)
-
-	if(NOT BUILD_SHARED_LIBS)
+		
+	if(BUILD_SHARED_LIBS)
+		target_link_libraries(${PROJECT_NAME} PRIVATE GDAL::GDAL)
+		target_compile_options(${PROJECT_NAME} PRIVATE /MDd)
+	else()
 		#statically link
-		#target_link_libraries(${PROJECT_NAME} PRIVATE gdal_lib)
 		target_compile_options(${PROJECT_NAME} PRIVATE /MT)
 		target_link_options(${PROJECT_NAME} PRIVATE /INCREMENTAL:NO /NODEFAULTLIB:MSVCRT)
 		
@@ -105,15 +95,6 @@ if(WIN32)
 			Normaliz
 			Wldap32
 		)
-		
-		#link boost dependencies
-		target_link_libraries(${PROJECT_NAME} PRIVATE
-			Boost::algorithm
-			Boost::asio
-			Boost::program_options
-		)
-	else()
-	#NOP for now
 	endif()
 else()
 	# link Boost and Threads
