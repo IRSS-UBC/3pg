@@ -30,16 +30,16 @@ endif()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # add include directories
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows/include/boost)
-if(NOT BUILD_SHARED_LIBS)
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows-static/include)
+if(BUILD_SHARED_LIBS)
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows/include)
+else()
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows_static/include)
 endif()
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # add link directories
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if(NOT BUILD_SHARED_LIBS)
-	#link_directories($ENV{GDAL_STATIC_LIB_DIR})
 	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows-static/lib)
 endif()
 
