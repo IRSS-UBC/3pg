@@ -3,8 +3,6 @@
 cmake_minimum_required (VERSION 3.11)
 set(CMAKE_CXX_STANDARD 20)
 
-include(FetchContent)
-
 option(BUILD_SHARED_LIBS "build with dynamic libraries except for the standalone executable" ON)
 option(BUILD_GOOGLE_TESTS "build 3pg with tests included" OFF)
 
@@ -21,26 +19,82 @@ project("3pg")
 #endif()
 
 if(BUILD_SHARED_LIBS)
-	set(VCPKG_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg)
+	#for building dynamically, it's easiest to use CMAKE find_package
 	
+	#getting GDAL and all it's dependencies
+	set(VCPKG_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg)
 	set(GDAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/packages/gdal_x64-windows/share/gdal)
 	find_package(GDAL CONFIG REQUIRED)
-endif()
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# add include directories
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if(BUILD_SHARED_LIBS)
+	
+	#getting remaining dependencies (boost)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows/include)
 else()
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows_static/include)
-endif()
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# add link directories
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if(NOT BUILD_SHARED_LIBS)
+	#for building statically, it's easiest to add the libs directly
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows-static/include)
 	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows-static/lib)
+	
+	#lib files required by GDAL which are within the vcpkg/instaled/x64-windows-static/lib folder
+	set(GDAL_STATIC_LIB_FILES
+		aec-static 		
+		charset 		
+		freexl 			
+		gdal 			
+		geos			
+		geos_c			
+		geotiff			
+		gif				
+		iconv			
+		jpeg			
+		json-c			
+		kmlbase			
+		kmlconvenience	
+		kmldom
+		kmlengine
+		kmlregionator
+		kmlxsd
+		Lerc
+		libcrypto
+		libcurl
+		libecpg
+		libecpg_compat
+		libexpatMT
+		libhdf5
+		libhdf5_cpp
+		libhdf5_hl
+		libhdf5_hl_cpp
+		libpgcommon
+		libpgport
+		libpgtypes
+		libpng16
+		libpq
+		libsharpyuv
+		libssl
+		libwebp
+		libwebpdecoder
+		libwebpdemux
+		libxml2
+		lz4
+		lzma
+		minizip
+		netcdf
+		openjp2
+		pcre2-8
+		pcre2-16
+		pcre2-32
+		pcre2-posix
+		proj
+		qhullcpp
+		qhullstatic
+		qhullstatic_r
+		spatialite
+		sqlite3
+		szip-static
+		tiff
+		turbojpeg
+		uriparser
+		zlib
+		zstd
+	)
 endif()
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

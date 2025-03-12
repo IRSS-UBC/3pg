@@ -53,6 +53,7 @@ cmake-build-debug
 out/*
 build/*
 release_build/*
+dev_build/*
 test_build/*
 
 # Vscode 
