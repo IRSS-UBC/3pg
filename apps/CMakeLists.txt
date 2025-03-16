@@ -10,7 +10,13 @@ set(SOURCE_FILES
     3pgModel.hpp
 )
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES} main.cpp)
+if(BUILD_GOOGLE_TESTS)
+	#if running tests, 3pg should .lib file which cmake can find when generating test executables
+	add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
+else()
+	#otherwise, it should be an executable
+	add_executable(${PROJECT_NAME} ${SOURCE_FILES} main.cpp)
+endif()
 
 if(WIN32)
 	if(BUILD_SHARED_LIBS)
@@ -47,8 +53,8 @@ endif()
 
 # Debug mode
 if(WITH_GOOGLE_TESTS)
-	add_library(3pgTest ${SOURCE_FILES})
-	target_link_libraries(3pgTest PRIVATE GDAL::GDAL)
+	#add_library(3pgTest ${SOURCE_FILES})
+	#target_link_libraries(3pgTest PRIVATE GDAL::GDAL)
 	if(NOT MSVC)
 		target_link_libraries(${PROJECT_NAME} PRIVATE Boost::system Boost::thread Threads::Threads)
 	endif()

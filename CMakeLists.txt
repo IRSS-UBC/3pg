@@ -13,6 +13,7 @@ endif()
 
 project("3pg")
 
+#TODO Release build to use all compiler optimizations
 #if we're building a release version, add the speediest compiler optimizations
 #if(NOT BUILD_SHARED_LIBS AND MSVC)
 #	add_compile_options("-O2")
@@ -22,11 +23,12 @@ if(BUILD_SHARED_LIBS)
 	#for building dynamically, it's easiest to use CMAKE find_package
 	
 	#getting GDAL and all it's dependencies
+	#TODO use cmake projected directory instead of CMAKE_CURRENT_SOURCE_DIR
 	set(VCPKG_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg)
 	set(GDAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/packages/gdal_x64-windows/share/gdal)
 	find_package(GDAL CONFIG REQUIRED)
 	
-	#getting remaining dependencies (boost)
+	#add remaining include dependencies
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows/include)
 else()
 	#for building statically, it's easiest to add the libs directly
@@ -102,5 +104,14 @@ endif()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 add_subdirectory("apps")
 if(BUILD_GOOGLE_TESTS)
+	
+	#getting gtest and all its dependencies
+	set(GTEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/packages/gtest_x64-windows/share/gtest)
+	find_package(GTEST CONFIG REQUIRED)
+	
+	#add src directory to testing include directory so we're able to include required data structures
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/apps)
+	
+	#add the tests subdirectory to the build
 	add_subdirectory("tests")
 endif()
