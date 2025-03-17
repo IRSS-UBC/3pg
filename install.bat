@@ -72,7 +72,10 @@ call vcpkg integrate install
 call vcpkg install gdal:x64-windows-static boost-algorithm:x64-windows-static boost-asio:x64-windows-static boost-program-options:x64-windows-static
 
 ::install packages for dynamically linked version
-call vcpkg install gdal boost-algorithm boost-asio boost-program-options gtest --recurse 
+call vcpkg install gdal boost-algorithm boost-asio boost-program-options gtest --recurse
+
+::return to project directory
+cd ..
  
 ::add installed vcpkg folder to system path to ensure non-static builds are able to find required dll's
 setx path "%PATH%;%CD%\vcpkg\installed\x64-windows\debug\bin" /M
