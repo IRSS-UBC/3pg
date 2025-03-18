@@ -18,6 +18,8 @@ else()
 	add_executable(${PROJECT_NAME} ${SOURCE_FILES} main.cpp)
 endif()
 
+set_target_properties(${PROJECT_NAME} PROPERTIES VS_GLOBAL_VcpkgEnabled false)
+
 if(WIN32)
 	if(BUILD_SHARED_LIBS)
 		#set to compile with multi-threaded dynamic debug
