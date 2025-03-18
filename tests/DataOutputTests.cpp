@@ -2,8 +2,8 @@
 
 #include <filesystem>
 
-#include <../apps/GDALRasterImage.hpp>
-#include <../apps/DataOutput.hpp>
+#include <GDALRasterImage.hpp>
+#include <DataOutput.hpp>
 
 std::string refGridDir = "test_files/DataOutputTests/refgrid.tif";
 std::string outDir = "test_files/DataOutputTests/outputs/";

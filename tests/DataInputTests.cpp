@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <../apps/DataInput.hpp>
+#include <DataInput.hpp>
 #include <fstream>
 #include <vector>
 #include <tuple>
