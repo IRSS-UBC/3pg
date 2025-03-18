@@ -11,13 +11,14 @@ set(SOURCE_FILES
 )
 
 if(BUILD_GOOGLE_TESTS)
-	#if running tests, 3pg should .lib file which cmake can find when generating test executables
+	#if running tests, 3pg should be a .lib file which cmake can find when generating test executables
 	add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 else()
 	#otherwise, it should be an executable
 	add_executable(${PROJECT_NAME} ${SOURCE_FILES} main.cpp)
 endif()
 
+#don't get bogged down in vcpkg static / dynamic linked libraries, those libraries are already added as required
 set_target_properties(${PROJECT_NAME} PROPERTIES VS_GLOBAL_VcpkgEnabled false)
 
 if(WIN32)

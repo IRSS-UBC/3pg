@@ -1,27 +1,16 @@
 # CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 cmake_minimum_required (VERSION 3.11)
+#set compiler and options
 set(CMAKE_CXX_STANDARD 20)
-
 option(BUILD_SHARED_LIBS "build with dynamic libraries except for the standalone executable" ON)
 option(BUILD_GOOGLE_TESTS "build 3pg with tests included" OFF)
 
-# Enable use of _ROOT variables
-if(POLICY CMP0074)
-  cmake_policy(SET CMP0074 NEW)
-endif()
-
+#define project
 project("3pg")
 
-#TODO Release build to use all compiler optimizations
-#if we're building a release version, add the speediest compiler optimizations
-#if(NOT BUILD_SHARED_LIBS AND MSVC)
-#	add_compile_options("-O2")
-#endif()
-
+#dev/dynamic specific CMAKE options
 if(BUILD_SHARED_LIBS)
-	#for building dynamically, it's easiest to use CMAKE find_package
-	
 	#getting GDAL and all it's dependencies
 	set(VCPKG_ROOT ${PROJECT_SOURCE_DIR}/vcpkg)
 	set(GDAL_DIR ${PROJECT_SOURCE_DIR}/vcpkg/packages/gdal_x64-windows/share/gdal)
@@ -29,8 +18,9 @@ if(BUILD_SHARED_LIBS)
 	
 	#add remaining include dependencies
 	include_directories(${PROJECT_SOURCE_DIR}/vcpkg/installed/x64-windows/include)
+	
+#release/static specific CMAKE options
 else()
-	#for building statically, it's easiest to add the libs directly
 	include_directories(${PROJECT_SOURCE_DIR}/vcpkg/installed/x64-windows-static/include)
 	link_directories(${PROJECT_SOURCE_DIR}/vcpkg/installed/x64-windows-static/lib)
 	
@@ -98,19 +88,18 @@ else()
 	)
 endif()
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#add subdirectories
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-add_subdirectory("apps")
+#add testing specific options
 if(BUILD_GOOGLE_TESTS)
-	
 	#getting gtest and all its dependencies
 	set(GTEST_DIR ${PROJECT_SOURCE_DIR}/vcpkg/packages/gtest_x64-windows/share/gtest)
 	find_package(GTEST CONFIG REQUIRED)
 	
 	#add src directory to testing include directory so we're able to include required data structures
 	include_directories(${PROJECT_SOURCE_DIR}/apps)
-	
-	#add the tests subdirectory to the build
+endif()
+
+#add subdirectories
+add_subdirectory("apps")
+if(BUILD_GOOGLE_TESTS)
 	add_subdirectory("tests")
 endif()
